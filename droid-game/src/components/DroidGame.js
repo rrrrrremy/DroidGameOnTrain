@@ -10,6 +10,10 @@ import {
   checkCorrectTiles,
   getActiveRuns,
   validateWord,
+  encodeBoard,
+  encodePreserved,
+  decodeBoard,
+  decodePreserved,
 } from '../utils/gameLogic';
 
 const emptyBoard = () =>
@@ -32,6 +36,33 @@ const getScoreMessage = (score) => {
   return SCORE_MESSAGES[SCORE_MESSAGES.length - 1][1];
 };
 
+const CopyButton = ({ url }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+    } catch {
+      const el = document.createElement('textarea');
+      el.value = url;
+      el.style.position = 'fixed';
+      el.style.opacity = '0';
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
+      {copied ? 'Copied!' : 'Copy Link'}
+    </button>
+  );
+};
+
 const DroidGame = () => {
   const [gameState, setGameState] = useState('start');
   const [board, setBoard] = useState(emptyBoard());
@@ -44,6 +75,7 @@ const DroidGame = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
+  const [shareLink, setShareLink] = useState(null);
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -65,6 +97,29 @@ const DroidGame = () => {
     setValidationError(null);
     setInvalidWordTiles([]);
   }, [board]);
+
+  // On mount: detect ?b=&p= share URL and load Player 2 state directly
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bParam = params.get('b');
+    const pParam = params.get('p');
+    if (!bParam || !pParam) return;
+
+    const decoded = decodeBoard(bParam);
+    const preserved = decodePreserved(pParam);
+    if (!decoded) return;
+
+    const p2StartBoard = Array(5).fill(null).map(() => Array(5).fill(null));
+    preserved.forEach(({ x, y }) => { p2StartBoard[y][x] = decoded[y][x]; });
+
+    setPlayer1Board(decoded);
+    setPreservedTiles(preserved);
+    setBoard(p2StartBoard);
+    setLetterCounts(countLetters(decoded));
+    setCurrentPlayer(2);
+    setGameState('player2');
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Interactions ──────────────────────────────────────────────────────────
 
@@ -226,15 +281,16 @@ const DroidGame = () => {
         setIsValidating(false);
       }
 
-      // All checks passed — hand off to Player 2
+      // All checks passed — generate share link for Player 2
       const p1Board = board.map((r) => [...r]);
-      setPlayer1Board(p1Board);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
+      const url = `${window.location.origin}${window.location.pathname}?b=${encodeBoard(p1Board)}&p=${encodePreserved(preservedLetters)}`;
+      setPlayer1Board(p1Board);
       setPreservedTiles(preservedLetters);
       setBoard(newBoard);
       setLetterCounts(countLetters(p1Board));
-      setCurrentPlayer(2);
-      setGameState('player2');
+      setShareLink(url);
+      setGameState('share');
       setSelectedLetter(null);
     } else {
       const correct = checkCorrectTiles(board, player1Board);
@@ -255,6 +311,7 @@ const DroidGame = () => {
     setIsValidating(false);
     setValidationError(null);
     setInvalidWordTiles([]);
+    setShareLink(null);
     setGameState('player1');
   };
 
@@ -350,6 +407,26 @@ const DroidGame = () => {
           <div className="actions">
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn →' : 'Finish Game'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'share' && (
+        <div className="share-panel">
+          <div className="share-header">
+            <h2>Turn Complete!</h2>
+            <p className="share-subtext">
+              Send this link to Player 2. They can open it on any device — no login needed.
+            </p>
+          </div>
+          <div className="share-url-row">
+            <span className="share-url-text">{shareLink}</span>
+          </div>
+          <CopyButton url={shareLink} />
+          <div className="share-actions">
+            <Button primary onClick={() => { setCurrentPlayer(2); setGameState('player2'); }}>
+              Play on this device instead
             </Button>
           </div>
         </div>

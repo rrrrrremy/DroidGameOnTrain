@@ -102,3 +102,27 @@ export const checkCorrectTiles = (board, player1Board) => {
   );
   return correct;
 };
+
+// ── URL encode / decode for async multiplayer ─────────────────────────────
+
+export const encodeBoard = (board) =>
+  board.flat().map((cell) => cell ?? '.').join('');
+
+export const decodeBoard = (str) => {
+  if (!str || str.length !== 25) return null;
+  const flat = str.split('').map((c) => (c === '.' ? null : c.toUpperCase()));
+  return [0, 1, 2, 3, 4].map((row) => flat.slice(row * 5, row * 5 + 5));
+};
+
+export const encodePreserved = (tiles) =>
+  tiles.map((t) => `${t.x}${t.y}`).join('');
+
+export const decodePreserved = (str) => {
+  if (!str) return [];
+  if (!/^[0-4]{4}([0-4]{4})?$/.test(str)) return [];
+  const tiles = [];
+  for (let i = 0; i < str.length; i += 2) {
+    tiles.push({ x: parseInt(str[i], 10), y: parseInt(str[i + 1], 10) });
+  }
+  return tiles;
+};
