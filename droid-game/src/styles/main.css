@@ -6,7 +6,7 @@
 
 body {
   font-family: 'Segoe UI', Arial, sans-serif;
-  background: #0f172a;
+  background: #fbbf24;
   color: #f8fafc;
   min-height: 100vh;
 }
@@ -86,6 +86,14 @@ body {
   text-transform: uppercase;
 }
 
+.start-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
 .start-button {
   display: inline-flex;
   align-items: center;
@@ -100,13 +108,23 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   box-shadow: 0 4px 16px rgba(99, 102, 241, 0.5);
-  margin-bottom: 2.5rem;
+  min-width: 14rem;
 }
 
 .start-button:hover {
   background: #4f46e5;
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
+}
+
+.start-button.vs-computer {
+  background: #0f766e;
+  box-shadow: 0 4px 16px rgba(20, 184, 166, 0.4);
+}
+
+.start-button.vs-computer:hover {
+  background: #115e59;
+  box-shadow: 0 8px 24px rgba(20, 184, 166, 0.5);
 }
 
 .game-info {
