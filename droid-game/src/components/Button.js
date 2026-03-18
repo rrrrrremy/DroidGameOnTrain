@@ -1,9 +1,10 @@
 import React from 'react';
 
-const Button = ({ onClick, children, primary = false }) => (
-  <button 
+const Button = ({ onClick, children, primary = false, disabled = false }) => (
+  <button
+    className={`button ${primary ? 'primary' : 'secondary'}${disabled ? ' disabled' : ''}`}
     onClick={onClick}
-    className={`button ${primary ? 'primary' : 'secondary'}`}
+    disabled={disabled}
   >
     {children}
   </button>
