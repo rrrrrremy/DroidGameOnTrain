@@ -11,6 +11,7 @@ const BoardTile = ({
   isSelected,
   interactive,
   onClick,
+  onRemove,
   onDragStart,
   onDragOver,
   onDrop,
@@ -51,6 +52,13 @@ const BoardTile = ({
       onDrop={onDrop}
     >
       {letter}
+      {onRemove && letter && (
+        <button
+          className="tile-remove-btn"
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          title="Remove letter"
+        >×</button>
+      )}
     </div>
   );
 };
