@@ -7,6 +7,7 @@ const REMOVED_SQUARES = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
 const GameBoard = ({
   board,
   onTileClick,
+  onRemoveTile,
   preservedTiles,
   correctTiles,
   incorrectTiles,
@@ -60,6 +61,7 @@ const GameBoard = ({
               isSelected={isSelected}
               interactive={interactive && isActive && !isPreserved}
               onClick={() => onTileClick(x, y)}
+              onRemove={onRemoveTile && isActive && !isPreserved ? () => onRemoveTile(x, y) : undefined}
               onDragStart={
                 draggable ? (e) => onDragStart(e, letter, x, y) : undefined
               }

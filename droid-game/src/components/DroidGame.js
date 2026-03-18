@@ -93,6 +93,12 @@ const DroidGame = () => {
     setSelectedLetter((prev) => (prev === letter ? null : letter));
   };
 
+  const handleRemoveTile = (x, y) => {
+    const newBoard = board.map((r) => [...r]);
+    newBoard[y][x] = null;
+    setBoard(newBoard);
+  };
+
   const handleDragStart = (e, letter, srcX, srcY) => {
     e.dataTransfer.setData('letter', letter);
     if (srcX !== undefined) {
@@ -316,6 +322,7 @@ const DroidGame = () => {
           <GameBoard
             board={board}
             onTileClick={handleBoardTileClick}
+            onRemoveTile={currentPlayer === 1 ? handleRemoveTile : undefined}
             preservedTiles={preservedTiles}
             correctTiles={[]}
             incorrectTiles={[]}
