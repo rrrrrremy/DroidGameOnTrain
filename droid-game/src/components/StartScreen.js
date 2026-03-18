@@ -1,29 +1,32 @@
 import React, { useState } from 'react';
-import Button from './Button';
+
+const LETTERS = 'DROID'.split('');
 
 const StartScreen = ({ onStart }) => {
-  const [hoveredLetter, setHoveredLetter] = useState(null);
-  const letters = 'DROID'.split('');
+  const [hovered, setHovered] = useState(null);
 
   return (
     <div className="start-screen">
       <div className="start-content">
         <h1 className="game-title">
-          {letters.map((letter, index) => (
-            <span 
-              key={index} 
-              className={`game-letter ${hoveredLetter === index ? 'hovered' : ''}`}
-              onMouseEnter={() => setHoveredLetter(index)}
-              onMouseLeave={() => setHoveredLetter(null)}
+          {LETTERS.map((letter, i) => (
+            <span
+              key={i}
+              className={`game-letter${hovered === i ? ' hovered' : ''}`}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
             >
               {letter}
             </span>
           ))}
         </h1>
+
         <p className="game-subtitle">Word Reconstruction Challenge</p>
-        <Button onClick={onStart} primary className="start-button">
+
+        <button className="start-button" onClick={onStart}>
           Play Now
-        </Button>
+        </button>
+
         <div className="game-info">
           <div className="info-item">
             <span className="info-icon">👥</span>

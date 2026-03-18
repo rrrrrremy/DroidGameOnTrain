@@ -1,9 +1,9 @@
 import React from 'react';
 
 const Button = ({ onClick, children, primary = false }) => (
-  <button 
-    onClick={onClick}
+  <button
     className={`button ${primary ? 'primary' : 'secondary'}`}
+    onClick={onClick}
   >
     {children}
   </button>

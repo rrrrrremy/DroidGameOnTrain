@@ -1,30 +1,75 @@
 import React from 'react';
 import LetterTile from './LetterTile';
 
-const LetterSelection = ({ currentPlayer, availableLetters, onDragStart }) => {
-  const renderLetterGroup = (letters) => (
-    <div className="flex flex-wrap justify-center gap-2 p-2">
-      {letters.map((letter, index) => (
-        <LetterTile 
-          key={`${letter}-${index}`}
-          letter={letter} 
-          onDragStart={onDragStart}
+const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
+
+const LetterSelection = ({
+  currentPlayer,
+  availableLetters,
+  selectedLetter,
+  onLetterClick,
+  onDragStart,
+}) => {
+  if (currentPlayer === 1) {
+    return (
+      <div className="letter-pool">
+        <h2>Available Letters</h2>
+        <div className="letter-pool-grid">
+          {availableLetters.map((letter, i) => (
+            <LetterTile
+              key={i}
+              letter={letter}
+              selected={selectedLetter === letter}
+              onClick={() => onLetterClick(letter)}
+              onDragStart={(e) => onDragStart(e, letter)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const vowels = availableLetters.filter((l) => VOWELS.has(l));
+  const consonants = availableLetters.filter((l) => !VOWELS.has(l));
+
+  let idx = 0;
+  const renderGroup = (letters) =>
+    letters.map((letter) => {
+      const key = idx++;
+      return (
+        <LetterTile
+          key={key}
+          letter={letter}
+          selected={selectedLetter === letter}
+          onClick={() => onLetterClick(letter)}
+          onDragStart={(e) => onDragStart(e, letter)}
         />
-      ))}
-    </div>
-  );
+      );
+    });
 
   return (
-    <div className="w-full max-w-4xl bg-gray-100 p-4 rounded-lg shadow-md mb-4">
-      <h2 className="text-xl font-bold mb-2 text-center">Available Letters</h2>
-      {currentPlayer === 1 ? (
-        renderLetterGroup(availableLetters)
+    <div className="letter-pool">
+      <h2>Your Letters</h2>
+      {availableLetters.length === 0 ? (
+        <p className="pool-empty">All letters placed!</p>
       ) : (
-        <div className="space-y-4">
-          {renderLetterGroup(availableLetters.vowels)}
-          <div className="border-t border-gray-300 my-2"></div>
-          {renderLetterGroup(availableLetters.consonants)}
-        </div>
+        <>
+          {vowels.length > 0 && (
+            <>
+              <div className="pool-section-label">Vowels</div>
+              <div className="letter-pool-grid">{renderGroup(vowels)}</div>
+            </>
+          )}
+          {vowels.length > 0 && consonants.length > 0 && (
+            <div className="pool-divider" />
+          )}
+          {consonants.length > 0 && (
+            <>
+              <div className="pool-section-label">Consonants</div>
+              <div className="letter-pool-grid">{renderGroup(consonants)}</div>
+            </>
+          )}
+        </>
       )}
     </div>
   );

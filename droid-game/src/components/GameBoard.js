@@ -1,40 +1,73 @@
 import React from 'react';
 import BoardTile from './BoardTile';
 
-const GameBoard = ({ board, onSelectTile, preservedTiles, correctTiles, selectedTile, currentPlayer, onDragStart, onDrop }) => {
-  const removedSquares = [1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25];
+// 1-indexed square numbers that are NOT playable
+const REMOVED_SQUARES = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-  };
-
-  const handleDrop = (e, x, y) => {
-    e.preventDefault();
-    onDrop(x, y, e);
-  };
-
+const GameBoard = ({
+  board,
+  onTileClick,
+  preservedTiles,
+  correctTiles,
+  incorrectTiles,
+  selectedLetter,
+  selectedTile,
+  currentPlayer,
+  onDragStart,
+  onDrop,
+  interactive,
+}) => {
   return (
     <div className="board">
-      {board.map((row, y) => 
-        row.map((tile, x) => {
-          const squareNumber = y * 5 + x + 1;
-          const isActive = !removedSquares.includes(squareNumber);
-          const isPreserved = preservedTiles.some(t => t.x === x && t.y === y);
-          const isCorrect = correctTiles.some(t => t.x === x && t.y === y);
-          const isSelected = selectedTile && selectedTile.x === x && selectedTile.y === y;
+      {board.map((row, y) =>
+        row.map((letter, x) => {
+          const squareNum = y * 5 + x + 1;
+          const isActive = !REMOVED_SQUARES.has(squareNum);
+          const isPreserved = preservedTiles.some((t) => t.x === x && t.y === y);
+          const isCorrect = correctTiles.some((t) => t.x === x && t.y === y);
+          const isIncorrect = incorrectTiles
+            ? incorrectTiles.some((t) => t.x === x && t.y === y)
+            : false;
+          const isSelected =
+            selectedTile && selectedTile.x === x && selectedTile.y === y;
+
+          // Highlight empty active tiles when a letter is selected from pool
+          const isHighlighted =
+            interactive && !!selectedLetter && isActive && !letter && !isPreserved;
+
+          // Tiles that can be dragged: filled, non-preserved, interactive
+          const draggable =
+            interactive && isActive && !!letter && !isPreserved;
+
+          // Tiles that can receive drops: active, non-preserved, interactive
+          const droppable = interactive && isActive && !isPreserved;
+
           return (
-            <BoardTile 
-              key={`${x},${y}`} 
-              letter={tile}
-              onSelect={() => onSelectTile(x, y)}
+            <BoardTile
+              key={`${x}-${y}`}
+              letter={letter}
               isActive={isActive}
               isPreserved={isPreserved}
               isCorrect={isCorrect}
+              isIncorrect={isIncorrect}
+              isHighlighted={isHighlighted}
               isSelected={isSelected}
-              currentPlayer={currentPlayer}
-              onDragStart={(e) => onDragStart(e, tile, x, y)}
-              onDragOver={handleDragOver}
-              onDrop={(e) => handleDrop(e, x, y)}
+              interactive={interactive && isActive && !isPreserved}
+              onClick={() => onTileClick(x, y)}
+              onDragStart={
+                draggable ? (e) => onDragStart(e, letter, x, y) : undefined
+              }
+              onDragOver={
+                droppable ? (e) => e.preventDefault() : undefined
+              }
+              onDrop={
+                droppable
+                  ? (e) => {
+                      e.preventDefault();
+                      onDrop(x, y, e);
+                    }
+                  : undefined
+              }
             />
           );
         })
