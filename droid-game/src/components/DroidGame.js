@@ -15,6 +15,7 @@ import {
   decodeBoard,
   decodePreserved,
 } from '../utils/gameLogic';
+import { generateComputerBoard } from '../utils/computerPlayer';
 
 const emptyBoard = () =>
   Array(5)
@@ -76,6 +77,7 @@ const DroidGame = () => {
   const [validationError, setValidationError] = useState(null);
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
   const [shareLink, setShareLink] = useState(null);
+  const [vsComputer, setVsComputer] = useState(false);
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -312,7 +314,29 @@ const DroidGame = () => {
     setValidationError(null);
     setInvalidWordTiles([]);
     setShareLink(null);
-    setGameState('player1');
+    setVsComputer(false);
+    setGameState('start');
+  };
+
+  const handleStartVsComputer = () => {
+    const computerBoard = generateComputerBoard();
+    if (!computerBoard) {
+      setValidationError('Failed to generate board — please try again.');
+      setGameState('start');
+      return;
+    }
+    setVsComputer(true);
+
+    const p1Board = computerBoard.map((r) => [...r]);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
+
+    setPlayer1Board(p1Board);
+    setPreservedTiles(preservedLetters);
+    setBoard(newBoard);
+    setLetterCounts(countLetters(p1Board));
+    setCurrentPlayer(2);
+    setGameState('player2');
+    setSelectedLetter(null);
   };
 
   // ── Derived end-screen data ───────────────────────────────────────────────
@@ -339,17 +363,22 @@ const DroidGame = () => {
   return (
     <div className="game-container">
       {gameState === 'start' && (
-        <StartScreen onStart={() => setGameState('player1')} />
+        <StartScreen
+          onStart={() => setGameState('player1')}
+          onStartVsComputer={handleStartVsComputer}
+        />
       )}
 
       {(gameState === 'player1' || gameState === 'player2') && (
         <div className="game-play">
           <div className="player-header">
-            <h1>Player {currentPlayer}'s Turn</h1>
+            <h1>{vsComputer ? 'Your Turn' : `Player ${currentPlayer}'s Turn`}</h1>
             <p className="turn-instruction">
               {currentPlayer === 1
                 ? 'Place letters on the board to create words. Click a filled tile to remove it.'
-                : "Reconstruct Player 1's words! Gold tiles are locked hints."}
+                : vsComputer
+                  ? "Reconstruct the computer's words! Gold tiles are locked hints."
+                  : "Reconstruct Player 1's words! Gold tiles are locked hints."}
             </p>
           </div>
 
@@ -466,7 +495,7 @@ const DroidGame = () => {
 
           <div className="boards-comparison">
             <div className="board-column">
-              <h3>Player 1's Original</h3>
+              <h3>{vsComputer ? "Computer's Original" : "Player 1's Original"}</h3>
               <GameBoard
                 board={player1Board}
                 onTileClick={() => {}}
@@ -482,7 +511,7 @@ const DroidGame = () => {
               />
             </div>
             <div className="board-column">
-              <h3>Player 2's Reconstruction</h3>
+              <h3>{vsComputer ? 'Your Reconstruction' : "Player 2's Reconstruction"}</h3>
               <GameBoard
                 board={board}
                 onTileClick={() => {}}
