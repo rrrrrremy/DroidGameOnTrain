@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import GameBoard from './GameBoard';
 import Button from './Button';
 import StartScreen from './StartScreen';
@@ -8,6 +8,8 @@ import {
   countLetters,
   preserveRandomLettersForPlayer2,
   checkCorrectTiles,
+  extractWords,
+  validateWord,
 } from '../utils/gameLogic';
 
 const emptyBoard = () =>
@@ -39,6 +41,9 @@ const DroidGame = () => {
   const [letterCounts, setLetterCounts] = useState({});
   const [correctTiles, setCorrectTiles] = useState([]);
   const [selectedLetter, setSelectedLetter] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState(null);
+  const [invalidWordTiles, setInvalidWordTiles] = useState([]);
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -54,6 +59,12 @@ const DroidGame = () => {
     });
     return letters.sort();
   }, [currentPlayer, letterCounts, board]);
+
+  // Clear validation errors whenever the board changes
+  useEffect(() => {
+    setValidationError(null);
+    setInvalidWordTiles([]);
+  }, [board]);
 
   // ── Interactions ──────────────────────────────────────────────────────────
 
@@ -131,8 +142,54 @@ const DroidGame = () => {
 
   // ── Turn management ───────────────────────────────────────────────────────
 
-  const handleEndTurn = () => {
+  const handleEndTurn = async () => {
     if (currentPlayer === 1) {
+      const wordRuns = extractWords(board);
+
+      if (wordRuns.length === 0) {
+        setValidationError('Place at least one word on the board before ending your turn.');
+        return;
+      }
+
+      // Validate every unique word string against the dictionary API
+      setIsValidating(true);
+      setValidationError(null);
+      setInvalidWordTiles([]);
+
+      try {
+        const uniqueWords = [
+          ...new Set(wordRuns.map((run) => run.map((t) => t.letter).join(''))),
+        ];
+
+        const results = await Promise.all(
+          uniqueWords.map(async (word) => ({
+            word,
+            valid: await validateWord(word),
+          }))
+        );
+
+        const badWords = results.filter((r) => !r.valid).map((r) => r.word);
+
+        if (badWords.length > 0) {
+          // Highlight all tiles that belong to invalid words
+          const badTiles = [];
+          wordRuns.forEach((run) => {
+            const word = run.map((t) => t.letter).join('');
+            if (badWords.includes(word)) {
+              run.forEach((t) => badTiles.push({ x: t.x, y: t.y }));
+            }
+          });
+          setInvalidWordTiles(badTiles);
+          setValidationError(
+            `Not valid English word${badWords.length > 1 ? 's' : ''}: ${badWords.join(', ')}`
+          );
+          return;
+        }
+      } finally {
+        setIsValidating(false);
+      }
+
+      // All words valid — hand off to Player 2
       const p1Board = board.map((r) => [...r]);
       setPlayer1Board(p1Board);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
@@ -158,6 +215,9 @@ const DroidGame = () => {
     setLetterCounts({});
     setCorrectTiles([]);
     setSelectedLetter(null);
+    setIsValidating(false);
+    setValidationError(null);
+    setInvalidWordTiles([]);
     setGameState('player1');
   };
 
@@ -211,12 +271,24 @@ const DroidGame = () => {
             </div>
           )}
 
+          {isValidating && (
+            <div className="validation-loading">
+              <div className="spinner" />
+              Checking words…
+            </div>
+          )}
+
+          {validationError && !isValidating && (
+            <div className="validation-error">{validationError}</div>
+          )}
+
           <GameBoard
             board={board}
             onTileClick={handleBoardTileClick}
             preservedTiles={preservedTiles}
             correctTiles={[]}
             incorrectTiles={[]}
+            invalidWordTiles={invalidWordTiles}
             selectedLetter={selectedLetter}
             selectedTile={null}
             currentPlayer={currentPlayer}
@@ -238,8 +310,8 @@ const DroidGame = () => {
           )}
 
           <div className="actions">
-            <Button onClick={handleEndTurn} primary>
-              {currentPlayer === 1 ? 'End Turn →' : 'Finish Game'}
+            <Button onClick={handleEndTurn} primary disabled={isValidating}>
+              {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn →' : 'Finish Game'}
             </Button>
           </div>
         </div>

@@ -10,6 +10,7 @@ const GameBoard = ({
   preservedTiles,
   correctTiles,
   incorrectTiles,
+  invalidWordTiles,
   selectedLetter,
   selectedTile,
   currentPlayer,
@@ -27,6 +28,9 @@ const GameBoard = ({
           const isCorrect = correctTiles.some((t) => t.x === x && t.y === y);
           const isIncorrect = incorrectTiles
             ? incorrectTiles.some((t) => t.x === x && t.y === y)
+            : false;
+          const isInvalid = invalidWordTiles
+            ? invalidWordTiles.some((t) => t.x === x && t.y === y)
             : false;
           const isSelected =
             selectedTile && selectedTile.x === x && selectedTile.y === y;
@@ -50,6 +54,7 @@ const GameBoard = ({
               isPreserved={isPreserved}
               isCorrect={isCorrect}
               isIncorrect={isIncorrect}
+              isInvalid={isInvalid}
               isHighlighted={isHighlighted}
               isSelected={isSelected}
               interactive={interactive && isActive && !isPreserved}

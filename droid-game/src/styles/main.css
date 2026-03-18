@@ -259,6 +259,20 @@ body {
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 }
 
+.tile-invalid {
+  background: #78350f;
+  border-color: #f97316;
+  color: #ffedd5;
+  box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
+  animation: shake 0.35s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-4px); }
+  60%       { transform: translateX(4px); }
+}
+
 .tile-selected {
   box-shadow: 0 0 0 3px #6366f1, 0 0 16px rgba(99, 102, 241, 0.5) !important;
   transform: translateY(-2px);
@@ -382,6 +396,50 @@ body {
   color: #f87171;
 }
 
+/* ===== VALIDATION BANNER ===== */
+
+.validation-error {
+  width: 100%;
+  background: rgba(249, 115, 22, 0.12);
+  border: 1px solid #f97316;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: #fb923c;
+  margin-bottom: 0.75rem;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.validation-loading {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid #6366f1;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: #a5b4fc;
+  margin-bottom: 0.75rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #4f46e5;
+  border-top-color: #a5b4fc;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
 /* ===== RETURN BOX ===== */
 
 .return-box {
@@ -456,6 +514,14 @@ body {
 
 .button.secondary:hover {
   background: #475569;
+}
+
+.button.disabled,
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* ===== END SCREEN ===== */

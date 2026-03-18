@@ -6,6 +6,7 @@ const BoardTile = ({
   isPreserved,
   isCorrect,
   isIncorrect,
+  isInvalid,
   isHighlighted,
   isSelected,
   interactive,
@@ -23,6 +24,8 @@ const BoardTile = ({
     className += 'tile-correct';
   } else if (isIncorrect) {
     className += 'tile-incorrect';
+  } else if (isInvalid) {
+    className += 'tile-invalid';
   } else if (isPreserved) {
     className += 'tile-preserved';
   } else if (letter) {
