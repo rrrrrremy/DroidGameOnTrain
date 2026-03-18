@@ -259,12 +259,20 @@ body {
   box-shadow: 0 2px 8px rgba(248, 113, 113, 0.3);
 }
 
+/* Filled invalid tile — solid orange */
 .tile-invalid {
   background: #78350f;
   border-color: #f97316;
   color: #ffedd5;
   box-shadow: 0 2px 8px rgba(249, 115, 22, 0.35);
   animation: shake 0.35s ease;
+}
+
+/* Empty square that's part of an incomplete run — orange outline only */
+.tile-invalid-empty {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: #f97316;
+  cursor: pointer;
 }
 
 @keyframes shake {

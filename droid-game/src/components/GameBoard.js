@@ -36,8 +36,9 @@ const GameBoard = ({
             selectedTile && selectedTile.x === x && selectedTile.y === y;
 
           // Highlight empty active tiles when a letter is selected from pool
+          // (but not if the tile is already flagged as invalid/incomplete)
           const isHighlighted =
-            interactive && !!selectedLetter && isActive && !letter && !isPreserved;
+            interactive && !!selectedLetter && isActive && !letter && !isPreserved && !isInvalid;
 
           // Tiles that can be dragged: filled, non-preserved, interactive
           const draggable =

@@ -25,7 +25,8 @@ const BoardTile = ({
   } else if (isIncorrect) {
     className += 'tile-incorrect';
   } else if (isInvalid) {
-    className += 'tile-invalid';
+    // Filled: solid orange. Empty: orange outline (shows where to fill).
+    className += letter ? 'tile-invalid' : 'tile-invalid-empty';
   } else if (isPreserved) {
     className += 'tile-preserved';
   } else if (letter) {

@@ -3,21 +3,22 @@ const REMOVED_SQUARES = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
 const isActiveSquare = (x, y) => !REMOVED_SQUARES.has(y * 5 + x + 1);
 
 /**
- * Find all horizontal and vertical runs of 2+ consecutive filled letters
- * on active squares. Each run represents a word to validate.
- * Returns an array of runs, where each run is [{x, y, letter}, ...].
+ * Return every contiguous run of 2+ active squares on the board
+ * (i.e. the complete word slots — rows and columns — regardless of
+ * whether they have letters on them yet).
+ * Each run is an array of {x, y}.
  */
-export const extractWords = (board) => {
-  const words = [];
+export const getActiveRuns = () => {
+  const runs = [];
 
   // Horizontal
   for (let y = 0; y < 5; y++) {
     let run = [];
     for (let x = 0; x <= 5; x++) {
-      if (x < 5 && isActiveSquare(x, y) && board[y][x]) {
-        run.push({ x, y, letter: board[y][x] });
+      if (x < 5 && isActiveSquare(x, y)) {
+        run.push({ x, y });
       } else {
-        if (run.length >= 2) words.push(run);
+        if (run.length >= 2) runs.push(run);
         run = [];
       }
     }
@@ -27,16 +28,16 @@ export const extractWords = (board) => {
   for (let x = 0; x < 5; x++) {
     let run = [];
     for (let y = 0; y <= 5; y++) {
-      if (y < 5 && isActiveSquare(x, y) && board[y][x]) {
-        run.push({ x, y, letter: board[y][x] });
+      if (y < 5 && isActiveSquare(x, y)) {
+        run.push({ x, y });
       } else {
-        if (run.length >= 2) words.push(run);
+        if (run.length >= 2) runs.push(run);
         run = [];
       }
     }
   }
 
-  return words;
+  return runs;
 };
 
 /**

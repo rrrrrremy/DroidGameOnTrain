@@ -8,7 +8,7 @@ import {
   countLetters,
   preserveRandomLettersForPlayer2,
   checkCorrectTiles,
-  extractWords,
+  getActiveRuns,
   validateWord,
 } from '../utils/gameLogic';
 
@@ -144,21 +144,55 @@ const DroidGame = () => {
 
   const handleEndTurn = async () => {
     if (currentPlayer === 1) {
-      const wordRuns = extractWords(board);
+      const activeRuns = getActiveRuns();
 
-      if (wordRuns.length === 0) {
-        setValidationError('Place at least one word on the board before ending your turn.');
+      // Split runs into: fully filled, partially filled, empty
+      const fullRuns = [];
+      const partialRuns = [];
+
+      for (const run of activeRuns) {
+        const filled = run.filter(({ x, y }) => board[y][x]);
+        if (filled.length === 0) continue;           // empty — player skipped this slot
+        if (filled.length < run.length) {
+          partialRuns.push(run);                     // some squares missing
+        } else {
+          fullRuns.push(run);                        // all squares filled
+        }
+      }
+
+      // Rule 1: no partial fills allowed
+      if (partialRuns.length > 0) {
+        // Highlight every square in every partial run so the player can see
+        // exactly what needs completing
+        const seen = new Set();
+        const badTiles = [];
+        partialRuns.flat().forEach(({ x, y }) => {
+          const key = `${x},${y}`;
+          if (!seen.has(key)) { seen.add(key); badTiles.push({ x, y }); }
+        });
+        setInvalidWordTiles(badTiles);
+        setValidationError(
+          `Words must fill the entire row or column — complete or remove the highlighted tile${badTiles.length > 1 ? 's' : ''}.`
+        );
         return;
       }
 
-      // Validate every unique word string against the dictionary API
+      // Rule 2: must have placed at least one word
+      if (fullRuns.length === 0) {
+        setValidationError('Place at least one complete word on the board.');
+        return;
+      }
+
+      // Rule 3: every filled run must be a real English word
       setIsValidating(true);
       setValidationError(null);
       setInvalidWordTiles([]);
 
       try {
         const uniqueWords = [
-          ...new Set(wordRuns.map((run) => run.map((t) => t.letter).join(''))),
+          ...new Set(
+            fullRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))
+          ),
         ];
 
         const results = await Promise.all(
@@ -168,20 +202,17 @@ const DroidGame = () => {
           }))
         );
 
-        const badWords = results.filter((r) => !r.valid).map((r) => r.word);
+        const badWords = new Set(results.filter((r) => !r.valid).map((r) => r.word));
 
-        if (badWords.length > 0) {
-          // Highlight all tiles that belong to invalid words
+        if (badWords.size > 0) {
           const badTiles = [];
-          wordRuns.forEach((run) => {
-            const word = run.map((t) => t.letter).join('');
-            if (badWords.includes(word)) {
-              run.forEach((t) => badTiles.push({ x: t.x, y: t.y }));
-            }
+          fullRuns.forEach((run) => {
+            const word = run.map(({ x, y }) => board[y][x]).join('');
+            if (badWords.has(word)) run.forEach(({ x, y }) => badTiles.push({ x, y }));
           });
           setInvalidWordTiles(badTiles);
           setValidationError(
-            `Not valid English word${badWords.length > 1 ? 's' : ''}: ${badWords.join(', ')}`
+            `Not a valid English word${badWords.size > 1 ? 's' : ''}: ${[...badWords].join(', ')}`
           );
           return;
         }
@@ -189,7 +220,7 @@ const DroidGame = () => {
         setIsValidating(false);
       }
 
-      // All words valid — hand off to Player 2
+      // All checks passed — hand off to Player 2
       const p1Board = board.map((r) => [...r]);
       setPlayer1Board(p1Board);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
