@@ -356,11 +356,11 @@ const DroidGame = () => {
   const handleLetterHint = () => {
     if (!player1Board) return;
 
-    // Cells that are filled in the computer's board but not yet placed or locked on player 2's board
+    // Any tile on the computer's board that isn't already preserved
     const candidates = [];
     player1Board.forEach((row, y) =>
       row.forEach((letter, x) => {
-        if (letter && !board[y][x] && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+        if (letter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
           candidates.push({ x, y, letter });
         }
       })
@@ -371,6 +371,25 @@ const DroidGame = () => {
     const chosen = candidates[Math.floor(Math.random() * candidates.length)];
     const newBoard = board.map((row) => [...row]);
     newBoard[chosen.y][chosen.x] = chosen.letter;
+
+    // If placing this letter pushes its count on the board over the allowed total,
+    // remove one other non-preserved instance of that letter to keep the pool balanced
+    const maxAllowed = letterCounts[chosen.letter] || 0;
+    let countOnBoard = 0;
+    newBoard.forEach((row) => row.forEach((l) => { if (l === chosen.letter) countOnBoard++; }));
+
+    if (countOnBoard > maxAllowed) {
+      outer: for (let y = 0; y < 5; y++) {
+        for (let x = 0; x < 5; x++) {
+          if (x === chosen.x && y === chosen.y) continue;
+          if (newBoard[y][x] === chosen.letter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+            newBoard[y][x] = null;
+            break outer;
+          }
+        }
+      }
+    }
+
     setBoard(newBoard);
     setPreservedTiles([...preservedTiles, { x: chosen.x, y: chosen.y, letter: chosen.letter }]);
     setLetterHintsUsed((prev) => prev + 1);
