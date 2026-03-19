@@ -20,11 +20,11 @@ const emptyBoard = () =>
     .map(() => Array(5).fill(null));
 
 const SCORE_MESSAGES = [
-  [100, 'Perfect reconstruction! 🎯'],
-  [75, 'Excellent memory! 🌟'],
-  [50, 'Good effort! 👍'],
-  [25, 'Keep practising! 💪'],
-  [0, 'Better luck next time! 🎲'],
+  [100, 'Perfect reconstruction!'],
+  [75, 'Excellent memory!'],
+  [50, 'Good effort!'],
+  [25, 'Keep practising!'],
+  [0, 'Better luck next time!'],
 ];
 
 const getScoreMessage = (score) => {
@@ -410,11 +410,7 @@ const DroidGame = () => {
 
       {(gameState === 'player1' || gameState === 'player2') && (
         <div className="game-play">
-          <div className="player-header">
-            <h1>{vsComputer ? 'Your Turn' : `Player ${currentPlayer}'s Turn`}</h1>
-          </div>
-
-          {isValidating && (
+            {isValidating && (
             <div className="validation-loading">
               <div className="spinner" />
               Checking words…

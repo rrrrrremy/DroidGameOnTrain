@@ -24,6 +24,21 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
 
         <p className="game-subtitle">Word Reconstruction Challenge</p>
 
+        <div className="how-to-play">
+          <div className="how-step">
+            <span className="how-num">1</span>
+            <p>Place real English words on the board</p>
+          </div>
+          <div className="how-step">
+            <span className="how-num">2</span>
+            <p>Your opponent sees which letters you used, then reconstructs your board from memory</p>
+          </div>
+          <div className="how-step">
+            <span className="how-num">3</span>
+            <p>More tiles in the right position means a higher score</p>
+          </div>
+        </div>
+
         <div className="start-divider" />
 
         <div className="start-buttons">
@@ -49,25 +64,6 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
             <button className="start-button vs-computer" onClick={() => onStartVsComputer(hintCount)}>
               Play vs Computer
             </button>
-          </div>
-        </div>
-
-        <div className="game-info">
-          <div className="info-item">
-            <span className="info-icon">👥</span>
-            <span className="info-text">2 Players</span>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🤖</span>
-            <span className="info-text">vs Computer</span>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🧠</span>
-            <span className="info-text">Memory</span>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">📚</span>
-            <span className="info-text">Vocabulary</span>
           </div>
         </div>
       </div>
