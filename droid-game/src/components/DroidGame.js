@@ -397,6 +397,8 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
+  const maxScore = gameDifficulty === 'hard' ? 13 : gameDifficulty === 'easy' ? 11 : 12;
+
   const { score, rawScore, incorrectTiles, totalPlaced, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
       return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0, timePenalty: 0 };
@@ -434,7 +436,7 @@ const DroidGame = () => {
       ? gameDifficulty.charAt(0).toUpperCase() + gameDifficulty.slice(1)
       : '2 Player';
     const hintsLabel = letterHintsUsed > 0 ? ` · ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}` : '';
-    return `DROID 🧠\n${grid}\n${score}/12 · ${diffLabel}${hintsLabel}`;
+    return `DROID 🧠\n${grid}\n${score}/${maxScore} · ${diffLabel}${hintsLabel}`;
   }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, gameDifficulty, vsComputer]);
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -547,20 +549,20 @@ const DroidGame = () => {
             <h2>Game Over!</h2>
             <div
               className={`score-display ${
-                score >= 9 ? 'high' : score >= 5 ? 'mid' : 'low'
+                score >= maxScore * 0.75 ? 'high' : score >= maxScore * 0.42 ? 'mid' : 'low'
               }`}
             >
-              {score}/12
+              {score}/{maxScore}
             </div>
             <div className="score-label">
-              {correctTiles.length} / 12 tiles matched
+              {correctTiles.length} / {maxScore} tiles matched
             </div>
             {vsComputer && (letterHintsUsed > 0 || timePenalty > 0) && (
               <div className="score-penalty">
-                {rawScore}/12
+                {rawScore}/{maxScore}
                 {letterHintsUsed > 0 && ` − ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}`}
                 {timePenalty > 0 && ` − ${timePenalty} time`}
-                {' '}= {score}/12
+                {' '}= {score}/{maxScore}
               </div>
             )}
             <div className="score-message">{getScoreMessage(score)}</div>
