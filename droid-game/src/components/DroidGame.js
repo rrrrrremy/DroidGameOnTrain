@@ -3,7 +3,6 @@ import GameBoard from './GameBoard';
 import Button from './Button';
 import StartScreen from './StartScreen';
 import LetterSelection from './LetterSelection';
-import ReturnTilesBox from './ReturnTilesBox';
 import {
   countLetters,
   preserveRandomLettersForPlayer2,
@@ -402,13 +401,6 @@ const DroidGame = () => {
         <div className="game-play">
           <div className="player-header">
             <h1>{vsComputer ? 'Your Turn' : `Player ${currentPlayer}'s Turn`}</h1>
-            <p className="turn-instruction">
-              {currentPlayer === 1
-                ? 'Place letters to create words. Tap a placed tile to remove it.'
-                : vsComputer
-                  ? "Reconstruct the computer's words. Gold tiles are locked hints."
-                  : "Reconstruct Player 1's words. Gold tiles are locked hints."}
-            </p>
           </div>
 
           {isValidating && (
@@ -446,33 +438,27 @@ const DroidGame = () => {
             onDragStart={handleDragStart}
           />
 
-          {currentPlayer === 2 && (
-            <ReturnTilesBox onDrop={handleDropOnReturn} />
-          )}
-
-          {vsComputer && currentPlayer === 2 && (
-            <div className="hint-section">
-              <button className="hint-btn" onClick={handleHint}>
-                Ask for a hint
-              </button>
-              {hintMessage && (
-                <div className="hint-response">
-                  <span className="hint-computer-label">Computer:</span> {hintMessage}
-                </div>
-              )}
-              {hintsUsed > 0 && (
-                <div className="hint-penalty-note">
-                  Hints used: {hintsUsed} &nbsp;|&nbsp; Score penalty: −{hintsUsed * 10}%
-                </div>
-              )}
-            </div>
-          )}
-
           <div className="actions">
+            {vsComputer && currentPlayer === 2 && (
+              <button className="hint-btn" onClick={handleHint}>
+                Hint −10%
+              </button>
+            )}
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
-              {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn →' : 'Finish Game'}
+              {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
             </Button>
           </div>
+
+          {vsComputer && currentPlayer === 2 && hintMessage && (
+            <div className="hint-response">
+              <span className="hint-computer-label">Computer:</span> {hintMessage}
+            </div>
+          )}
+          {vsComputer && currentPlayer === 2 && hintsUsed > 0 && (
+            <div className="hint-penalty-note">
+              {hintsUsed} hint{hintsUsed > 1 ? 's' : ''} used — −{hintsUsed * 10}% penalty
+            </div>
+          )}
         </div>
       )}
 

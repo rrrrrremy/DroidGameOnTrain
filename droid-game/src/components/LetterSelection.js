@@ -13,7 +13,6 @@ const LetterSelection = ({
   if (currentPlayer === 1) {
     return (
       <div className="letter-pool">
-        <h2>Available Letters</h2>
         <div className="letter-pool-grid">
           {availableLetters.map((letter, i) => (
             <LetterTile
@@ -49,7 +48,6 @@ const LetterSelection = ({
 
   return (
     <div className="letter-pool">
-      <h2>Your Letters</h2>
       {availableLetters.length === 0 ? (
         <p className="pool-empty">All letters placed!</p>
       ) : (
