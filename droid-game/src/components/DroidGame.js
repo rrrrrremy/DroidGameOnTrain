@@ -318,7 +318,7 @@ const DroidGame = () => {
     setGameState('start');
   };
 
-  const handleStartVsComputer = () => {
+  const handleStartVsComputer = (hintCount = 2) => {
     const computerBoard = generateComputerBoard();
     if (!computerBoard) {
       setValidationError('Failed to generate board — please try again.');
@@ -328,7 +328,7 @@ const DroidGame = () => {
     setVsComputer(true);
 
     const p1Board = computerBoard.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, hintCount);
 
     setPlayer1Board(p1Board);
     setPreservedTiles(preservedLetters);

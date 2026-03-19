@@ -67,7 +67,7 @@ export const countLetters = (board) => {
 
 const isVowel = (letter) => 'AEIOU'.includes(letter);
 
-export const preserveRandomLettersForPlayer2 = (board) => {
+export const preserveRandomLettersForPlayer2 = (board, count = 2) => {
   const filledTiles = [];
   board.forEach((row, y) =>
     row.forEach((letter, x) => {
@@ -75,13 +75,8 @@ export const preserveRandomLettersForPlayer2 = (board) => {
     })
   );
 
-  const vowelTiles = filledTiles.filter((t) => isVowel(t.letter));
-  const consonantTiles = filledTiles.filter((t) => !isVowel(t.letter));
-
-  const pick = (arr) =>
-    arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
-
-  const preserved = [pick(vowelTiles), pick(consonantTiles)].filter(Boolean);
+  const shuffled = [...filledTiles].sort(() => Math.random() - 0.5);
+  const preserved = shuffled.slice(0, Math.min(count, shuffled.length));
 
   const newBoard = Array(5)
     .fill(null)
@@ -119,7 +114,7 @@ export const encodePreserved = (tiles) =>
 
 export const decodePreserved = (str) => {
   if (!str) return [];
-  if (!/^[0-4]{4}([0-4]{4})?$/.test(str)) return [];
+  if (!/^([0-4]{2}){1,4}$/.test(str)) return [];
   const tiles = [];
   for (let i = 0; i < str.length; i += 2) {
     tiles.push({ x: parseInt(str[i], 10), y: parseInt(str[i + 1], 10) });
