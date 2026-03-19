@@ -4,7 +4,6 @@ const LETTERS = 'DROID'.split('');
 
 const StartScreen = ({ onStart, onStartVsComputer }) => {
   const [hovered, setHovered] = useState(null);
-  const [hintCount, setHintCount] = useState(2);
   const [difficulty, setDifficulty] = useState('normal');
 
   return (
@@ -62,21 +61,7 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
                 ))}
               </div>
             </div>
-            <div className="hint-count-selector">
-              <span className="hint-label">Locked hints:</span>
-              <div className="hint-count-btns">
-                {[1, 2, 3, 4].map((n) => (
-                  <button
-                    key={n}
-                    className={`hint-count-btn${hintCount === n ? ' active' : ''}`}
-                    onClick={() => setHintCount(n)}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button className="start-button vs-computer" onClick={() => onStartVsComputer(hintCount, difficulty)}>
+            <button className="start-button vs-computer" onClick={() => onStartVsComputer(difficulty)}>
               Play vs Computer
             </button>
           </div>
