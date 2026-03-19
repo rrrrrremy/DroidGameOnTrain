@@ -9,10 +9,8 @@ import {
   checkCorrectTiles,
   getActiveRuns,
   validateWord,
-  encodeBoard,
-  encodePreserved,
-  decodeBoard,
-  decodePreserved,
+  encodeShareParam,
+  decodeShareParam,
 } from '../utils/gameLogic';
 import { generateComputerBoard } from '../utils/computerPlayer';
 
@@ -101,17 +99,16 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
   }, [board]);
 
-  // On mount: detect ?b=&p= share URL and load Player 2 state directly
+  // On mount: detect ?g= share URL and load Player 2 state directly
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const bParam = params.get('b');
-    const pParam = params.get('p');
-    if (!bParam || !pParam) return;
+    const token = params.get('g');
+    if (!token) return;
 
-    const decoded = decodeBoard(bParam);
-    const preserved = decodePreserved(pParam);
-    if (!decoded) return;
+    const result = decodeShareParam(token);
+    if (!result) return;
 
+    const { board: decoded, preserved } = result;
     const p2StartBoard = Array(5).fill(null).map(() => Array(5).fill(null));
     preserved.forEach(({ x, y }) => { p2StartBoard[y][x] = decoded[y][x]; });
 
@@ -287,7 +284,7 @@ const DroidGame = () => {
       // All checks passed — generate share link for Player 2
       const p1Board = board.map((r) => [...r]);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
-      const url = `${window.location.origin}${window.location.pathname}?b=${encodeBoard(p1Board)}&p=${encodePreserved(preservedLetters)}`;
+      const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters)}`;
       setPlayer1Board(p1Board);
       setPreservedTiles(preservedLetters);
       setBoard(newBoard);
@@ -343,20 +340,34 @@ const DroidGame = () => {
   };
 
   const handleHint = () => {
-    let correct = 0;
-    let placed = 0;
-    board.forEach((row, y) =>
-      row.forEach((letter, x) => {
-        if (letter && !isPreserved(x, y)) {
-          placed++;
-          if (letter === player1Board[y][x]) correct++;
+    const runs = getActiveRuns();
+    const newPreserved = [...preservedTiles];
+    let wordsLocked = 0;
+
+    for (const run of runs) {
+      // Only consider fully filled runs
+      if (!run.every(({ x, y }) => board[y][x])) continue;
+      // Skip if already fully preserved
+      if (run.every(({ x, y }) => newPreserved.some((t) => t.x === x && t.y === y))) continue;
+      // Check every tile matches the computer's board
+      if (!run.every(({ x, y }) => board[y][x] === player1Board[y][x])) continue;
+
+      let newTilesAdded = false;
+      for (const { x, y } of run) {
+        if (!newPreserved.some((t) => t.x === x && t.y === y)) {
+          newPreserved.push({ x, y, letter: board[y][x] });
+          newTilesAdded = true;
         }
-      })
-    );
-    const newCount = hintsUsed + 1;
-    setHintsUsed(newCount);
+      }
+      if (newTilesAdded) wordsLocked++;
+    }
+
+    setHintsUsed((prev) => prev + 1);
+    setPreservedTiles(newPreserved);
     setHintMessage(
-      `${correct} of your ${placed} placed letter${placed !== 1 ? 's are' : ' is'} in the correct position. (−10% penalty applied)`
+      wordsLocked > 0
+        ? `${wordsLocked} word${wordsLocked > 1 ? 's' : ''} locked in!`
+        : 'No complete correct words yet.'
     );
   };
 
@@ -431,7 +442,6 @@ const DroidGame = () => {
           />
 
           <LetterSelection
-            currentPlayer={currentPlayer}
             availableLetters={availableLetters}
             selectedLetter={selectedLetter}
             onLetterClick={handleLetterClick}
