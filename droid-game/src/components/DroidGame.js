@@ -21,7 +21,7 @@ const emptyBoard = () =>
 
 const SCORE_MESSAGES = [
   [100, 'Perfect reconstruction!'],
-  [75, 'Excellent memory!'],
+  [75, 'Excellent word sense!'],
   [50, 'Good effort!'],
   [25, 'Keep practising!'],
   [0, 'Better luck next time!'],

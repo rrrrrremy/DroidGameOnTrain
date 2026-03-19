@@ -31,7 +31,7 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
           </div>
           <div className="how-step">
             <span className="how-num">2</span>
-            <p>Your opponent sees which letters you used, then reconstructs your board from memory</p>
+            <p>Your opponent gets the same letters and tries to reconstruct your word arrangement</p>
           </div>
           <div className="how-step">
             <span className="how-num">3</span>
