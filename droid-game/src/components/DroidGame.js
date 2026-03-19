@@ -78,6 +78,8 @@ const DroidGame = () => {
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
   const [shareLink, setShareLink] = useState(null);
   const [vsComputer, setVsComputer] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hintMessage, setHintMessage] = useState(null);
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -315,6 +317,8 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
     setShareLink(null);
     setVsComputer(false);
+    setHintsUsed(0);
+    setHintMessage(null);
     setGameState('start');
   };
 
@@ -339,14 +343,33 @@ const DroidGame = () => {
     setSelectedLetter(null);
   };
 
+  const handleHint = () => {
+    let correct = 0;
+    let placed = 0;
+    board.forEach((row, y) =>
+      row.forEach((letter, x) => {
+        if (letter && !isPreserved(x, y)) {
+          placed++;
+          if (letter === player1Board[y][x]) correct++;
+        }
+      })
+    );
+    const newCount = hintsUsed + 1;
+    setHintsUsed(newCount);
+    setHintMessage(
+      `${correct} of your ${placed} placed letter${placed !== 1 ? 's are' : ' is'} in the correct position. (−10% penalty applied)`
+    );
+  };
+
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const { score, incorrectTiles, totalPlaced } = useMemo(() => {
+  const { score, rawScore, incorrectTiles, totalPlaced } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
-      return { score: 0, incorrectTiles: [], totalPlaced: 0 };
+      return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0 };
     }
     const total = player1Board.flat().filter(Boolean).length;
-    const s = total === 0 ? 0 : Math.round((correctTiles.length / total) * 100);
+    const raw = total === 0 ? 0 : Math.round((correctTiles.length / total) * 100);
+    const s = Math.max(0, raw - hintsUsed * 10);
 
     const incorrect = [];
     board.forEach((row, y) =>
@@ -355,8 +378,8 @@ const DroidGame = () => {
       })
     );
 
-    return { score: s, incorrectTiles: incorrect, totalPlaced: total };
-  }, [board, player1Board, correctTiles, gameState]);
+    return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total };
+  }, [board, player1Board, correctTiles, gameState, hintsUsed]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -433,6 +456,24 @@ const DroidGame = () => {
             <ReturnTilesBox onDrop={handleDropOnReturn} />
           )}
 
+          {vsComputer && currentPlayer === 2 && (
+            <div className="hint-section">
+              <button className="hint-btn" onClick={handleHint}>
+                Ask for a hint
+              </button>
+              {hintMessage && (
+                <div className="hint-response">
+                  <span className="hint-computer-label">Computer:</span> {hintMessage}
+                </div>
+              )}
+              {hintsUsed > 0 && (
+                <div className="hint-penalty-note">
+                  Hints used: {hintsUsed} &nbsp;|&nbsp; Score penalty: −{hintsUsed * 10}%
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="actions">
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn →' : 'Finish Game'}
@@ -475,6 +516,11 @@ const DroidGame = () => {
             <div className="score-label">
               {correctTiles.length} / {totalPlaced} tiles matched
             </div>
+            {vsComputer && hintsUsed > 0 && (
+              <div className="score-penalty">
+                {rawScore}% − {hintsUsed * 10}% hint penalty = {score}%
+              </div>
+            )}
             <div className="score-message">{getScoreMessage(score)}</div>
           </div>
 

@@ -178,6 +178,67 @@ body {
   box-shadow: 0 0 10px rgba(20, 184, 166, 0.5);
 }
 
+/* ===== IN-GAME HINT ===== */
+
+.hint-section {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.hint-btn {
+  padding: 0.5rem 1.4rem;
+  background: transparent;
+  border: 2px solid #d97706;
+  color: #fbbf24;
+  border-radius: 9999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.hint-btn:hover {
+  background: rgba(217, 119, 6, 0.15);
+  box-shadow: 0 0 12px rgba(217, 119, 6, 0.4);
+}
+
+.hint-response {
+  background: rgba(217, 119, 6, 0.1);
+  border: 1px solid #d97706;
+  border-radius: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  font-size: 0.85rem;
+  color: #fde68a;
+  text-align: center;
+  line-height: 1.5;
+  width: 100%;
+}
+
+.hint-computer-label {
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.hint-penalty-note {
+  font-size: 0.75rem;
+  color: #f87171;
+  letter-spacing: 0.04em;
+}
+
+/* ===== END SCREEN PENALTY ===== */
+
+.score-penalty {
+  font-size: 0.85rem;
+  color: #f87171;
+  margin-top: 0.25rem;
+  letter-spacing: 0.03em;
+}
+
 .game-info {
   display: flex;
   justify-content: center;
