@@ -294,9 +294,19 @@ const buildIndex = (words) => {
   return index;
 };
 
-const IDX4_EASY   = buildIndex(WORDS_4_EASY);
-const IDX4_NORMAL = buildIndex(WORDS_4);
-const IDX4_HARD   = buildIndex(WORDS_4_HARD);
+const IDX4_EASY        = buildIndex(WORDS_4_EASY);
+const IDX4_NORMAL      = buildIndex(WORDS_4);
+const IDX4_HARD        = buildIndex(WORDS_4_HARD);
+// Combined index for hard mode — lets normal words fill gaps while hard words are preferred
+const IDX4_HARD_MIXED  = buildIndex([...WORDS_4_HARD, ...WORDS_4]);
+
+// Returns an array with hard words first (shuffled within each group), normal words after.
+// Used so col candidates always try hard words before falling back to normal words.
+const hardSet4 = new Set(WORDS_4_HARD);
+const hardBias = (arr) => [
+  ...shuffle(arr.filter(w => hardSet4.has(w))),
+  ...shuffle(arr.filter(w => !hardSet4.has(w))),
+];
 
 // ── Shuffle helper ─────────────────────────────────────────────────────────
 
@@ -344,38 +354,48 @@ export const generateComputerBoard = (difficulty = 'normal') => {
 };
 
 const tryGenerate = (difficulty) => {
-  const words5 = difficulty === 'easy' ? WORDS_5_EASY
-               : difficulty === 'hard' ? WORDS_5_HARD
-               : WORDS_5;
-  const words4 = difficulty === 'easy' ? WORDS_4_EASY
-               : difficulty === 'hard' ? WORDS_4_HARD
-               : WORDS_4;
-  const idx4   = difficulty === 'easy' ? IDX4_EASY
-               : difficulty === 'hard' ? IDX4_HARD
-               : IDX4_NORMAL;
+  const isHard = difficulty === 'hard';
 
-  // Step 1: Pick a random 5-letter word for Row 1
-  const row1Candidates = shuffle(words5);
+  // Hard mode: row1 pool = hard words first, then normal as fallback for variety.
+  // Easy mode: restricted recognisable-word pool only.
+  const words5 = difficulty === 'easy' ? WORDS_5_EASY
+               : isHard ? [...shuffle(WORDS_5_HARD), ...shuffle(WORDS_5)]
+               : WORDS_5;
+  // Hard mode: combined index so filterWords can find normal-word fallbacks.
+  const idx4   = difficulty === 'easy' ? IDX4_EASY
+               : isHard ? IDX4_HARD_MIXED
+               : IDX4_NORMAL;
+  // The 4-letter word pool used for filterWords — combined for hard so Set works correctly.
+  const words4 = difficulty === 'easy' ? WORDS_4_EASY
+               : isHard ? [...WORDS_4_HARD, ...WORDS_4]
+               : WORDS_4;
+
+  // Step 1: Pick a random 5-letter word for Row 1.
+  // For hard mode the array is already ordered (hard first), so slicing 50 almost
+  // always picks from the hard list; normal words only surface if hard words exhaust.
+  const row1Candidates = isHard ? words5 : shuffle(words5);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // Row 1 letters at positions: row1[0]@(0,1), row1[1]@(1,1), row1[2]@(2,1), row1[3]@(3,1), row1[4]@(4,1)
 
     // Step 2: Pick Col 1 (4-letter) where col1[0] = row1[1]
-    const col1Candidates = shuffle(filterWords(words4, idx4, { 0: row1[1] }));
+    // Hard mode: hardBias sorts hard words first so they're always preferred.
+    const applyBias = isHard ? hardBias : shuffle;
+    const col1Candidates = applyBias(filterWords(words4, idx4, { 0: row1[1] }));
     if (col1Candidates.length === 0) continue;
 
     for (const col1 of col1Candidates.slice(0, 10)) {
       // col1: col1[0]@(1,1), col1[1]@(1,2), col1[2]@(1,3), col1[3]@(1,4)
 
       // Step 3: Pick Col 2 (4-letter) where col2[1] = row1[2]
-      const col2Candidates = shuffle(filterWords(words4, idx4, { 1: row1[2] }));
+      const col2Candidates = applyBias(filterWords(words4, idx4, { 1: row1[2] }));
       if (col2Candidates.length === 0) continue;
 
       for (const col2 of col2Candidates.slice(0, 10)) {
         // col2: col2[0]@(2,0), col2[1]@(2,1), col2[2]@(2,2), col2[3]@(2,3)
 
         // Step 4: Pick Col 3 (4-letter) where col3[0] = row1[3]
-        const col3Candidates = shuffle(filterWords(words4, idx4, { 0: row1[3] }));
+        const col3Candidates = applyBias(filterWords(words4, idx4, { 0: row1[3] }));
         if (col3Candidates.length === 0) continue;
 
         for (const col3 of col3Candidates.slice(0, 10)) {
