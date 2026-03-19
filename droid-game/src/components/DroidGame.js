@@ -34,7 +34,7 @@ const getScoreMessage = (score) => {
   return SCORE_MESSAGES[SCORE_MESSAGES.length - 1][1];
 };
 
-const CopyButton = ({ url }) => {
+const CopyButton = ({ url, label = 'Copy Link' }) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -56,10 +56,13 @@ const CopyButton = ({ url }) => {
 
   return (
     <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
-      {copied ? 'Copied!' : 'Copy Link'}
+      {copied ? 'Copied!' : label}
     </button>
   );
 };
+
+// Inactive squares (1-indexed, squareNum = y*5+x+1)
+const REMOVED_SQ = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
 
 const DroidGame = () => {
   const [gameState, setGameState] = useState('start');
@@ -75,6 +78,7 @@ const DroidGame = () => {
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
   const [shareLink, setShareLink] = useState(null);
   const [vsComputer, setVsComputer] = useState(false);
+  const [gameDifficulty, setGameDifficulty] = useState('normal');
   const [hintsUsed, setHintsUsed] = useState(0);
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [hintMessage, setHintMessage] = useState(null);
@@ -314,6 +318,7 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
     setShareLink(null);
     setVsComputer(false);
+    setGameDifficulty('normal');
     setHintsUsed(0);
     setLetterHintsUsed(0);
     setHintMessage(null);
@@ -328,9 +333,11 @@ const DroidGame = () => {
       return;
     }
     setVsComputer(true);
+    setGameDifficulty(difficulty);
 
+    const preRevealed = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2;
     const p1Board = computerBoard.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 0);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, preRevealed);
 
     setPlayer1Board(p1Board);
     setPreservedTiles(preservedLetters);
@@ -415,6 +422,28 @@ const DroidGame = () => {
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total };
   }, [board, player1Board, correctTiles, gameState, hintsUsed, letterHintsUsed]);
+
+  const scoreCard = useMemo(() => {
+    if (gameState !== 'end' || !player1Board) return '';
+    const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
+    const correctSet   = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
+    const grid = board.map((row, y) =>
+      row.map((letter, x) => {
+        if (REMOVED_SQ.has(y * 5 + x + 1)) return '⬛';
+        const key = `${x},${y}`;
+        if (preservedSet.has(key)) return '🟨';
+        if (correctSet.has(key))   return '🟩';
+        if (letter)                return '🟥';
+        return '⬜';
+      }).join('')
+    ).join('\n');
+    const totalHints = hintsUsed + letterHintsUsed;
+    const diffLabel  = vsComputer
+      ? gameDifficulty.charAt(0).toUpperCase() + gameDifficulty.slice(1)
+      : '2 Player';
+    const hintsLabel = totalHints > 0 ? ` · ${totalHints} hint${totalHints !== 1 ? 's' : ''}` : '';
+    return `DROID 🧠\n${grid}\n${score}% · ${diffLabel}${hintsLabel}`;
+  }, [gameState, board, player1Board, preservedTiles, correctTiles, hintsUsed, letterHintsUsed, score, gameDifficulty, vsComputer]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -534,9 +563,9 @@ const DroidGame = () => {
             <div className="score-label">
               {correctTiles.length} / {totalPlaced} tiles matched
             </div>
-            {vsComputer && hintsUsed > 0 && (
+            {vsComputer && (hintsUsed > 0 || letterHintsUsed > 0) && (
               <div className="score-penalty">
-                {rawScore}% − {hintsUsed * 10}% hint penalty = {score}%
+                {rawScore}% − {hintsUsed * 10 + letterHintsUsed * 5}% hint penalty = {score}%
               </div>
             )}
             <div className="score-message">{getScoreMessage(score)}</div>
@@ -590,6 +619,11 @@ const DroidGame = () => {
                 interactive={false}
               />
             </div>
+          </div>
+
+          <div className="score-card">
+            <pre className="score-card-grid">{scoreCard}</pre>
+            <CopyButton url={scoreCard} label="Share Result" />
           </div>
 
           <Button onClick={resetGame} primary>
