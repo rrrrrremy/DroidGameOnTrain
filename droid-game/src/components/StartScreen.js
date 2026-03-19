@@ -4,6 +4,7 @@ const LETTERS = 'DROID'.split('');
 
 const StartScreen = ({ onStart, onStartVsComputer }) => {
   const [hovered, setHovered] = useState(null);
+  const [hintCount, setHintCount] = useState(2);
 
   return (
     <div className="start-screen">
@@ -23,31 +24,46 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
 
         <p className="game-subtitle">Word Reconstruction Challenge</p>
 
+        <div className="how-to-play">
+          <div className="how-step">
+            <span className="how-num">1</span>
+            <p>Place real English words on the board</p>
+          </div>
+          <div className="how-step">
+            <span className="how-num">2</span>
+            <p>Your opponent sees which letters you used, then reconstructs your board from memory</p>
+          </div>
+          <div className="how-step">
+            <span className="how-num">3</span>
+            <p>More tiles in the right position means a higher score</p>
+          </div>
+        </div>
+
+        <div className="start-divider" />
+
         <div className="start-buttons">
           <button className="start-button" onClick={onStart}>
             2 Player Game
           </button>
-          <button className="start-button vs-computer" onClick={onStartVsComputer}>
-            Play vs Computer
-          </button>
-        </div>
 
-        <div className="game-info">
-          <div className="info-item">
-            <span className="info-icon">👥</span>
-            <span className="info-text">2 Players</span>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🤖</span>
-            <span className="info-text">vs Computer</span>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">🧠</span>
-            <span className="info-text">Memory</span>
-          </div>
-          <div className="info-item">
-            <span className="info-icon">📚</span>
-            <span className="info-text">Vocabulary</span>
+          <div className="vs-computer-section">
+            <div className="hint-count-selector">
+              <span className="hint-label">Locked hints:</span>
+              <div className="hint-count-btns">
+                {[1, 2, 3, 4].map((n) => (
+                  <button
+                    key={n}
+                    className={`hint-count-btn${hintCount === n ? ' active' : ''}`}
+                    onClick={() => setHintCount(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button className="start-button vs-computer" onClick={() => onStartVsComputer(hintCount)}>
+              Play vs Computer
+            </button>
           </div>
         </div>
       </div>

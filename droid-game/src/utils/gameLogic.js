@@ -65,9 +65,7 @@ export const countLetters = (board) => {
   return counts;
 };
 
-const isVowel = (letter) => 'AEIOU'.includes(letter);
-
-export const preserveRandomLettersForPlayer2 = (board) => {
+export const preserveRandomLettersForPlayer2 = (board, count = 2) => {
   const filledTiles = [];
   board.forEach((row, y) =>
     row.forEach((letter, x) => {
@@ -75,13 +73,8 @@ export const preserveRandomLettersForPlayer2 = (board) => {
     })
   );
 
-  const vowelTiles = filledTiles.filter((t) => isVowel(t.letter));
-  const consonantTiles = filledTiles.filter((t) => !isVowel(t.letter));
-
-  const pick = (arr) =>
-    arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
-
-  const preserved = [pick(vowelTiles), pick(consonantTiles)].filter(Boolean);
+  const shuffled = [...filledTiles].sort(() => Math.random() - 0.5);
+  const preserved = shuffled.slice(0, Math.min(count, shuffled.length));
 
   const newBoard = Array(5)
     .fill(null)
@@ -105,24 +98,44 @@ export const checkCorrectTiles = (board, player1Board) => {
 
 // ── URL encode / decode for async multiplayer ─────────────────────────────
 
-export const encodeBoard = (board) =>
+const encodeBoard = (board) =>
   board.flat().map((cell) => cell ?? '.').join('');
 
-export const decodeBoard = (str) => {
+const decodeBoard = (str) => {
   if (!str || str.length !== 25) return null;
   const flat = str.split('').map((c) => (c === '.' ? null : c.toUpperCase()));
   return [0, 1, 2, 3, 4].map((row) => flat.slice(row * 5, row * 5 + 5));
 };
 
-export const encodePreserved = (tiles) =>
+const encodePreserved = (tiles) =>
   tiles.map((t) => `${t.x}${t.y}`).join('');
 
-export const decodePreserved = (str) => {
+const decodePreserved = (str) => {
   if (!str) return [];
-  if (!/^[0-4]{4}([0-4]{4})?$/.test(str)) return [];
+  if (!/^([0-4]{2}){1,8}$/.test(str)) return [];
   const tiles = [];
   for (let i = 0; i < str.length; i += 2) {
     tiles.push({ x: parseInt(str[i], 10), y: parseInt(str[i + 1], 10) });
   }
   return tiles;
+};
+
+// Combine board + preserved into a single opaque base64url token
+export const encodeShareParam = (board, preserved) => {
+  const raw = `${encodeBoard(board)}|${encodePreserved(preserved)}`;
+  return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
+
+export const decodeShareParam = (token) => {
+  if (!token) return null;
+  try {
+    const raw = atob(token.replace(/-/g, '+').replace(/_/g, '/'));
+    const [boardStr, preservedStr] = raw.split('|');
+    const board = decodeBoard(boardStr);
+    if (!board) return null;
+    const preserved = decodePreserved(preservedStr ?? '');
+    return { board, preserved };
+  } catch {
+    return null;
+  }
 };

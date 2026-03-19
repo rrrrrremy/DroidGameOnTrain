@@ -3,17 +3,14 @@ import GameBoard from './GameBoard';
 import Button from './Button';
 import StartScreen from './StartScreen';
 import LetterSelection from './LetterSelection';
-import ReturnTilesBox from './ReturnTilesBox';
 import {
   countLetters,
   preserveRandomLettersForPlayer2,
   checkCorrectTiles,
   getActiveRuns,
   validateWord,
-  encodeBoard,
-  encodePreserved,
-  decodeBoard,
-  decodePreserved,
+  encodeShareParam,
+  decodeShareParam,
 } from '../utils/gameLogic';
 import { generateComputerBoard } from '../utils/computerPlayer';
 
@@ -23,11 +20,11 @@ const emptyBoard = () =>
     .map(() => Array(5).fill(null));
 
 const SCORE_MESSAGES = [
-  [100, 'Perfect reconstruction! 🎯'],
-  [75, 'Excellent memory! 🌟'],
-  [50, 'Good effort! 👍'],
-  [25, 'Keep practising! 💪'],
-  [0, 'Better luck next time! 🎲'],
+  [100, 'Perfect reconstruction!'],
+  [75, 'Excellent memory!'],
+  [50, 'Good effort!'],
+  [25, 'Keep practising!'],
+  [0, 'Better luck next time!'],
 ];
 
 const getScoreMessage = (score) => {
@@ -78,6 +75,8 @@ const DroidGame = () => {
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
   const [shareLink, setShareLink] = useState(null);
   const [vsComputer, setVsComputer] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState(0);
+  const [hintMessage, setHintMessage] = useState(null);
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -100,17 +99,16 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
   }, [board]);
 
-  // On mount: detect ?b=&p= share URL and load Player 2 state directly
+  // On mount: detect ?g= share URL and load Player 2 state directly
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const bParam = params.get('b');
-    const pParam = params.get('p');
-    if (!bParam || !pParam) return;
+    const token = params.get('g');
+    if (!token) return;
 
-    const decoded = decodeBoard(bParam);
-    const preserved = decodePreserved(pParam);
-    if (!decoded) return;
+    const result = decodeShareParam(token);
+    if (!result) return;
 
+    const { board: decoded, preserved } = result;
     const p2StartBoard = Array(5).fill(null).map(() => Array(5).fill(null));
     preserved.forEach(({ x, y }) => { p2StartBoard[y][x] = decoded[y][x]; });
 
@@ -286,7 +284,7 @@ const DroidGame = () => {
       // All checks passed — generate share link for Player 2
       const p1Board = board.map((r) => [...r]);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
-      const url = `${window.location.origin}${window.location.pathname}?b=${encodeBoard(p1Board)}&p=${encodePreserved(preservedLetters)}`;
+      const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters)}`;
       setPlayer1Board(p1Board);
       setPreservedTiles(preservedLetters);
       setBoard(newBoard);
@@ -315,10 +313,12 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
     setShareLink(null);
     setVsComputer(false);
+    setHintsUsed(0);
+    setHintMessage(null);
     setGameState('start');
   };
 
-  const handleStartVsComputer = () => {
+  const handleStartVsComputer = (hintCount = 2) => {
     const computerBoard = generateComputerBoard();
     if (!computerBoard) {
       setValidationError('Failed to generate board — please try again.');
@@ -328,7 +328,7 @@ const DroidGame = () => {
     setVsComputer(true);
 
     const p1Board = computerBoard.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, hintCount);
 
     setPlayer1Board(p1Board);
     setPreservedTiles(preservedLetters);
@@ -339,14 +339,47 @@ const DroidGame = () => {
     setSelectedLetter(null);
   };
 
+  const handleHint = () => {
+    const runs = getActiveRuns();
+    const newPreserved = [...preservedTiles];
+    let wordsLocked = 0;
+
+    for (const run of runs) {
+      // Only consider fully filled runs
+      if (!run.every(({ x, y }) => board[y][x])) continue;
+      // Skip if already fully preserved
+      if (run.every(({ x, y }) => newPreserved.some((t) => t.x === x && t.y === y))) continue;
+      // Check every tile matches the computer's board
+      if (!run.every(({ x, y }) => board[y][x] === player1Board[y][x])) continue;
+
+      let newTilesAdded = false;
+      for (const { x, y } of run) {
+        if (!newPreserved.some((t) => t.x === x && t.y === y)) {
+          newPreserved.push({ x, y, letter: board[y][x] });
+          newTilesAdded = true;
+        }
+      }
+      if (newTilesAdded) wordsLocked++;
+    }
+
+    setHintsUsed((prev) => prev + 1);
+    setPreservedTiles(newPreserved);
+    setHintMessage(
+      wordsLocked > 0
+        ? `${wordsLocked} word${wordsLocked > 1 ? 's' : ''} locked in!`
+        : 'No complete correct words yet.'
+    );
+  };
+
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const { score, incorrectTiles, totalPlaced } = useMemo(() => {
+  const { score, rawScore, incorrectTiles, totalPlaced } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
-      return { score: 0, incorrectTiles: [], totalPlaced: 0 };
+      return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0 };
     }
     const total = player1Board.flat().filter(Boolean).length;
-    const s = total === 0 ? 0 : Math.round((correctTiles.length / total) * 100);
+    const raw = total === 0 ? 0 : Math.round((correctTiles.length / total) * 100);
+    const s = Math.max(0, raw - hintsUsed * 10);
 
     const incorrect = [];
     board.forEach((row, y) =>
@@ -355,13 +388,19 @@ const DroidGame = () => {
       })
     );
 
-    return { score: s, incorrectTiles: incorrect, totalPlaced: total };
-  }, [board, player1Board, correctTiles, gameState]);
+    return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total };
+  }, [board, player1Board, correctTiles, gameState, hintsUsed]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="game-container">
+      {gameState !== 'start' && (
+        <header className="site-header">
+          <span className="site-header-title">Droid</span>
+        </header>
+      )}
+
       {gameState === 'start' && (
         <StartScreen
           onStart={() => setGameState('player1')}
@@ -371,30 +410,7 @@ const DroidGame = () => {
 
       {(gameState === 'player1' || gameState === 'player2') && (
         <div className="game-play">
-          <div className="player-header">
-            <h1>{vsComputer ? 'Your Turn' : `Player ${currentPlayer}'s Turn`}</h1>
-            <p className="turn-instruction">
-              {currentPlayer === 1
-                ? 'Place letters on the board to create words. Click a filled tile to remove it.'
-                : vsComputer
-                  ? "Reconstruct the computer's words! Gold tiles are locked hints."
-                  : "Reconstruct Player 1's words! Gold tiles are locked hints."}
-            </p>
-          </div>
-
-          {selectedLetter && (
-            <div className="selected-indicator">
-              Selected: <strong>{selectedLetter}</strong>
-              <button
-                className="deselect-btn"
-                onClick={() => setSelectedLetter(null)}
-              >
-                ✕
-              </button>
-            </div>
-          )}
-
-          {isValidating && (
+            {isValidating && (
             <div className="validation-loading">
               <div className="spinner" />
               Checking words…
@@ -422,22 +438,33 @@ const DroidGame = () => {
           />
 
           <LetterSelection
-            currentPlayer={currentPlayer}
             availableLetters={availableLetters}
             selectedLetter={selectedLetter}
             onLetterClick={handleLetterClick}
             onDragStart={handleDragStart}
           />
 
-          {currentPlayer === 2 && (
-            <ReturnTilesBox onDrop={handleDropOnReturn} />
-          )}
-
           <div className="actions">
+            {vsComputer && currentPlayer === 2 && (
+              <button className="hint-btn" onClick={handleHint}>
+                Hint −10%
+              </button>
+            )}
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
-              {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn →' : 'Finish Game'}
+              {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
             </Button>
           </div>
+
+          {vsComputer && currentPlayer === 2 && hintMessage && (
+            <div className="hint-response">
+              <span className="hint-computer-label">Computer:</span> {hintMessage}
+            </div>
+          )}
+          {vsComputer && currentPlayer === 2 && hintsUsed > 0 && (
+            <div className="hint-penalty-note">
+              {hintsUsed} hint{hintsUsed > 1 ? 's' : ''} used — −{hintsUsed * 10}% penalty
+            </div>
+          )}
         </div>
       )}
 
@@ -475,6 +502,11 @@ const DroidGame = () => {
             <div className="score-label">
               {correctTiles.length} / {totalPlaced} tiles matched
             </div>
+            {vsComputer && hintsUsed > 0 && (
+              <div className="score-penalty">
+                {rawScore}% − {hintsUsed * 10}% hint penalty = {score}%
+              </div>
+            )}
             <div className="score-message">{getScoreMessage(score)}</div>
           </div>
 

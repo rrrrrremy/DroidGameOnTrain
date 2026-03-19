@@ -4,70 +4,39 @@ import LetterTile from './LetterTile';
 const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 
 const LetterSelection = ({
-  currentPlayer,
   availableLetters,
   selectedLetter,
   onLetterClick,
   onDragStart,
 }) => {
-  if (currentPlayer === 1) {
-    return (
-      <div className="letter-pool">
-        <h2>Available Letters</h2>
-        <div className="letter-pool-grid">
-          {availableLetters.map((letter, i) => (
-            <LetterTile
-              key={i}
-              letter={letter}
-              selected={selectedLetter === letter}
-              onClick={() => onLetterClick(letter)}
-              onDragStart={(e) => onDragStart(e, letter)}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   const vowels = availableLetters.filter((l) => VOWELS.has(l));
   const consonants = availableLetters.filter((l) => !VOWELS.has(l));
 
-  let idx = 0;
   const renderGroup = (letters) =>
-    letters.map((letter) => {
-      const key = idx++;
-      return (
-        <LetterTile
-          key={key}
-          letter={letter}
-          selected={selectedLetter === letter}
-          onClick={() => onLetterClick(letter)}
-          onDragStart={(e) => onDragStart(e, letter)}
-        />
-      );
-    });
+    letters.map((letter, i) => (
+      <LetterTile
+        key={letter + i}
+        letter={letter}
+        selected={selectedLetter === letter}
+        onClick={() => onLetterClick(letter)}
+        onDragStart={(e) => onDragStart(e, letter)}
+      />
+    ));
 
   return (
     <div className="letter-pool">
-      <h2>Your Letters</h2>
       {availableLetters.length === 0 ? (
         <p className="pool-empty">All letters placed!</p>
       ) : (
         <>
           {vowels.length > 0 && (
-            <>
-              <div className="pool-section-label">Vowels</div>
-              <div className="letter-pool-grid">{renderGroup(vowels)}</div>
-            </>
+            <div className="letter-pool-grid">{renderGroup(vowels)}</div>
           )}
           {vowels.length > 0 && consonants.length > 0 && (
             <div className="pool-divider" />
           )}
           {consonants.length > 0 && (
-            <>
-              <div className="pool-section-label">Consonants</div>
-              <div className="letter-pool-grid">{renderGroup(consonants)}</div>
-            </>
+            <div className="letter-pool-grid">{renderGroup(consonants)}</div>
           )}
         </>
       )}
