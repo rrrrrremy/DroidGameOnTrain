@@ -24,6 +24,8 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
 
         <p className="game-subtitle">Word Reconstruction Challenge</p>
 
+        <div className="start-divider" />
+
         <div className="start-buttons">
           <button className="start-button" onClick={onStart}>
             2 Player Game

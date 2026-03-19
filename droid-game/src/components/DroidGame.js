@@ -385,6 +385,12 @@ const DroidGame = () => {
 
   return (
     <div className="game-container">
+      {gameState !== 'start' && (
+        <header className="site-header">
+          <span className="site-header-title">Droid</span>
+        </header>
+      )}
+
       {gameState === 'start' && (
         <StartScreen
           onStart={() => setGameState('player1')}
@@ -398,24 +404,12 @@ const DroidGame = () => {
             <h1>{vsComputer ? 'Your Turn' : `Player ${currentPlayer}'s Turn`}</h1>
             <p className="turn-instruction">
               {currentPlayer === 1
-                ? 'Place letters on the board to create words. Click a filled tile to remove it.'
+                ? 'Place letters to create words. Tap a placed tile to remove it.'
                 : vsComputer
-                  ? "Reconstruct the computer's words! Gold tiles are locked hints."
-                  : "Reconstruct Player 1's words! Gold tiles are locked hints."}
+                  ? "Reconstruct the computer's words. Gold tiles are locked hints."
+                  : "Reconstruct Player 1's words. Gold tiles are locked hints."}
             </p>
           </div>
-
-          {selectedLetter && (
-            <div className="selected-indicator">
-              Selected: <strong>{selectedLetter}</strong>
-              <button
-                className="deselect-btn"
-                onClick={() => setSelectedLetter(null)}
-              >
-                ✕
-              </button>
-            </div>
-          )}
 
           {isValidating && (
             <div className="validation-loading">
