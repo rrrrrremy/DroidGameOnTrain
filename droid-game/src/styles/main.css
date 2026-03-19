@@ -60,6 +60,7 @@ body {
   background: var(--bg);
   z-index: 100;
   flex-shrink: 0;
+  position: relative;
 }
 
 .site-header-title {
@@ -70,6 +71,21 @@ body {
   color: var(--text);
   text-transform: uppercase;
   padding-left: 0.22em; /* compensate letter-spacing on last char */
+}
+
+.timer-display {
+  position: absolute;
+  right: 1rem;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--subtle, #6b7280);
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+}
+
+.timer-display.timer-over {
+  color: #f59e0b;
+  opacity: 1;
 }
 
 /* ===== GAME PLAY ===== */

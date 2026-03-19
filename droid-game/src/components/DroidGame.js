@@ -82,6 +82,7 @@ const DroidGame = () => {
   const [hintsUsed, setHintsUsed] = useState(0);
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [hintMessage, setHintMessage] = useState(null);
+  const [timerSeconds, setTimerSeconds] = useState(0);
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -125,6 +126,13 @@ const DroidGame = () => {
     setGameState('player2');
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Timer: only runs during vs-computer player2 phase
+  useEffect(() => {
+    if (!vsComputer || gameState !== 'player2') return;
+    const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [vsComputer, gameState]);
 
   // ── Interactions ──────────────────────────────────────────────────────────
 
@@ -322,6 +330,7 @@ const DroidGame = () => {
     setHintsUsed(0);
     setLetterHintsUsed(0);
     setHintMessage(null);
+    setTimerSeconds(0);
     setGameState('start');
   };
 
@@ -405,13 +414,14 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const { score, rawScore, incorrectTiles, totalPlaced } = useMemo(() => {
+  const { score, rawScore, incorrectTiles, totalPlaced, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
-      return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0 };
+      return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0, timePenalty: 0 };
     }
     const total = player1Board.flat().filter(Boolean).length;
     const raw = total === 0 ? 0 : Math.round((correctTiles.length / total) * 100);
-    const s = Math.max(0, raw - hintsUsed * 10 - letterHintsUsed * 5);
+    const tp = vsComputer ? Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10 : 0;
+    const s = Math.max(0, Math.round((raw - hintsUsed * 10 - letterHintsUsed * 5 - tp) * 10) / 10);
 
     const incorrect = [];
     board.forEach((row, y) =>
@@ -420,8 +430,8 @@ const DroidGame = () => {
       })
     );
 
-    return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total };
-  }, [board, player1Board, correctTiles, gameState, hintsUsed, letterHintsUsed]);
+    return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
+  }, [board, player1Board, correctTiles, gameState, hintsUsed, letterHintsUsed, timerSeconds, vsComputer]);
 
   const scoreCard = useMemo(() => {
     if (gameState !== 'end' || !player1Board) return '';
@@ -452,6 +462,16 @@ const DroidGame = () => {
       {gameState !== 'start' && (
         <header className="site-header">
           <span className="site-header-title">Droid</span>
+          {vsComputer && (gameState === 'player2' || gameState === 'end') && (() => {
+            const m = Math.floor(timerSeconds / 60);
+            const s = timerSeconds % 60;
+            const over = timerSeconds > 120;
+            return (
+              <span className={`timer-display${over ? ' timer-over' : ''}`}>
+                {m}:{String(s).padStart(2, '0')}
+              </span>
+            );
+          })()}
         </header>
       )}
 
@@ -563,9 +583,12 @@ const DroidGame = () => {
             <div className="score-label">
               {correctTiles.length} / {totalPlaced} tiles matched
             </div>
-            {vsComputer && (hintsUsed > 0 || letterHintsUsed > 0) && (
+            {vsComputer && (hintsUsed > 0 || letterHintsUsed > 0 || timePenalty > 0) && (
               <div className="score-penalty">
-                {rawScore}% − {hintsUsed * 10 + letterHintsUsed * 5}% hint penalty = {score}%
+                {rawScore}%
+                {(hintsUsed > 0 || letterHintsUsed > 0) && ` − ${hintsUsed * 10 + letterHintsUsed * 5}% hints`}
+                {timePenalty > 0 && ` − ${timePenalty}% time`}
+                {' '}= {score}%
               </div>
             )}
             <div className="score-message">{getScoreMessage(score)}</div>
