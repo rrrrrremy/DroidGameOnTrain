@@ -471,14 +471,14 @@ const DroidGame = () => {
 
           <div className="actions">
             {vsComputer && currentPlayer === 2 && (
-              <>
+              <div className="hint-actions">
                 <button className="hint-btn" onClick={handleHint}>
                   Lock words −10%
                 </button>
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
                   Reveal letter −5%
                 </button>
-              </>
+              </div>
             )}
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}

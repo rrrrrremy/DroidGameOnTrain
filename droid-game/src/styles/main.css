@@ -78,7 +78,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.9rem 1rem 2rem;
+  padding: 0.9rem 1rem max(2rem, env(safe-area-inset-bottom, 0px));
   width: 100%;
   max-width: 500px;
   flex: 1;
@@ -632,12 +632,29 @@ body {
 
 .actions {
   display: flex;
-  gap: 0.65rem;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: stretch;
   margin-top: 0.5rem;
   width: 100%;
 }
+
+/* Hint buttons sit side-by-side in their own row */
+.hint-actions {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.hint-actions .hint-btn {
+  flex: 1;
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+/* Finish / End Turn always full width */
+.actions .button { width: 100%; }
 
 /* ===== BUTTONS ===== */
 
@@ -856,15 +873,43 @@ body {
 
 /* ===== RESPONSIVE ===== */
 
+/* On touch screens the remove-tile × button never gets a hover state,
+   so always show it so players can tap it to remove a tile. */
+@media (hover: none) {
+  .tile-filled .tile-remove-btn,
+  .tile-invalid .tile-remove-btn { display: block; }
+}
+
 @media (max-width: 480px) {
-  .boards-comparison {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
+  /* ── Header ── */
+  .site-header       { height: 2.8rem; }
+  .site-header-title { font-size: 1.4rem; }
+
+  /* ── Game play area ── */
+  .game-play {
+    padding: 0.6rem 0.75rem max(1.25rem, env(safe-area-inset-bottom, 0px));
   }
 
-  .site-header-title { font-size: 1.5rem; }
+  /* ── Board tiles — shrink gap slightly to reclaim space ── */
+  :root { --board-gap: 4px; }
 
-  .end-header h2 { font-size: 0.65rem; }
+  /* ── Letter tiles — larger touch targets ── */
+  .letter-tile {
+    width:  clamp(2.4rem, 11.5vw, 2.75rem);
+    height: clamp(2.8rem, 12.5vw, 3rem);
+    font-size: clamp(0.9rem, 4.2vw, 1.05rem);
+  }
 
-  .game-info { gap: 1.5rem; }
+  /* ── Letter pool — tighter padding ── */
+  .letter-pool { padding: 0.5rem; }
+  .letter-pool-grid { gap: 3px; }
+
+  /* ── Hint penalty note ── */
+  .hint-penalty-note { text-align: center; }
+
+  /* ── End screen ── */
+  .boards-comparison { grid-template-columns: 1fr; gap: 1.25rem; }
+  .end-header h2     { font-size: 0.65rem; }
+  .game-info         { gap: 1.5rem; }
+  .end-screen        { padding: 1.25rem 0.75rem 2rem; }
 }
