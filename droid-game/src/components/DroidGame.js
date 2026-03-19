@@ -318,8 +318,8 @@ const DroidGame = () => {
     setGameState('start');
   };
 
-  const handleStartVsComputer = (hintCount = 2) => {
-    const computerBoard = generateComputerBoard();
+  const handleStartVsComputer = (hintCount = 2, difficulty = 'normal') => {
+    const computerBoard = generateComputerBoard(difficulty);
     if (!computerBoard) {
       setValidationError('Failed to generate board — please try again.');
       setGameState('start');
