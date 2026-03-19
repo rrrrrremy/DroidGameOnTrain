@@ -76,6 +76,7 @@ const DroidGame = () => {
   const [shareLink, setShareLink] = useState(null);
   const [vsComputer, setVsComputer] = useState(false);
   const [hintsUsed, setHintsUsed] = useState(0);
+  const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [hintMessage, setHintMessage] = useState(null);
 
   const isPreserved = (x, y) =>
@@ -314,12 +315,13 @@ const DroidGame = () => {
     setShareLink(null);
     setVsComputer(false);
     setHintsUsed(0);
+    setLetterHintsUsed(0);
     setHintMessage(null);
     setGameState('start');
   };
 
-  const handleStartVsComputer = (hintCount = 2) => {
-    const computerBoard = generateComputerBoard();
+  const handleStartVsComputer = (hintCount = 2, difficulty = 'normal') => {
+    const computerBoard = generateComputerBoard(difficulty);
     if (!computerBoard) {
       setValidationError('Failed to generate board — please try again.');
       setGameState('start');
@@ -371,6 +373,29 @@ const DroidGame = () => {
     );
   };
 
+  const handleLetterHint = () => {
+    if (!player1Board) return;
+
+    // Cells that are filled in the computer's board but not yet placed or locked on player 2's board
+    const candidates = [];
+    player1Board.forEach((row, y) =>
+      row.forEach((letter, x) => {
+        if (letter && !board[y][x] && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+          candidates.push({ x, y, letter });
+        }
+      })
+    );
+
+    if (candidates.length === 0) return;
+
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    const newBoard = board.map((row) => [...row]);
+    newBoard[chosen.y][chosen.x] = chosen.letter;
+    setBoard(newBoard);
+    setPreservedTiles([...preservedTiles, { x: chosen.x, y: chosen.y, letter: chosen.letter }]);
+    setLetterHintsUsed((prev) => prev + 1);
+  };
+
   // ── Derived end-screen data ───────────────────────────────────────────────
 
   const { score, rawScore, incorrectTiles, totalPlaced } = useMemo(() => {
@@ -379,7 +404,7 @@ const DroidGame = () => {
     }
     const total = player1Board.flat().filter(Boolean).length;
     const raw = total === 0 ? 0 : Math.round((correctTiles.length / total) * 100);
-    const s = Math.max(0, raw - hintsUsed * 10);
+    const s = Math.max(0, raw - hintsUsed * 10 - letterHintsUsed * 5);
 
     const incorrect = [];
     board.forEach((row, y) =>
@@ -389,7 +414,7 @@ const DroidGame = () => {
     );
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total };
-  }, [board, player1Board, correctTiles, gameState, hintsUsed]);
+  }, [board, player1Board, correctTiles, gameState, hintsUsed, letterHintsUsed]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -446,9 +471,14 @@ const DroidGame = () => {
 
           <div className="actions">
             {vsComputer && currentPlayer === 2 && (
-              <button className="hint-btn" onClick={handleHint}>
-                Hint −10%
-              </button>
+              <>
+                <button className="hint-btn" onClick={handleHint}>
+                  Lock words −10%
+                </button>
+                <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
+                  Reveal letter −5%
+                </button>
+              </>
             )}
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
@@ -460,9 +490,11 @@ const DroidGame = () => {
               <span className="hint-computer-label">Computer:</span> {hintMessage}
             </div>
           )}
-          {vsComputer && currentPlayer === 2 && hintsUsed > 0 && (
+          {vsComputer && currentPlayer === 2 && (hintsUsed > 0 || letterHintsUsed > 0) && (
             <div className="hint-penalty-note">
-              {hintsUsed} hint{hintsUsed > 1 ? 's' : ''} used — −{hintsUsed * 10}% penalty
+              −{hintsUsed * 10 + letterHintsUsed * 5}% penalty
+              {hintsUsed > 0 && ` (${hintsUsed} word hint${hintsUsed > 1 ? 's' : ''})`}
+              {letterHintsUsed > 0 && ` (${letterHintsUsed} letter hint${letterHintsUsed > 1 ? 's' : ''})`}
             </div>
           )}
         </div>

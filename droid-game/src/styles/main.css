@@ -224,6 +224,29 @@ body {
 .hint-count-btn:hover  { border-color: var(--teal); color: var(--text); }
 .hint-count-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
 
+/* ─── DIFFICULTY SELECTOR ─── */
+
+.difficulty-selector { display: flex; gap: 0.3rem; }
+
+.diff-btn {
+  padding: 0 0.6rem;
+  height: 2rem;
+  border-radius: 4px;
+  border: 1px solid var(--border-med);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  transition: all 0.12s ease;
+  touch-action: manipulation;
+}
+
+.diff-btn:hover  { border-color: var(--teal); color: var(--text); }
+.diff-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+
 /* ─── HOW TO PLAY ─── */
 
 .how-to-play {
@@ -580,6 +603,10 @@ body {
 
 .hint-btn:hover  { background: rgba(146, 64, 14, 0.18); border-color: #f59e0b; }
 .hint-btn:active { transform: scale(0.96); }
+
+/* Letter-reveal variant — lighter amber to distinguish from word-lock */
+.letter-hint-btn { border-color: #78350f; color: #fbbf24; }
+.letter-hint-btn:hover { background: rgba(120, 53, 15, 0.18); border-color: #fbbf24; }
 
 .hint-response {
   background: rgba(146, 64, 14, 0.12);

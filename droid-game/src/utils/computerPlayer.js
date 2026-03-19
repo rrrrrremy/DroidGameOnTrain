@@ -220,6 +220,64 @@ const WORDS_3 = [
   'YEA','YES','YET','YEW','YOU','ZAP','ZEN','ZIP','ZIT','ZOO',
 ];
 
+// ── Difficulty word tiers ───────────────────────────────────────────────────
+
+// Easy: recognisable everyday words (subset of the normal lists)
+const WORDS_5_EASY = [
+  'ABOUT','AFTER','AGAIN','BEACH','BLACK','BLANK','BOARD','BRAIN','BRAND',
+  'BRAVE','BREAD','BREAK','BRING','BROWN','BUILD','CARRY','CATCH','CAUSE',
+  'CHAIR','CHARM','CHASE','CHEAP','CHECK','CHILD','CLASS','CLEAN','CLEAR',
+  'CLIMB','CLOCK','CLOSE','CLOUD','COACH','COUNT','COURT','COVER','CREAM',
+  'CROSS','CROWD','CROWN','CRUSH','DANCE','DREAM','DRESS','DRINK','DRIVE',
+  'EARLY','EARTH','EIGHT','EVERY','EXTRA','FAITH','FIELD','FIGHT','FIRST',
+  'FLASH','FLOOD','FLOOR','FORCE','FOUND','FRAME','FRESH','FRUIT','GIANT',
+  'GLASS','GRAND','GRASS','GREAT','GREEN','GROUP','GUARD','HAPPY','HEART',
+  'HEAVY','HOUSE','HUMAN','JUICE','LARGE','LAUGH','LIGHT','LUNCH',
+];
+
+const WORDS_4_EASY = [
+  'ABLE','BACK','BALL','BAND','BANK','BARE','BARN','BASE','BEAR','BEAT',
+  'BEEN','BELL','BELT','BEST','BILL','BIRD','BLOW','BLUE','BOAT','BODY',
+  'BOLD','BOND','BONE','BOOK','BOOT','BORN','BOSS','BOTH','BOWL','BULL',
+  'BURN','BUSY','CALL','CALM','CAME','CAMP','CARD','CARE','CART','CASE',
+  'CASH','CAVE','CHAT','CHIP','CITY','CLAY','CLUB','COAL','COAT','CODE',
+  'COIN','COLD','COME','COOK','COOL','COPY','CORN','COST','CREW','DARK',
+  'DEAD','DEAL','DEAR','DEEP','DESK','DIRT','DISH','DOOR','DOWN','DRAW',
+  'DROP','DRUM','DUCK','DUTY','EARN','EASE','EAST','EASY','EDGE','FACE',
+  'FACT','FAIR','FALL','FAME','FARM','FAST','FATE','FEAR','FEED','FEEL',
+  'FILE','FILL','FILM','FIND','FINE','FIRE','FIRM','FISH','FLAG','FLOW',
+];
+
+// Hard: obscure but valid English words
+const WORDS_5_HARD = [
+  'ABBOT','ABYSS','ADAGE','AEGIS','ARGOT','ASKEW','ATOLL','AXIOM','AZURE',
+  'BALMY','BASTE','BRASH','BRAWL','BRAWN','BROOD','CHANT','CHASM','CLEFT',
+  'CLOAK','CLOUT','CRAVE','CREAK','CROON','CRYPT','DAUNT','DRAWL','DWARF',
+  'EXALT','EXPEL','EXUDE','FETID','FJORD','FLECK','FORAY','GAUDY','GAUNT',
+  'GIRTH','GLEAN','GLINT','GLOAT','GNASH','GROAN','GRUEL','GUILE','GUSTO',
+  'HAVOC','HEIST','HELIX','HOIST','INEPT','IRONY','JOUST','KNAVE','LADEN',
+  'LARVA','LEACH','LITHE','LIVID','LUCID','MAXIM','MINCE','MOGUL','MURKY',
+  'MUSTY','NOTCH','NYMPH','OPTIC','OUNCE','PIQUE','PLUCK','POISE','PRIVY',
+  'PROWL','PSALM','QUAFF','QUASH','RABBI','RELIC','RHYME','RIVET','ROUGE',
+  'SCALD','SCANT','SCONE','SCORN','SCOWL','SEIZE','SHACK','SHAWL','SHEEN',
+];
+
+const WORDS_4_HARD = [
+  'AMOK','ANKH','APEX','BALK','BALM','BAWL','BLOB','BODE','BOOR','BRAE',
+  'BRAY','BRIG','BROW','BURP','CEDE','CLOD','CODA','COIF','COMA','CONK',
+  'CRAG','CRUX','CZAR','DANK','DAUB','DOTE','DRAB','DRUB','DUCT','DUPE',
+  'ENVY','ESPY','FAWN','FAZE','FLEX','FLIT','FUME','GIBE','GILD','GILT',
+  'GIST','GLUT','GNAW','GORE','GOUT','GOWN','GRUB','GULL','HOAX','HONE',
+  'HOOF','HOOP','HUSK','ITCH','JIBE','JOWL','LANK','LAUD','LAVA','LEWD',
+  'LILT','LISP','LODE','LOIN','LUTE','LYNX','MESA','MIEN','MIRE','MOAT',
+  'MOLT','MUTT','NARC','NEWT','NOSH','NULL','OBOE','OKRA','OMEN','OPUS',
+  'ORCA','PLOP','PLOW','PLOY','PURL','QUAY','RIFE','RIME','ROAN','ROIL',
+  'ROUT','RUFF','RUSE','SCUD','SKEW','SKIT','SLAG','SLOP','SMOG','SMUG',
+  'SNAG','SNIP','SNUB','SNUG','SPUD','STUB','SWAY','TALC','TAUT','TEAK',
+  'TEEM','TORC','TROD','TUFT','VAMP','VEER','VOLE','WAFT','WEAN','WEEP',
+  'WHAM','WHIM','WHIP','WISP','WREN','YORE',
+];
+
 // ── Index words by letter at each position ─────────────────────────────────
 
 const buildIndex = (words) => {
@@ -236,7 +294,19 @@ const buildIndex = (words) => {
   return index;
 };
 
-const IDX4 = buildIndex(WORDS_4);
+const IDX4_EASY        = buildIndex(WORDS_4_EASY);
+const IDX4_NORMAL      = buildIndex(WORDS_4);
+const IDX4_HARD        = buildIndex(WORDS_4_HARD);
+// Combined index for hard mode — lets normal words fill gaps while hard words are preferred
+const IDX4_HARD_MIXED  = buildIndex([...WORDS_4_HARD, ...WORDS_4]);
+
+// Returns an array with hard words first (shuffled within each group), normal words after.
+// Used so col candidates always try hard words before falling back to normal words.
+const hardSet4 = new Set(WORDS_4_HARD);
+const hardBias = (arr) => [
+  ...shuffle(arr.filter(w => hardSet4.has(w))),
+  ...shuffle(arr.filter(w => !hardSet4.has(w))),
+];
 
 // ── Shuffle helper ─────────────────────────────────────────────────────────
 
@@ -273,38 +343,59 @@ const filterWords = (words, index, constraints) => {
  * Generates a valid crossword board.
  * Returns a 5x5 2D array or null on failure.
  */
-export const generateComputerBoard = () => {
-  // Try multiple times with different random orderings
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const result = tryGenerate();
+export const generateComputerBoard = (difficulty = 'normal') => {
+  // Hard mode needs more attempts due to smaller word pool
+  const maxAttempts = difficulty === 'hard' ? 50 : 20;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const result = tryGenerate(difficulty);
     if (result) return result;
   }
   return null;
 };
 
-const tryGenerate = () => {
-  // Step 1: Pick a random 5-letter word for Row 1
-  const row1Candidates = shuffle(WORDS_5);
+const tryGenerate = (difficulty) => {
+  const isHard = difficulty === 'hard';
+
+  // Hard mode: row1 pool = hard words first, then normal as fallback for variety.
+  // Easy mode: restricted recognisable-word pool only.
+  const words5 = difficulty === 'easy' ? WORDS_5_EASY
+               : isHard ? [...shuffle(WORDS_5_HARD), ...shuffle(WORDS_5)]
+               : WORDS_5;
+  // Hard mode: combined index so filterWords can find normal-word fallbacks.
+  const idx4   = difficulty === 'easy' ? IDX4_EASY
+               : isHard ? IDX4_HARD_MIXED
+               : IDX4_NORMAL;
+  // The 4-letter word pool used for filterWords — combined for hard so Set works correctly.
+  const words4 = difficulty === 'easy' ? WORDS_4_EASY
+               : isHard ? [...WORDS_4_HARD, ...WORDS_4]
+               : WORDS_4;
+
+  // Step 1: Pick a random 5-letter word for Row 1.
+  // For hard mode the array is already ordered (hard first), so slicing 50 almost
+  // always picks from the hard list; normal words only surface if hard words exhaust.
+  const row1Candidates = isHard ? words5 : shuffle(words5);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // Row 1 letters at positions: row1[0]@(0,1), row1[1]@(1,1), row1[2]@(2,1), row1[3]@(3,1), row1[4]@(4,1)
 
     // Step 2: Pick Col 1 (4-letter) where col1[0] = row1[1]
-    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[1] }));
+    // Hard mode: hardBias sorts hard words first so they're always preferred.
+    const applyBias = isHard ? hardBias : shuffle;
+    const col1Candidates = applyBias(filterWords(words4, idx4, { 0: row1[1] }));
     if (col1Candidates.length === 0) continue;
 
     for (const col1 of col1Candidates.slice(0, 10)) {
       // col1: col1[0]@(1,1), col1[1]@(1,2), col1[2]@(1,3), col1[3]@(1,4)
 
       // Step 3: Pick Col 2 (4-letter) where col2[1] = row1[2]
-      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[2] }));
+      const col2Candidates = applyBias(filterWords(words4, idx4, { 1: row1[2] }));
       if (col2Candidates.length === 0) continue;
 
       for (const col2 of col2Candidates.slice(0, 10)) {
         // col2: col2[0]@(2,0), col2[1]@(2,1), col2[2]@(2,2), col2[3]@(2,3)
 
         // Step 4: Pick Col 3 (4-letter) where col3[0] = row1[3]
-        const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[3] }));
+        const col3Candidates = applyBias(filterWords(words4, idx4, { 0: row1[3] }));
         if (col3Candidates.length === 0) continue;
 
         for (const col3 of col3Candidates.slice(0, 10)) {
@@ -316,7 +407,7 @@ const tryGenerate = () => {
           // Step 6: Row 3 (3-letter) must be: col1[2], col2[3], col3[2]
           const row3 = col1[2] + col2[3] + col3[2];
 
-          // Check Row 2 and Row 3 are real words
+          // Check Row 2 and Row 3 are real words (always use full WORDS_3 for max intersection hits)
           if (WORDS_3.includes(row2) && WORDS_3.includes(row3)) {
             // Build the board!
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
