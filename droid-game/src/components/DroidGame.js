@@ -80,6 +80,19 @@ const fetchHintWord = async (word) => {
       return `synonym of "${pick.word}"`;
     }
 
+    // Fallback: build a two-word description from an adjective + hypernym
+    const [adjRes, spcRes] = await Promise.all([
+      fetch(`https://api.datamuse.com/words?rel_jjb=${lower}&max=5`),
+      fetch(`https://api.datamuse.com/words?rel_spc=${lower}&max=5`),
+    ]);
+    const [adjs, spcs] = await Promise.all([adjRes.json(), spcRes.json()]);
+
+    const bestAdj = adjs.find((i) => clean(i.word));
+    const bestSpc = spcs.find((i) => clean(i.word));
+
+    if (bestAdj && bestSpc) return `${bestAdj.word} ${bestSpc.word}`;
+    if (bestSpc) return `a type of ${bestSpc.word}`;
+
     return null;
   } catch {
     return null;
