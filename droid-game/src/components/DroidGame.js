@@ -81,8 +81,13 @@ const fetchHintWord = async (word) => {
       ...syns.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`),
     ];
 
-    if (hints.length === 0) return null;
-    return hints[Math.floor(Math.random() * hints.length)];
+    if (hints.length > 0) return hints[Math.floor(Math.random() * hints.length)];
+
+    // Fallback: ml= (means-like) has much broader coverage than rel_syn
+    const mlRes = await fetch(`https://api.datamuse.com/words?ml=${lower}&max=5`);
+    const ml = await mlRes.json();
+    const mlHints = ml.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`);
+    return mlHints.length > 0 ? mlHints[Math.floor(Math.random() * mlHints.length)] : null;
   } catch {
     return null;
   }
