@@ -393,13 +393,84 @@ export const BOARD_SHAPES = {
     removed: new Set([1, 2, 4, 5, 11, 15, 16, 21, 23, 24, 25]),
     grid: [[0,0,1,0,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,1],[0,1,0,0,0]],
   },
+  bolt: {
+    name: 'Bolt',
+    removed: new Set([1, 2, 3, 5, 10, 11, 20, 21, 22, 23, 25]),
+    grid: [[0,0,0,1,0],[1,1,1,1,0],[0,1,1,1,1],[1,1,1,1,0],[0,0,0,1,0]],
+  },
 };
 
 export const SHAPE_IDS = Object.keys(BOARD_SHAPES);
 
 // ── Crossword generators ────────────────────────────────────────────────────
 
-const GENERATORS = { droid: tryGenerateDroid, cross: tryGenerateCross, invader: tryGenerateInvader };
+// ── Bolt shape generator ─────────────────────────────────────────────────────
+// Layout:  . . . X .    col3[0] at (3,0)
+//          X X X X .    row1: 4-letter (x=0..3)
+//          . X X X X    row2: 4-letter (x=1..4)
+//          X X X X .    row3: 4-letter (x=0..3)
+//          . . . X .    col3[4] at (3,4)
+// Cols: col1 x=1 y=1..3 (3-letter), col2 x=2 y=1..3 (3-letter), col3 x=3 y=0..4 (5-letter)
+
+function tryGenerateBolt(rng = Math.random) {
+  const col3Candidates = shuffle(WORDS_5, rng);
+
+  for (const col3 of col3Candidates.slice(0, 50)) {
+    // row1 (y=1, x=0..3): 4-letter, row1[3] = col3[1]
+    const row1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 3: col3[1] }), rng);
+    if (row1Candidates.length === 0) continue;
+
+    for (const row1 of row1Candidates.slice(0, 10)) {
+      // col1 (x=1, y=1..3): 3-letter, col1[0] = row1[1]
+      const col1Candidates = shuffle(filterWords(WORDS_3, IDX3, { 0: row1[1] }), rng);
+      if (col1Candidates.length === 0) continue;
+
+      for (const col1 of col1Candidates.slice(0, 10)) {
+        // col2 (x=2, y=1..3): 3-letter, col2[0] = row1[2]
+        const col2Candidates = shuffle(filterWords(WORDS_3, IDX3, { 0: row1[2] }), rng);
+        if (col2Candidates.length === 0) continue;
+
+        for (const col2 of col2Candidates.slice(0, 10)) {
+          // row2 (y=2, x=1..4): 4-letter = col1[1], col2[1], col3[2], ?
+          const row2Matches = filterWords(WORDS_4, IDX4, { 0: col1[1], 1: col2[1], 2: col3[2] });
+          if (row2Matches.length === 0) continue;
+
+          for (const row2 of shuffle(row2Matches, rng).slice(0, 5)) {
+            // row3 (y=3, x=0..3): 4-letter = ?, col1[2], col2[2], col3[3]
+            const row3Matches = filterWords(WORDS_4, IDX4, { 1: col1[2], 2: col2[2], 3: col3[3] });
+            if (row3Matches.length === 0) continue;
+            const row3 = shuffle(row3Matches, rng)[0];
+
+            // Max 2 of any letter (14 unique positions)
+            const allLetters = col3 + row1.slice(0, 3) + col1.slice(1) + col2.slice(1) + row2[3] + row3[0];
+            const counts = {};
+            let tooMany = false;
+            for (const ch of allLetters) {
+              counts[ch] = (counts[ch] || 0) + 1;
+              if (counts[ch] > 2) { tooMany = true; break; }
+            }
+            if (tooMany) continue;
+
+            const pluralCount = [row1, row2, row3, col1, col2, col3].filter(isPlural).length;
+            if (pluralCount > 1) continue;
+
+            const board = Array(5).fill(null).map(() => Array(5).fill(null));
+            board[0][3] = col3[0];
+            for (let i = 0; i < 4; i++) board[1][i] = row1[i];
+            for (let i = 0; i < 4; i++) board[2][1 + i] = row2[i];
+            for (let i = 0; i < 4; i++) board[3][i] = row3[i];
+            board[4][3] = col3[4];
+
+            return board;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+const GENERATORS = { droid: tryGenerateDroid, cross: tryGenerateCross, invader: tryGenerateInvader, bolt: tryGenerateBolt };
 
 export const generateComputerBoard = (shape = 'droid') => {
   const gen = GENERATORS[shape] || GENERATORS.droid;
