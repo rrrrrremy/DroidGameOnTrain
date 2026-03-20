@@ -379,22 +379,22 @@ const isPlural = (word) => word.endsWith('S') && ALL_WORDS_SET.has(word.slice(0,
 
 export const BOARD_SHAPES = {
   droid: {
-    name: 'Droid',
+    name: 'Normal',
     removed: new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]),
     grid: [[0,0,1,0,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,0],[0,1,0,1,0]],
   },
   cross: {
-    name: 'Cross',
+    name: 'Bodybuilder',
     removed: new Set([1, 2, 4, 5, 6, 10, 16, 20, 21, 23, 25]),
     grid: [[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0]],
   },
   invader: {
-    name: 'Invader',
+    name: 'Yoga',
     removed: new Set([1, 2, 4, 5, 11, 15, 16, 21, 23, 24, 25]),
     grid: [[0,0,1,0,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,1],[0,1,0,0,0]],
   },
   bolt: {
-    name: 'Bolt',
+    name: 'Relaxing',
     removed: new Set([1, 2, 3, 5, 10, 11, 20, 21, 22, 23, 25]),
     grid: [[0,0,0,1,0],[1,1,1,1,0],[0,1,1,1,1],[1,1,1,1,0],[0,0,0,1,0]],
   },
