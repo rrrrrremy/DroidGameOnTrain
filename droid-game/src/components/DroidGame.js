@@ -76,8 +76,7 @@ const fetchHintWord = async (word) => {
     const strongSyns = syns.filter((i) => clean(i.word) && (i.score ?? 0) >= 1000);
 
     if (strongSyns.length > 0) {
-      const pick = strongSyns[Math.floor(Math.random() * Math.min(strongSyns.length, 3))];
-      return `synonym of "${pick.word}"`;
+      return `synonym of "${strongSyns[0].word}"`;
     }
 
     // Fallback: build a two-word description from an adjective + hypernym
