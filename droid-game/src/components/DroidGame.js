@@ -13,32 +13,65 @@ import {
   encodeShareParam,
   decodeShareParam,
 } from '../utils/gameLogic';
-import { generateComputerBoard, generateDailyBoard, todayString, BOARD_SHAPES } from '../utils/computerPlayer';
+import {
+  generateComputerBoard,
+  generateDailyBoard,
+  todayString,
+  BOARD_SHAPES,
+  extractFiveLetterWord,
+  countBoardCombinations,
+} from '../utils/computerPlayer';
+
+import SYNONYMS from '../utils/synonyms.json';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
+
+// Per-shape hint penalty (points subtracted per reveal)
+const HINT_PENALTY = { droid: 1.0, cross: 0.9, invader: 0.8, bolt: 0.7 };
+
+// Per-shape time penalty interval (seconds per 0.1pt deduction after 120s)
+const TIME_INTERVAL = { droid: 10, cross: 12, invader: 15, bolt: 20 };
 
 const emptyBoard = () =>
   Array(5)
     .fill(null)
     .map(() => Array(5).fill(null));
 
-const getGrade = (score, max) => {
-  if (max === 0) return 'F';
-  const n = (score / max) * 12;
-  if (n >= 12) return 'DUX';
-  if (n >= 11.5) return 'A++';
-  if (n >= 11.0) return 'A+';
-  if (n >= 10.5) return 'A';
-  if (n >= 10.0) return 'A−';
-  if (n >= 9.5) return 'B+';
-  if (n >= 9.0) return 'B';
-  if (n >= 8.5) return 'B−';
-  if (n >= 8.0) return 'C+';
-  if (n >= 7.5) return 'C';
-  if (n >= 7.0) return 'C−';
-  if (n >= 6.5) return 'D+';
-  if (n >= 6.0) return 'D';
-  return 'F';
+/** Returns a CSS class name based on score/maxScore ratio (9-tier rainbow). */
+const getScoreColorClass = (score, maxScore) => {
+  if (maxScore === 0) return 'score-red';
+  const r = score / maxScore;
+  if (r >= 1)        return 'score-gold';
+  if (r >= 11 / 12)  return 'score-purple';
+  if (r >= 10 / 12)  return 'score-navy';
+  if (r >= 9 / 12)   return 'score-skyblue';
+  if (r >= 8 / 12)   return 'score-darkgreen';
+  if (r >= 7 / 12)   return 'score-lightgreen';
+  if (r >= 6 / 12)   return 'score-yellow';
+  if (r >= 5 / 12)   return 'score-orange';
+  return 'score-red';
+};
+
+/** Return timer CSS class based on elapsed seconds. */
+const getTimerClass = (secs) => {
+  if (secs <= 120) return 'timer-green';
+  if (secs <= 360) return 'timer-amber';
+  return 'timer-red';
+};
+
+/** Compute time penalty given elapsed seconds and shape. */
+const calcTimePenalty = (seconds, shapeId) => {
+  const interval = TIME_INTERVAL[shapeId] || 10;
+  return Math.floor(Math.max(0, seconds - 120) / interval) * 0.1;
+};
+
+/** Pick a random hint string for a word from SYNONYMS data. */
+const getHintWord = (word) => {
+  if (!word) return null;
+  const entries = SYNONYMS[word];
+  if (!entries || entries.length === 0) return null;
+  const entry = entries[Math.floor(Math.random() * entries.length)];
+  return entry ? `${entry.type === 'antonym' ? 'opposite of' : 'related to'} "${entry.word}"` : null;
 };
 
 const CopyButton = ({ url, label = 'Copy Link' }) => {
@@ -92,9 +125,19 @@ const DroidGame = () => {
   const [player2FullValid, setPlayer2FullValid] = useState(false);
   const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily'
 
+  // Session tracking (persists across the 4-droid game)
+  const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
+  const [sessionScores, setSessionScores] = useState({}); // shapeId → percent
+
+  // Per-game metadata
+  const [combinationCount, setCombinationCount] = useState(null);
+  const [hintWord, setHintWord] = useState(null);
+
   const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
   const activeTileCount = 25 - removedSquares.size;
-  const maxScore = activeTileCount - 2; // minus preserved tiles
+  const maxScore = activeTileCount - 2; // minus 2 preserved tiles
+
+  const hintPenalty = HINT_PENALTY[boardShape] ?? 1.0;
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -136,12 +179,18 @@ const DroidGame = () => {
     const p2StartBoard = Array(5).fill(null).map(() => Array(5).fill(null));
     preserved.forEach(({ x, y }) => { p2StartBoard[y][x] = decoded[y][x]; });
 
-    setBoardShape(shape || 'droid');
+    const shapeId = shape || 'droid';
+    const fiveLetterWord = extractFiveLetterWord(decoded, shapeId);
+    const combCount = countBoardCombinations(shapeId, fiveLetterWord);
+
+    setBoardShape(shapeId);
     setPlayer1Board(decoded);
     setPreservedTiles(preserved);
     setBoard(p2StartBoard);
     setLetterCounts(countLetters(decoded));
     setCurrentPlayer(2);
+    setCombinationCount(combCount);
+    setHintWord(getHintWord(fiveLetterWord));
     setGameState('player2');
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -213,20 +262,6 @@ const DroidGame = () => {
     setSelectedLetter(null);
   };
 
-  const handleDropOnReturn = (e) => {
-    const srcXStr = e.dataTransfer.getData('srcX');
-    const srcYStr = e.dataTransfer.getData('srcY');
-    if (!srcXStr) return;
-
-    const srcX = parseInt(srcXStr);
-    const srcY = parseInt(srcYStr);
-    if (isNaN(srcX) || isNaN(srcY) || isPreserved(srcX, srcY)) return;
-
-    const newBoard = board.map((r) => [...r]);
-    newBoard[srcY][srcX] = null;
-    setBoard(newBoard);
-  };
-
   // ── Mode → Shape selection ─────────────────────────────────────────────────
 
   const handleModeSelect = (mode) => {
@@ -238,25 +273,29 @@ const DroidGame = () => {
     setBoardShape(shape);
 
     if (pendingMode === 'player1') {
+      setCombinationCount(null);
+      setHintWord(null);
       setGameState('player1');
       return;
     }
 
     // Computer or daily mode — generate the board
-    const computerBoard = pendingMode === 'daily'
+    const result = pendingMode === 'daily'
       ? generateDailyBoard(shape)
       : generateComputerBoard(shape);
 
-    if (!computerBoard) {
+    if (!result) {
       setValidationError('Failed to generate board — please try again.');
       setGameState('start');
       return;
     }
 
+    const { board: computerBoardRaw, fiveLetterWord, combinationCount: combCount } = result;
+
     setVsComputer(true);
     if (pendingMode === 'daily') setDailyMode(true);
 
-    const p1Board = computerBoard.map((r) => [...r]);
+    const p1Board = computerBoardRaw.map((r) => [...r]);
     const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
 
     setPlayer1Board(p1Board);
@@ -264,6 +303,8 @@ const DroidGame = () => {
     setBoard(newBoard);
     setLetterCounts(countLetters(p1Board));
     setCurrentPlayer(2);
+    setCombinationCount(combCount);
+    setHintWord(getHintWord(fiveLetterWord));
     setGameState('player2');
     setSelectedLetter(null);
   };
@@ -343,6 +384,8 @@ const DroidGame = () => {
       }
 
       const p1Board = board.map((r) => [...r]);
+      const fiveLetterWord = extractFiveLetterWord(p1Board, boardShape);
+      const combCount = countBoardCombinations(boardShape, fiveLetterWord);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
       const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
       setPlayer1Board(p1Board);
@@ -350,6 +393,8 @@ const DroidGame = () => {
       setBoard(newBoard);
       setLetterCounts(countLetters(p1Board));
       setShareLink(url);
+      setCombinationCount(combCount);
+      setHintWord(getHintWord(fiveLetterWord));
       setGameState('share');
       setSelectedLetter(null);
     } else {
@@ -397,6 +442,7 @@ const DroidGame = () => {
     }
   };
 
+  // Full reset including session
   const resetGame = () => {
     setBoard(emptyBoard());
     setPlayer1Board(null);
@@ -416,7 +462,40 @@ const DroidGame = () => {
     setBoardShape('droid');
     setPendingMode(null);
     setPlayer2FullValid(false);
+    setCombinationCount(null);
+    setHintWord(null);
+    setSessionPlayedShapes([]);
+    setSessionScores({});
     setGameState('start');
+  };
+
+  // Reset for next droid — keeps session state
+  const resetForNextDroid = (scorePercent) => {
+    const newPlayed = [...sessionPlayedShapes, boardShape];
+    const newScores = { ...sessionScores, [boardShape]: scorePercent };
+    setBoard(emptyBoard());
+    setPlayer1Board(null);
+    setCurrentPlayer(1);
+    setPreservedTiles([]);
+    setLetterCounts({});
+    setCorrectTiles([]);
+    setSelectedLetter(null);
+    setIsValidating(false);
+    setValidationError(null);
+    setInvalidWordTiles([]);
+    setShareLink(null);
+    setVsComputer(false);
+    setDailyMode(false);
+    setLetterHintsUsed(0);
+    setTimerSeconds(0);
+    setBoardShape('droid');
+    setPendingMode(null);
+    setPlayer2FullValid(false);
+    setCombinationCount(null);
+    setHintWord(null);
+    setSessionPlayedShapes(newPlayed);
+    setSessionScores(newScores);
+    setGameState('selectShape');
   };
 
   const handleLetterHint = () => {
@@ -460,22 +539,20 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const { score, rawScore, incorrectTiles, totalPlaced, timePenalty } = useMemo(() => {
+  const { score, rawScore, incorrectTiles, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
-      return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0, timePenalty: 0 };
+      return { score: 0, rawScore: 0, incorrectTiles: [], timePenalty: 0 };
     }
-    const total = player1Board.flat().filter(Boolean).length;
     const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
 
-    // Full-board valid: award maxScore regardless of exact tile positions
     const raw = player2FullValid
       ? maxScore
       : Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, maxScore);
 
-    const tp = Math.round(Math.max(0, timerSeconds - 120) / 10) / 10;
-    const s = Math.min(maxScore, Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10));
+    const tp = calcTimePenalty(timerSeconds, boardShape);
+    const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
+    const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - tp) * 10) / 10));
 
-    // Incomplete puzzle: only matched tiles score; full-valid puzzle has no incorrect tiles
     const incorrect = player2FullValid ? [] : (() => {
       const arr = [];
       board.forEach((row, y) =>
@@ -486,15 +563,21 @@ const DroidGame = () => {
       return arr;
     })();
 
-    return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
-  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid]);
+    return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: tp };
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty]);
 
+  const scorePercent = maxScore > 0 ? Math.round(score / maxScore * 100) : 0;
 
   // ── Live score (player 2 turn) ────────────────────────────────────────────
-  const liveTimePenalty = Math.round(Math.max(0, timerSeconds - 120) / 10) / 10;
-  const liveScore = Math.max(0, Math.round((maxScore - letterHintsUsed - liveTimePenalty) * 10) / 10);
-  const liveGrade = getGrade(liveScore, maxScore);
-  const liveScoreClass = liveScore >= maxScore * (10 / 12) ? 'high' : liveScore >= maxScore * (7.5 / 12) ? 'mid' : 'low';
+  const liveTimePenalty = calcTimePenalty(timerSeconds, boardShape);
+  const hintDeductionLive = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
+  const liveScore = Math.max(0, Math.round((maxScore - hintDeductionLive - liveTimePenalty) * 10) / 10);
+  const liveScoreClass = getScoreColorClass(liveScore, maxScore);
+  const livePercent = maxScore > 0 ? Math.round(liveScore / maxScore * 100) : 0;
+
+  // Session total
+  const sessionTotal = Object.values(sessionScores).reduce((a, b) => a + b, 0);
+  const sessionCount = sessionPlayedShapes.length;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -503,7 +586,7 @@ const DroidGame = () => {
       {gameState !== 'start' && gameState !== 'selectShape' && (
         <header className="site-header">
           <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
-            </header>
+        </header>
       )}
 
       {gameState === 'start' && (
@@ -516,12 +599,18 @@ const DroidGame = () => {
       )}
 
       {gameState === 'selectShape' && (
-        <ShapeSelection onSelect={handleShapeSelect} />
+        <ShapeSelection
+          onSelect={handleShapeSelect}
+          sessionPlayedShapes={sessionPlayedShapes}
+          sessionScores={sessionScores}
+          sessionTotal={sessionTotal}
+          sessionCount={sessionCount}
+        />
       )}
 
       {(gameState === 'player1' || gameState === 'player2') && (
         <div className="game-play">
-            {isValidating && (
+          {isValidating && (
             <div className="validation-loading">
               <div className="spinner" />
               Checking words…
@@ -533,22 +622,33 @@ const DroidGame = () => {
           )}
 
           {currentPlayer === 2 && (
-            <div className="live-hud">
-              <div className={`live-score-badge ${liveScoreClass}`}>
-                <span className="live-score-grade">{liveGrade}</span>
-                <span className="live-score-pts">{liveScore}/{maxScore} pts · max achievable</span>
+            <>
+              <div className="live-hud">
+                <div className={`live-score-badge ${liveScoreClass}`}>
+                  <span className="live-score-grade">{livePercent}%</span>
+                  <span className="live-score-pts">max achievable</span>
+                </div>
+                {(() => {
+                  const m = Math.floor(timerSeconds / 60);
+                  const s = timerSeconds % 60;
+                  return (
+                    <span className={`hint-timer ${getTimerClass(timerSeconds)}`}>
+                      {m}:{String(s).padStart(2, '0')}
+                    </span>
+                  );
+                })()}
               </div>
-              {(() => {
-                const m = Math.floor(timerSeconds / 60);
-                const s = timerSeconds % 60;
-                const over = timerSeconds > 120;
-                return (
-                  <span className={`hint-timer${over ? ' timer-over' : ''}`}>
-                    {m}:{String(s).padStart(2, '0')}
-                  </span>
-                );
-              })()}
-            </div>
+              {hintWord && (
+                <div className="hint-word-display">
+                  Hint: {hintWord}
+                </div>
+              )}
+              {combinationCount !== null && (
+                <div className="combo-count">
+                  {combinationCount} valid board combination{combinationCount !== 1 ? 's' : ''}
+                </div>
+              )}
+            </>
           )}
 
           <GameBoard
@@ -582,7 +682,7 @@ const DroidGame = () => {
               </button>
               {currentPlayer === 2 && (
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
-                  Reveal letter −1pt
+                  Reveal letter −{hintPenalty}pt
                 </button>
               )}
             </div>
@@ -613,87 +713,108 @@ const DroidGame = () => {
         </div>
       )}
 
-      {gameState === 'end' && (
-        <div className="end-screen">
-          <div className="end-header">
-            <h2>Game Over!</h2>
-            <div
-              className={`score-display ${
-                score >= maxScore * (10 / 12) ? 'high' : score >= maxScore * (7.5 / 12) ? 'mid' : 'low'
-              }`}
-            >
-              {getGrade(score, maxScore)}
-            </div>
-            <div className="score-label">
-              {score}/{maxScore} pts
-            </div>
-            {(letterHintsUsed > 0 || timePenalty > 0) && (
-              <div className="score-penalty">
-                {rawScore}/{maxScore}
-                {letterHintsUsed > 0 && ` − ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}`}
-                {timePenalty > 0 && ` − ${timePenalty} time`}
-                {' '}= {score}/{maxScore}
+      {gameState === 'end' && (() => {
+        const thisScoreClass = getScoreColorClass(score, maxScore);
+        const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
+        const hasPenalties = letterHintsUsed > 0 || timePenalty > 0;
+        const allPlayed = [...sessionPlayedShapes, boardShape];
+        const allScores = { ...sessionScores, [boardShape]: scorePercent };
+        const combinedTotal = Object.values(allScores).reduce((a, b) => a + b, 0);
+        const gamesPlayed = allPlayed.length;
+
+        return (
+          <div className="end-screen">
+            <div className="end-header">
+              <h2>Game Over!</h2>
+
+              {/* Session combined total if more than one game played */}
+              {gamesPlayed > 1 && (
+                <div className="session-combined">
+                  Combined total ({gamesPlayed} droids): {combinedTotal}%
+                </div>
+              )}
+
+              <div className={`score-display ${thisScoreClass}`}>
+                {scorePercent}%
               </div>
-            )}
-          </div>
+              <div className="score-label">
+                {score}/{maxScore} pts · {BOARD_SHAPES[boardShape]?.name}
+              </div>
+              {hasPenalties && (
+                <div className="score-penalty">
+                  {rawScore}/{maxScore}
+                  {letterHintsUsed > 0 && ` − ${hintDeduction} hint${letterHintsUsed !== 1 ? 's' : ''}`}
+                  {timePenalty > 0 && ` − ${timePenalty} time`}
+                  {' '}= {score}/{maxScore}
+                </div>
+              )}
+            </div>
 
-          <div className="legend">
-            <div className="legend-item">
-              <div className="legend-dot correct" />
-              Correct
+            <div className="legend">
+              <div className="legend-item">
+                <div className="legend-dot correct" />
+                Correct
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot incorrect" />
+                Wrong
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot preserved" />
+                Hint tile
+              </div>
             </div>
-            <div className="legend-item">
-              <div className="legend-dot incorrect" />
-              Wrong
+
+            <div className="boards-comparison">
+              <div className="board-column">
+                <h3>{vsComputer ? "Computer's Original" : "Player 1's Original"}</h3>
+                <GameBoard
+                  board={player1Board}
+                  onTileClick={() => {}}
+                  preservedTiles={[]}
+                  correctTiles={[]}
+                  incorrectTiles={[]}
+                  selectedLetter={null}
+                  selectedTile={null}
+                  currentPlayer={1}
+                  onDragStart={() => {}}
+                  onDrop={() => {}}
+                  interactive={false}
+                  removedSquares={removedSquares}
+                />
+              </div>
+              <div className="board-column">
+                <h3>{vsComputer ? 'Your Reconstruction' : "Player 2's Reconstruction"}</h3>
+                <GameBoard
+                  board={board}
+                  onTileClick={() => {}}
+                  preservedTiles={preservedTiles}
+                  correctTiles={correctTiles}
+                  incorrectTiles={incorrectTiles}
+                  selectedLetter={null}
+                  selectedTile={null}
+                  currentPlayer={2}
+                  onDragStart={() => {}}
+                  onDrop={() => {}}
+                  interactive={false}
+                  removedSquares={removedSquares}
+                />
+              </div>
             </div>
-            <div className="legend-item">
-              <div className="legend-dot preserved" />
-              Hint tile
+
+            <div className="end-actions">
+              {gamesPlayed < 4 && (
+                <Button primary onClick={() => resetForNextDroid(scorePercent)}>
+                  Play Next Droid
+                </Button>
+              )}
+              <Button onClick={resetGame} primary={gamesPlayed >= 4}>
+                Play New Game
+              </Button>
             </div>
           </div>
-
-          <div className="boards-comparison">
-            <div className="board-column">
-              <h3>{vsComputer ? "Computer's Original" : "Player 1's Original"}</h3>
-              <GameBoard
-                board={player1Board}
-                onTileClick={() => {}}
-                preservedTiles={[]}
-                correctTiles={[]}
-                incorrectTiles={[]}
-                selectedLetter={null}
-                selectedTile={null}
-                currentPlayer={1}
-                onDragStart={() => {}}
-                onDrop={() => {}}
-                interactive={false}
-                removedSquares={removedSquares}
-              />
-            </div>
-            <div className="board-column">
-              <h3>{vsComputer ? 'Your Reconstruction' : "Player 2's Reconstruction"}</h3>
-              <GameBoard
-                board={board}
-                onTileClick={() => {}}
-                preservedTiles={preservedTiles}
-                correctTiles={correctTiles}
-                incorrectTiles={incorrectTiles}
-                selectedLetter={null}
-                selectedTile={null}
-                currentPlayer={2}
-                onDragStart={() => {}}
-                onDrop={() => {}}
-                interactive={false}
-                removedSquares={removedSquares}
-              />
-            </div>
-          </div>
-
-          <Button onClick={resetGame} primary>
-            Play Again
-          </Button>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };
