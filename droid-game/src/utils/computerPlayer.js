@@ -323,6 +323,7 @@ const buildIndex = (words) => {
   return index;
 };
 
+const IDX3 = buildIndex(WORDS_3);
 const IDX4 = buildIndex(WORDS_4);
 
 // ── Seeded PRNG (mulberry32) ────────────────────────────────────────────────
@@ -374,28 +375,46 @@ const filterWords = (words, index, constraints) => {
 const ALL_WORDS_SET = new Set([...WORDS_3, ...WORDS_4, ...WORDS_5]);
 const isPlural = (word) => word.endsWith('S') && ALL_WORDS_SET.has(word.slice(0, -1));
 
-// ── Crossword generator ─────────────────────────────────────────────────────
+// ── Board shape definitions ─────────────────────────────────────────────────
 
-/**
- * Generates a valid crossword board.
- * Returns a 5x5 2D array or null on failure.
- */
-export const generateComputerBoard = () => {
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const result = tryGenerate();
+export const BOARD_SHAPES = {
+  droid: {
+    name: 'Droid',
+    removed: new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]),
+    grid: [[0,0,1,0,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,0],[0,1,0,1,0]],
+  },
+  cross: {
+    name: 'Cross',
+    removed: new Set([1, 2, 4, 5, 6, 10, 16, 20, 21, 23, 25]),
+    grid: [[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,0,1,0]],
+  },
+  invader: {
+    name: 'Invader',
+    removed: new Set([1, 2, 3, 5, 11, 15, 16, 21, 23, 24, 25]),
+    grid: [[0,0,0,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,1],[0,1,0,0,0]],
+  },
+};
+
+export const SHAPE_IDS = Object.keys(BOARD_SHAPES);
+
+// ── Crossword generators ────────────────────────────────────────────────────
+
+const GENERATORS = { droid: tryGenerateDroid, cross: tryGenerateCross, invader: tryGenerateInvader };
+
+export const generateComputerBoard = (shape = 'droid') => {
+  const gen = GENERATORS[shape] || GENERATORS.droid;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const result = gen();
     if (result) return result;
   }
   return null;
 };
 
-/**
- * Generates the daily board — identical for everyone on the same calendar day.
- * Seeded by YYYYMMDD so it changes at midnight local time.
- */
-export const generateDailyBoard = () => {
+export const generateDailyBoard = (shape = 'droid') => {
   const rng = mulberry32(todaySeed());
-  for (let attempt = 0; attempt < 40; attempt++) {
-    const result = tryGenerate(rng);
+  const gen = GENERATORS[shape] || GENERATORS.droid;
+  for (let attempt = 0; attempt < 60; attempt++) {
+    const result = gen(rng);
     if (result) return result;
   }
   return null;
@@ -407,7 +426,7 @@ export const todayString = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-const tryGenerate = (rng = Math.random) => {
+function tryGenerateDroid(rng = Math.random) {
   // Step 1: Pick a random 5-letter word for Row 1.
   const row1Candidates = shuffle(WORDS_5, rng);
 
@@ -471,4 +490,130 @@ const tryGenerate = (rng = Math.random) => {
   }
 
   return null;
-};
+}
+
+// ── Invader shape generator ─────────────────────────────────────────────────
+// Layout:  . . . X .    col3[0] at (3,0)
+//          X X X X X    row1: 5-letter
+//          . X X X .    row2: 3-letter (derived)
+//          . X X X X    row3: 4-letter (partially derived)
+//          . X . . .    col1[3] at (1,4)
+// Cols: col1 x=1 y=1..4 (4-letter), col2 x=2 y=1..3 (3-letter), col3 x=3 y=0..3 (4-letter)
+
+function tryGenerateInvader(rng = Math.random) {
+  const row1Candidates = shuffle(WORDS_5, rng);
+
+  for (const row1 of row1Candidates.slice(0, 50)) {
+    // col1 (x=1, y=1..4): 4-letter, col1[0] = row1[1]
+    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[1] }), rng);
+    if (col1Candidates.length === 0) continue;
+
+    for (const col1 of col1Candidates.slice(0, 10)) {
+      // col3 (x=3, y=0..3): 4-letter, col3[1] = row1[3]
+      const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[3] }), rng);
+      if (col3Candidates.length === 0) continue;
+
+      for (const col3 of col3Candidates.slice(0, 10)) {
+        // col2 (x=2, y=1..3): 3-letter, col2[0] = row1[2]
+        const col2Candidates = shuffle(filterWords(WORDS_3, IDX3, { 0: row1[2] }), rng);
+        if (col2Candidates.length === 0) continue;
+
+        for (const col2 of col2Candidates.slice(0, 10)) {
+          // row2 (y=2): 3-letter derived = col1[1], col2[1], col3[2]
+          const row2 = col1[1] + col2[1] + col3[2];
+          if (!WORDS_3.includes(row2)) continue;
+
+          // row3 (y=3): 4-letter with row3[0]=col1[2], row3[1]=col2[2], row3[2]=col3[3]
+          const row3Matches = filterWords(WORDS_4, IDX4, { 0: col1[2], 1: col2[2], 2: col3[3] });
+          if (row3Matches.length === 0) continue;
+          const row3 = shuffle(row3Matches, rng)[0];
+
+          // Max 2 of any letter (14 unique positions)
+          const allLetters = row1 + col1.slice(1) + col3[0] + col3.slice(2) + col2.slice(1) + row3[3];
+          const counts = {};
+          let tooMany = false;
+          for (const ch of allLetters) {
+            counts[ch] = (counts[ch] || 0) + 1;
+            if (counts[ch] > 2) { tooMany = true; break; }
+          }
+          if (tooMany) continue;
+
+          const pluralCount = [row1, row2, row3, col1, col2, col3].filter(isPlural).length;
+          if (pluralCount > 1) continue;
+
+          const board = Array(5).fill(null).map(() => Array(5).fill(null));
+          board[0][3] = col3[0];
+          for (let x = 0; x < 5; x++) board[1][x] = row1[x];
+          board[2][1] = col1[1]; board[2][2] = col2[1]; board[2][3] = col3[2];
+          for (let i = 0; i < 4; i++) board[3][1 + i] = row3[i];
+          board[4][1] = col1[3];
+
+          return board;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// ── Cross shape generator ───────────────────────────────────────────────────
+// Layout:  . . X . .    col2[0] at (2,0)
+//          . X X X .    row1: 3-letter (derived)
+//          X X X X X    row2: 5-letter
+//          . X X X .    row3: 3-letter (derived)
+//          . X . X .    col1[3] at (1,4), col3[3] at (3,4)
+// Cols: col1 x=1 y=1..4 (4-letter), col2 x=2 y=0..3 (4-letter), col3 x=3 y=1..4 (4-letter)
+
+function tryGenerateCross(rng = Math.random) {
+  const row2Candidates = shuffle(WORDS_5, rng);
+
+  for (const row2 of row2Candidates.slice(0, 50)) {
+    // col1 (x=1, y=1..4): 4-letter, col1[1] = row2[1]
+    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row2[1] }), rng);
+    if (col1Candidates.length === 0) continue;
+
+    for (const col1 of col1Candidates.slice(0, 10)) {
+      // col2 (x=2, y=0..3): 4-letter, col2[2] = row2[2]
+      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 2: row2[2] }), rng);
+      if (col2Candidates.length === 0) continue;
+
+      for (const col2 of col2Candidates.slice(0, 10)) {
+        // col3 (x=3, y=1..4): 4-letter, col3[1] = row2[3]
+        const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row2[3] }), rng);
+        if (col3Candidates.length === 0) continue;
+
+        for (const col3 of col3Candidates.slice(0, 10)) {
+          // row1 (y=1): 3-letter derived = col1[0], col2[1], col3[0]
+          const row1 = col1[0] + col2[1] + col3[0];
+          // row3 (y=3): 3-letter derived = col1[2], col2[3], col3[2]
+          const row3 = col1[2] + col2[3] + col3[2];
+
+          if (!WORDS_3.includes(row1) || !WORDS_3.includes(row3)) continue;
+
+          // Max 2 of any letter (14 unique positions)
+          const allLetters = row2 + col1[0] + col1.slice(2) + col2.slice(0, 2) + col2[3] + col3[0] + col3.slice(2);
+          const counts = {};
+          let tooMany = false;
+          for (const ch of allLetters) {
+            counts[ch] = (counts[ch] || 0) + 1;
+            if (counts[ch] > 2) { tooMany = true; break; }
+          }
+          if (tooMany) continue;
+
+          const pluralCount = [row1, row2, row3, col1, col2, col3].filter(isPlural).length;
+          if (pluralCount > 1) continue;
+
+          const board = Array(5).fill(null).map(() => Array(5).fill(null));
+          board[0][2] = col2[0];
+          board[1][1] = col1[0]; board[1][2] = col2[1]; board[1][3] = col3[0];
+          for (let x = 0; x < 5; x++) board[2][x] = row2[x];
+          board[3][1] = col1[2]; board[3][2] = col2[3]; board[3][3] = col3[2];
+          board[4][1] = col1[3]; board[4][3] = col3[3];
+
+          return board;
+        }
+      }
+    }
+  }
+  return null;
+}

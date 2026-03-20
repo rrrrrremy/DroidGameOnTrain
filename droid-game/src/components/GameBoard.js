@@ -1,8 +1,8 @@
 import React from 'react';
 import BoardTile from './BoardTile';
+import { BOARD_SHAPES } from '../utils/computerPlayer';
 
-// 1-indexed square numbers that are NOT playable
-const REMOVED_SQUARES = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
+const DEFAULT_REMOVED = BOARD_SHAPES.droid.removed;
 
 const GameBoard = ({
   board,
@@ -18,13 +18,16 @@ const GameBoard = ({
   onDragStart,
   onDrop,
   interactive,
+  removedSquares,
 }) => {
+  const removed = removedSquares || DEFAULT_REMOVED;
+
   return (
     <div className="board">
       {board.map((row, y) =>
         row.map((letter, x) => {
           const squareNum = y * 5 + x + 1;
-          const isActive = !REMOVED_SQUARES.has(squareNum);
+          const isActive = !removed.has(squareNum);
           const isPreserved = preservedTiles.some((t) => t.x === x && t.y === y);
           const isCorrect = correctTiles.some((t) => t.x === x && t.y === y);
           const isIncorrect = incorrectTiles
