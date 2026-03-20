@@ -390,8 +390,8 @@ export const BOARD_SHAPES = {
   },
   invader: {
     name: 'Invader',
-    removed: new Set([1, 2, 3, 5, 11, 15, 16, 21, 23, 24, 25]),
-    grid: [[0,0,0,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,1],[0,1,0,0,0]],
+    removed: new Set([1, 2, 4, 5, 11, 15, 16, 21, 23, 24, 25]),
+    grid: [[0,0,1,0,0],[1,1,1,1,1],[0,1,1,1,0],[0,1,1,1,1],[0,1,0,0,0]],
   },
 };
 
@@ -493,12 +493,12 @@ function tryGenerateDroid(rng = Math.random) {
 }
 
 // ── Invader shape generator ─────────────────────────────────────────────────
-// Layout:  . . . X .    col3[0] at (3,0)
+// Layout:  . . X . .    col2[0] at (2,0)
 //          X X X X X    row1: 5-letter
 //          . X X X .    row2: 3-letter (derived)
 //          . X X X X    row3: 4-letter (partially derived)
 //          . X . . .    col1[3] at (1,4)
-// Cols: col1 x=1 y=1..4 (4-letter), col2 x=2 y=1..3 (3-letter), col3 x=3 y=0..3 (4-letter)
+// Cols: col1 x=1 y=1..4 (4-letter), col2 x=2 y=0..3 (4-letter), col3 x=3 y=1..3 (3-letter)
 
 function tryGenerateInvader(rng = Math.random) {
   const row1Candidates = shuffle(WORDS_5, rng);
@@ -509,27 +509,27 @@ function tryGenerateInvader(rng = Math.random) {
     if (col1Candidates.length === 0) continue;
 
     for (const col1 of col1Candidates.slice(0, 10)) {
-      // col3 (x=3, y=0..3): 4-letter, col3[1] = row1[3]
-      const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[3] }), rng);
-      if (col3Candidates.length === 0) continue;
+      // col2 (x=2, y=0..3): 4-letter, col2[1] = row1[2]
+      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[2] }), rng);
+      if (col2Candidates.length === 0) continue;
 
-      for (const col3 of col3Candidates.slice(0, 10)) {
-        // col2 (x=2, y=1..3): 3-letter, col2[0] = row1[2]
-        const col2Candidates = shuffle(filterWords(WORDS_3, IDX3, { 0: row1[2] }), rng);
-        if (col2Candidates.length === 0) continue;
+      for (const col2 of col2Candidates.slice(0, 10)) {
+        // col3 (x=3, y=1..3): 3-letter, col3[0] = row1[3]
+        const col3Candidates = shuffle(filterWords(WORDS_3, IDX3, { 0: row1[3] }), rng);
+        if (col3Candidates.length === 0) continue;
 
-        for (const col2 of col2Candidates.slice(0, 10)) {
-          // row2 (y=2): 3-letter derived = col1[1], col2[1], col3[2]
-          const row2 = col1[1] + col2[1] + col3[2];
+        for (const col3 of col3Candidates.slice(0, 10)) {
+          // row2 (y=2): 3-letter derived = col1[1], col2[2], col3[1]
+          const row2 = col1[1] + col2[2] + col3[1];
           if (!WORDS_3.includes(row2)) continue;
 
-          // row3 (y=3): 4-letter with row3[0]=col1[2], row3[1]=col2[2], row3[2]=col3[3]
-          const row3Matches = filterWords(WORDS_4, IDX4, { 0: col1[2], 1: col2[2], 2: col3[3] });
+          // row3 (y=3): 4-letter with row3[0]=col1[2], row3[1]=col2[3], row3[2]=col3[2]
+          const row3Matches = filterWords(WORDS_4, IDX4, { 0: col1[2], 1: col2[3], 2: col3[2] });
           if (row3Matches.length === 0) continue;
           const row3 = shuffle(row3Matches, rng)[0];
 
           // Max 2 of any letter (14 unique positions)
-          const allLetters = row1 + col1.slice(1) + col3[0] + col3.slice(2) + col2.slice(1) + row3[3];
+          const allLetters = row1 + col1.slice(1) + col2[0] + col2.slice(2) + col3.slice(1) + row3[3];
           const counts = {};
           let tooMany = false;
           for (const ch of allLetters) {
@@ -542,9 +542,9 @@ function tryGenerateInvader(rng = Math.random) {
           if (pluralCount > 1) continue;
 
           const board = Array(5).fill(null).map(() => Array(5).fill(null));
-          board[0][3] = col3[0];
+          board[0][2] = col2[0];
           for (let x = 0; x < 5; x++) board[1][x] = row1[x];
-          board[2][1] = col1[1]; board[2][2] = col2[1]; board[2][3] = col3[2];
+          board[2][1] = col1[1]; board[2][2] = col2[2]; board[2][3] = col3[1];
           for (let i = 0; i < 4; i++) board[3][1 + i] = row3[i];
           board[4][1] = col1[3];
 
