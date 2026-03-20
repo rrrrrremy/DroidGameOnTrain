@@ -13,8 +13,6 @@ const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, dailyPlayed }) 
     <div className="start-screen">
       <div className="start-content">
 
-        <div className="start-badge">Word Reconstruction</div>
-
         <h1 className="game-title">
           {LETTERS.map((letter, i) => (
             <span key={i} className="game-letter">{letter}</span>
