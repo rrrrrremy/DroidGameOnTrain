@@ -451,7 +451,10 @@ function tryGenerateBolt(rng = Math.random) {
             }
             if (tooMany) continue;
 
-            const pluralCount = [row1, row2, row3, col1, col2, col3].filter(isPlural).length;
+            const boltWords = [row1, row2, row3, col1, col2, col3];
+            if (new Set(boltWords).size !== boltWords.length) continue;
+
+            const pluralCount = boltWords.filter(isPlural).length;
             if (pluralCount > 1) continue;
 
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
@@ -542,8 +545,12 @@ function tryGenerateDroid(rng = Math.random) {
             }
             if (tooMany) continue;
 
+            // Enforce all 6 words are distinct
+            const droidWords = [row1, col1, col2, col3, row2, row3];
+            if (new Set(droidWords).size !== droidWords.length) continue;
+
             // Enforce max 1 plural word across all 6 board words
-            const pluralCount = [row1, col1, col2, col3, row2, row3].filter(isPlural).length;
+            const pluralCount = droidWords.filter(isPlural).length;
             if (pluralCount > 1) continue;
 
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
@@ -609,7 +616,10 @@ function tryGenerateInvader(rng = Math.random) {
           }
           if (tooMany) continue;
 
-          const pluralCount = [row1, row2, row3, col1, col2, col3].filter(isPlural).length;
+          const invaderWords = [row1, row2, row3, col1, col2, col3];
+          if (new Set(invaderWords).size !== invaderWords.length) continue;
+
+          const pluralCount = invaderWords.filter(isPlural).length;
           if (pluralCount > 1) continue;
 
           const board = Array(5).fill(null).map(() => Array(5).fill(null));
@@ -671,7 +681,10 @@ function tryGenerateCross(rng = Math.random) {
           }
           if (tooMany) continue;
 
-          const pluralCount = [row1, row2, row3, col1, col2, col3].filter(isPlural).length;
+          const crossWords = [row1, row2, row3, col1, col2, col3];
+          if (new Set(crossWords).size !== crossWords.length) continue;
+
+          const pluralCount = crossWords.filter(isPlural).length;
           if (pluralCount > 1) continue;
 
           const board = Array(5).fill(null).map(() => Array(5).fill(null));

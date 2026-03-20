@@ -454,17 +454,7 @@ const DroidGame = () => {
       {gameState !== 'start' && gameState !== 'selectShape' && (
         <header className="site-header">
           <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
-          {(gameState === 'player2' || gameState === 'end') && (() => {
-            const m = Math.floor(timerSeconds / 60);
-            const s = timerSeconds % 60;
-            const over = timerSeconds > 120;
-            return (
-              <span className={`timer-display${over ? ' timer-over' : ''}`}>
-                {m}:{String(s).padStart(2, '0')}
-              </span>
-            );
-          })()}
-        </header>
+            </header>
       )}
 
       {gameState === 'start' && (
@@ -523,6 +513,16 @@ const DroidGame = () => {
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
                   Reveal letter −1pt
                 </button>
+                {(() => {
+                  const m = Math.floor(timerSeconds / 60);
+                  const s = timerSeconds % 60;
+                  const over = timerSeconds > 120;
+                  return (
+                    <span className={`hint-timer${over ? ' timer-over' : ''}`}>
+                      {m}:{String(s).padStart(2, '0')}
+                    </span>
+                  );
+                })()}
               </div>
             )}
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
