@@ -66,15 +66,21 @@ export const countLetters = (board) => {
 };
 
 export const preserveRandomLettersForPlayer2 = (board, count = 2) => {
-  const filledTiles = [];
+  const centerLetter = board[2][2];
+  const center = centerLetter ? { x: 2, y: 2, letter: centerLetter } : null;
+
+  const otherTiles = [];
   board.forEach((row, y) =>
     row.forEach((letter, x) => {
-      if (letter) filledTiles.push({ x, y, letter });
+      if (letter && !(x === 2 && y === 2)) otherTiles.push({ x, y, letter });
     })
   );
 
-  const shuffled = [...filledTiles].sort(() => Math.random() - 0.5);
-  const preserved = shuffled.slice(0, Math.min(count, shuffled.length));
+  const shuffled = [...otherTiles].sort(() => Math.random() - 0.5);
+  const preserved = [
+    ...(center ? [center] : []),
+    ...shuffled.slice(0, Math.max(0, count - (center ? 1 : 0))),
+  ].slice(0, count);
 
   const newBoard = Array(5)
     .fill(null)

@@ -9,36 +9,27 @@ const LetterSelection = ({
   onLetterClick,
   onDragStart,
 }) => {
-  const vowels = availableLetters.filter((l) => VOWELS.has(l));
-  const consonants = availableLetters.filter((l) => !VOWELS.has(l));
-
-  const renderGroup = (letters) =>
-    letters.map((letter, i) => (
-      <LetterTile
-        key={letter + i}
-        letter={letter}
-        selected={selectedLetter === letter}
-        onClick={() => onLetterClick(letter)}
-        onDragStart={(e) => onDragStart(e, letter)}
-      />
-    ));
+  const sorted = [
+    ...availableLetters.filter((l) => VOWELS.has(l)),
+    ...availableLetters.filter((l) => !VOWELS.has(l)),
+  ];
 
   return (
     <div className="letter-pool">
       {availableLetters.length === 0 ? (
         <p className="pool-empty">All letters placed!</p>
       ) : (
-        <>
-          {vowels.length > 0 && (
-            <div className="letter-pool-grid">{renderGroup(vowels)}</div>
-          )}
-          {vowels.length > 0 && consonants.length > 0 && (
-            <div className="pool-divider" />
-          )}
-          {consonants.length > 0 && (
-            <div className="letter-pool-grid">{renderGroup(consonants)}</div>
-          )}
-        </>
+        <div className="letter-pool-grid letter-pool-grid--6col">
+          {sorted.map((letter, i) => (
+            <LetterTile
+              key={letter + i}
+              letter={letter}
+              selected={selectedLetter === letter}
+              onClick={() => onLetterClick(letter)}
+              onDragStart={(e) => onDragStart(e, letter)}
+            />
+          ))}
+        </div>
       )}
     </div>
   );

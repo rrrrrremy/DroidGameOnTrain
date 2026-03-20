@@ -384,6 +384,55 @@ body {
   color: var(--text-muted);
 }
 
+.shape-score {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--yellow-border);
+  letter-spacing: 0.05em;
+}
+
+.shape-option-played {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.session-total-banner {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--yellow-border);
+  border: 1px solid var(--yellow-border);
+  border-radius: 4px;
+  padding: 0.4rem 1rem;
+  background: rgba(201, 180, 88, 0.08);
+}
+
+/* ===== HINT WORD & COMBO COUNT (Player 2 turn) ===== */
+
+.hint-word-display {
+  width: 100%;
+  text-align: center;
+  font-size: 0.78rem;
+  color: #fde68a;
+  background: rgba(146, 64, 14, 0.1);
+  border: 1px solid rgba(146, 64, 14, 0.5);
+  border-radius: 4px;
+  padding: 0.35rem 0.7rem;
+  margin-bottom: 0.35rem;
+  font-style: italic;
+}
+
+.combo-count {
+  width: 100%;
+  text-align: center;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.35rem;
+}
+
 /* ===== BOARD ===== */
 
 .board {
@@ -547,6 +596,12 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+  justify-content: center;
+}
+
+.letter-pool-grid--6col {
+  display: grid;
+  grid-template-columns: repeat(6, auto);
   justify-content: center;
 }
 
@@ -753,6 +808,80 @@ body {
   line-height: 1.25;
 }
 
+.hint-timer {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+}
+
+/* 3-tier timer colour coding */
+.hint-timer.timer-green { color: var(--green-border); }
+.hint-timer.timer-amber { color: #f59e0b; }
+.hint-timer.timer-red   { color: #ef4444; }
+/* legacy */
+.hint-timer.timer-over  { color: #f59e0b; }
+
+/* Clear board + live score side by side */
+/* Live score + timer row above the board */
+.live-hud {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: stretch;
+  margin-bottom: 0.5rem;
+}
+
+.live-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  padding: 0.35rem 0.5rem;
+  line-height: 1.2;
+  transition: color 0.3s, border-color 0.3s;
+}
+
+.live-score-grade {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+.live-score-pts {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+}
+
+/* 9-tier score colour system */
+.live-score-badge.score-gold      { color: #FFD700; border-color: #FFD700; }
+.live-score-badge.score-purple    { color: #b57bee; border-color: #b57bee; }
+.live-score-badge.score-navy      { color: #5ba4cf; border-color: #5ba4cf; }
+.live-score-badge.score-skyblue   { color: #87CEEB; border-color: #87CEEB; }
+.live-score-badge.score-darkgreen { color: #27AE60; border-color: #27AE60; }
+.live-score-badge.score-lightgreen{ color: var(--green-border); border-color: var(--green-border); }
+.live-score-badge.score-yellow    { color: var(--yellow-border); border-color: var(--yellow-border); }
+.live-score-badge.score-orange    { color: #f97316; border-color: #f97316; }
+.live-score-badge.score-red       { color: #ef4444; border-color: #ef4444; }
+
+/* Legacy aliases kept for any remaining use */
+.live-score-badge.high { color: var(--green-border); border-color: var(--green-border); }
+.live-score-badge.mid  { color: var(--yellow-border); border-color: var(--yellow-border); }
+.live-score-badge.low  { color: #ef4444; border-color: #ef4444; }
+
 /* Finish / End Turn always full width */
 .actions .button { width: 100%; }
 
@@ -815,6 +944,17 @@ body {
   margin-bottom: 0.3rem;
 }
 
+/* 9-tier score colour classes for end screen */
+.score-display.score-gold       { color: #FFD700; }
+.score-display.score-purple     { color: #b57bee; }
+.score-display.score-navy       { color: #5ba4cf; }
+.score-display.score-skyblue    { color: #87CEEB; }
+.score-display.score-darkgreen  { color: #27AE60; }
+.score-display.score-lightgreen { color: var(--green-border); }
+.score-display.score-yellow     { color: var(--yellow-border); }
+.score-display.score-orange     { color: #f97316; }
+.score-display.score-red        { color: #ef4444; }
+/* legacy */
 .score-display.high { color: var(--green-border); }
 .score-display.mid  { color: var(--yellow-border); }
 .score-display.low  { color: #ef4444; }
@@ -837,6 +977,36 @@ body {
   font-size: 0.95rem;
   color: var(--text);
   margin-top: 0.15rem;
+}
+
+/* ===== END SCREEN ACTIONS & SESSION ===== */
+
+.end-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.end-actions .button {
+  flex: 1;
+  min-width: 140px;
+}
+
+.session-combined {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--yellow-border);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--yellow-border);
+  border-radius: 4px;
+  padding: 0.3rem 0.8rem;
+  display: inline-block;
+  background: rgba(201, 180, 88, 0.08);
 }
 
 /* ===== LEGEND ===== */
