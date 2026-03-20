@@ -1,6 +1,4 @@
-// 1-indexed square numbers that are NOT playable (matches GameBoard)
-const REMOVED_SQUARES = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
-const isActiveSquare = (x, y) => !REMOVED_SQUARES.has(y * 5 + x + 1);
+import { BOARD_SHAPES } from './computerPlayer';
 
 /**
  * Return every contiguous run of 2+ active squares on the board
@@ -8,14 +6,16 @@ const isActiveSquare = (x, y) => !REMOVED_SQUARES.has(y * 5 + x + 1);
  * whether they have letters on them yet).
  * Each run is an array of {x, y}.
  */
-export const getActiveRuns = () => {
+export const getActiveRuns = (shape = 'droid') => {
+  const removed = BOARD_SHAPES[shape]?.removed ?? BOARD_SHAPES.droid.removed;
+  const isActive = (x, y) => !removed.has(y * 5 + x + 1);
   const runs = [];
 
   // Horizontal
   for (let y = 0; y < 5; y++) {
     let run = [];
     for (let x = 0; x <= 5; x++) {
-      if (x < 5 && isActiveSquare(x, y)) {
+      if (x < 5 && isActive(x, y)) {
         run.push({ x, y });
       } else {
         if (run.length >= 2) runs.push(run);
@@ -28,7 +28,7 @@ export const getActiveRuns = () => {
   for (let x = 0; x < 5; x++) {
     let run = [];
     for (let y = 0; y <= 5; y++) {
-      if (y < 5 && isActiveSquare(x, y)) {
+      if (y < 5 && isActive(x, y)) {
         run.push({ x, y });
       } else {
         if (run.length >= 2) runs.push(run);
@@ -120,9 +120,9 @@ const decodePreserved = (str) => {
   return tiles;
 };
 
-// Combine board + preserved into a single opaque base64url token
-export const encodeShareParam = (board, preserved) => {
-  const raw = `${encodeBoard(board)}|${encodePreserved(preserved)}`;
+// Combine shape + board + preserved into a single opaque base64url token
+export const encodeShareParam = (board, preserved, shape = 'droid') => {
+  const raw = `${shape}|${encodeBoard(board)}|${encodePreserved(preserved)}`;
   return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 };
 
@@ -130,11 +130,23 @@ export const decodeShareParam = (token) => {
   if (!token) return null;
   try {
     const raw = atob(token.replace(/-/g, '+').replace(/_/g, '/'));
-    const [boardStr, preservedStr] = raw.split('|');
-    const board = decodeBoard(boardStr);
-    if (!board) return null;
-    const preserved = decodePreserved(preservedStr ?? '');
-    return { board, preserved };
+    const parts = raw.split('|');
+    if (parts.length === 3) {
+      // New format: shape|board|preserved
+      const [shape, boardStr, preservedStr] = parts;
+      const board = decodeBoard(boardStr);
+      if (!board) return null;
+      const preserved = decodePreserved(preservedStr ?? '');
+      return { board, preserved, shape };
+    } else if (parts.length === 2) {
+      // Old format: board|preserved (backwards compat)
+      const [boardStr, preservedStr] = parts;
+      const board = decodeBoard(boardStr);
+      if (!board) return null;
+      const preserved = decodePreserved(preservedStr ?? '');
+      return { board, preserved, shape: 'droid' };
+    }
+    return null;
   } catch {
     return null;
   }

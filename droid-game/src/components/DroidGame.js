@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import GameBoard from './GameBoard';
 import Button from './Button';
 import StartScreen from './StartScreen';
+import ShapeSelection from './ShapeSelection';
 import LetterSelection from './LetterSelection';
 import {
   countLetters,
@@ -12,7 +13,7 @@ import {
   encodeShareParam,
   decodeShareParam,
 } from '../utils/gameLogic';
-import { generateComputerBoard, generateDailyBoard, todayString } from '../utils/computerPlayer';
+import { generateComputerBoard, generateDailyBoard, todayString, BOARD_SHAPES } from '../utils/computerPlayer';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
 
@@ -21,19 +22,12 @@ const emptyBoard = () =>
     .fill(null)
     .map(() => Array(5).fill(null));
 
-const SCORE_MESSAGES = [
-  [12, 'Perfect reconstruction!'],
-  [9, 'Excellent word sense!'],
-  [6, 'Good effort!'],
-  [3, 'Keep practising!'],
-  [0, 'Better luck next time!'],
-];
-
-const getScoreMessage = (score) => {
-  for (const [threshold, message] of SCORE_MESSAGES) {
-    if (score >= threshold) return message;
-  }
-  return SCORE_MESSAGES[SCORE_MESSAGES.length - 1][1];
+const getScoreMessage = (score, max) => {
+  if (score >= max) return 'Perfect reconstruction!';
+  if (score >= max * 0.75) return 'Excellent word sense!';
+  if (score >= max * 0.5) return 'Good effort!';
+  if (score >= max * 0.25) return 'Keep practising!';
+  return 'Better luck next time!';
 };
 
 const CopyButton = ({ url, label = 'Copy Link' }) => {
@@ -63,9 +57,6 @@ const CopyButton = ({ url, label = 'Copy Link' }) => {
   );
 };
 
-// Inactive squares (1-indexed, squareNum = y*5+x+1)
-const REMOVED_SQ = new Set([1, 2, 4, 5, 11, 15, 16, 20, 21, 23, 25]);
-
 const DroidGame = () => {
   const [gameState, setGameState] = useState('start');
   const [board, setBoard] = useState(emptyBoard());
@@ -86,6 +77,12 @@ const DroidGame = () => {
   );
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [boardShape, setBoardShape] = useState('droid');
+  const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily'
+
+  const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
+  const activeTileCount = 25 - removedSquares.size;
+  const maxScore = activeTileCount - 2; // minus preserved tiles
 
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
@@ -117,10 +114,11 @@ const DroidGame = () => {
     const result = decodeShareParam(token);
     if (!result) return;
 
-    const { board: decoded, preserved } = result;
+    const { board: decoded, preserved, shape } = result;
     const p2StartBoard = Array(5).fill(null).map(() => Array(5).fill(null));
     preserved.forEach(({ x, y }) => { p2StartBoard[y][x] = decoded[y][x]; });
 
+    setBoardShape(shape || 'droid');
     setPlayer1Board(decoded);
     setPreservedTiles(preserved);
     setBoard(p2StartBoard);
@@ -145,22 +143,18 @@ const DroidGame = () => {
     const letter = board[y][x];
 
     if (selectedLetter) {
-      // Place the selected letter (replaces any existing letter, returning it to pool automatically)
       const newBoard = board.map((r) => [...r]);
       newBoard[y][x] = selectedLetter;
       setBoard(newBoard);
       setSelectedLetter(null);
     } else if (letter) {
-      // Click a filled tile to remove it (return to pool)
       const newBoard = board.map((r) => [...r]);
       newBoard[y][x] = null;
       setBoard(newBoard);
     }
-    // Empty tile + nothing selected → no-op
   };
 
   const handleLetterClick = (letter) => {
-    // Toggle selection; clicking the same letter deselects
     setSelectedLetter((prev) => (prev === letter ? null : letter));
   };
 
@@ -192,7 +186,6 @@ const DroidGame = () => {
 
     const newBoard = board.map((r) => [...r]);
 
-    // Clear source board tile (if dragged from board, not from pool, not preserved)
     if (hasSrc && !isNaN(srcX) && !isPreserved(srcX, srcY)) {
       newBoard[srcY][srcX] = null;
     }
@@ -202,11 +195,10 @@ const DroidGame = () => {
     setSelectedLetter(null);
   };
 
-  // Only meaningful for Player 2 — returns a dragged board tile to the pool
   const handleDropOnReturn = (e) => {
     const srcXStr = e.dataTransfer.getData('srcX');
     const srcYStr = e.dataTransfer.getData('srcY');
-    if (!srcXStr) return; // Dragged from pool — nothing to do
+    if (!srcXStr) return;
 
     const srcX = parseInt(srcXStr);
     const srcY = parseInt(srcYStr);
@@ -217,30 +209,67 @@ const DroidGame = () => {
     setBoard(newBoard);
   };
 
+  // ── Mode → Shape selection ─────────────────────────────────────────────────
+
+  const handleModeSelect = (mode) => {
+    setPendingMode(mode);
+    setGameState('selectShape');
+  };
+
+  const handleShapeSelect = (shape) => {
+    setBoardShape(shape);
+
+    if (pendingMode === 'player1') {
+      setGameState('player1');
+      return;
+    }
+
+    // Computer or daily mode — generate the board
+    const computerBoard = pendingMode === 'daily'
+      ? generateDailyBoard(shape)
+      : generateComputerBoard(shape);
+
+    if (!computerBoard) {
+      setValidationError('Failed to generate board — please try again.');
+      setGameState('start');
+      return;
+    }
+
+    setVsComputer(true);
+    if (pendingMode === 'daily') setDailyMode(true);
+
+    const p1Board = computerBoard.map((r) => [...r]);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
+
+    setPlayer1Board(p1Board);
+    setPreservedTiles(preservedLetters);
+    setBoard(newBoard);
+    setLetterCounts(countLetters(p1Board));
+    setCurrentPlayer(2);
+    setGameState('player2');
+    setSelectedLetter(null);
+  };
+
   // ── Turn management ───────────────────────────────────────────────────────
 
   const handleEndTurn = async () => {
     if (currentPlayer === 1) {
-      const activeRuns = getActiveRuns();
+      const activeRuns = getActiveRuns(boardShape);
 
-      // Split runs into: fully filled, partially filled, empty
       const fullRuns = [];
       const partialRuns = [];
 
       for (const run of activeRuns) {
         const filled = run.filter(({ x, y }) => board[y][x]);
-        if (filled.length === 0) continue;           // empty — player skipped this slot
+        if (filled.length === 0) continue;
         if (filled.length < run.length) {
-          partialRuns.push(run);                     // some squares missing
+          partialRuns.push(run);
         } else {
-          fullRuns.push(run);                        // all squares filled
+          fullRuns.push(run);
         }
       }
 
-      // Rule 1: no partial fills allowed
       if (partialRuns.length > 0) {
-        // Highlight every square in every partial run so the player can see
-        // exactly what needs completing
         const seen = new Set();
         const badTiles = [];
         partialRuns.flat().forEach(({ x, y }) => {
@@ -254,13 +283,11 @@ const DroidGame = () => {
         return;
       }
 
-      // Rule 2: must have placed at least one word
       if (fullRuns.length === 0) {
         setValidationError('Place at least one complete word on the board.');
         return;
       }
 
-      // Rule 3: every filled run must be a real English word
       setIsValidating(true);
       setValidationError(null);
       setInvalidWordTiles([]);
@@ -297,10 +324,9 @@ const DroidGame = () => {
         setIsValidating(false);
       }
 
-      // All checks passed — generate share link for Player 2
       const p1Board = board.map((r) => [...r]);
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
-      const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters)}`;
+      const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
       setPlayer1Board(p1Board);
       setPreservedTiles(preservedLetters);
       setBoard(newBoard);
@@ -336,56 +362,14 @@ const DroidGame = () => {
     setDailyMode(false);
     setLetterHintsUsed(0);
     setTimerSeconds(0);
+    setBoardShape('droid');
+    setPendingMode(null);
     setGameState('start');
-  };
-
-  const handleStartVsComputer = () => {
-    const computerBoard = generateComputerBoard();
-    if (!computerBoard) {
-      setValidationError('Failed to generate board — please try again.');
-      setGameState('start');
-      return;
-    }
-    setVsComputer(true);
-
-    const p1Board = computerBoard.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
-
-    setPlayer1Board(p1Board);
-    setPreservedTiles(preservedLetters);
-    setBoard(newBoard);
-    setLetterCounts(countLetters(p1Board));
-    setCurrentPlayer(2);
-    setGameState('player2');
-    setSelectedLetter(null);
-  };
-
-  const handleStartDaily = () => {
-    const computerBoard = generateDailyBoard();
-    if (!computerBoard) {
-      setValidationError('Failed to generate daily board — please try again.');
-      setGameState('start');
-      return;
-    }
-    setVsComputer(true);
-    setDailyMode(true);
-
-    const p1Board = computerBoard.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
-
-    setPlayer1Board(p1Board);
-    setPreservedTiles(preservedLetters);
-    setBoard(newBoard);
-    setLetterCounts(countLetters(p1Board));
-    setCurrentPlayer(2);
-    setGameState('player2');
-    setSelectedLetter(null);
   };
 
   const handleLetterHint = () => {
     if (!player1Board) return;
 
-    // Any tile on the computer's board that isn't already preserved
     const candidates = [];
     player1Board.forEach((row, y) =>
       row.forEach((letter, x) => {
@@ -401,8 +385,6 @@ const DroidGame = () => {
     const newBoard = board.map((row) => [...row]);
     newBoard[chosen.y][chosen.x] = chosen.letter;
 
-    // If placing this letter pushes its count on the board over the allowed total,
-    // remove one other non-preserved instance of that letter to keep the pool balanced
     const maxAllowed = letterCounts[chosen.letter] || 0;
     let countOnBoard = 0;
     newBoard.forEach((row) => row.forEach((l) => { if (l === chosen.letter) countOnBoard++; }));
@@ -426,8 +408,6 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const maxScore = 12;
-
   const { score, rawScore, incorrectTiles, totalPlaced, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
       return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0, timePenalty: 0 };
@@ -446,7 +426,7 @@ const DroidGame = () => {
     );
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
-  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds]);
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore]);
 
   const scoreCard = useMemo(() => {
     if (gameState !== 'end' || !player1Board) return '';
@@ -454,7 +434,7 @@ const DroidGame = () => {
     const correctSet   = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
     const grid = board.map((row, y) =>
       row.map((letter, x) => {
-        if (REMOVED_SQ.has(y * 5 + x + 1)) return '⬛';
+        if (removedSquares.has(y * 5 + x + 1)) return '⬛';
         const key = `${x},${y}`;
         if (preservedSet.has(key)) return '🟨';
         if (correctSet.has(key))   return '🟩';
@@ -465,13 +445,13 @@ const DroidGame = () => {
     const modeLabel  = dailyMode ? `Daily ${todayString()}` : vsComputer ? 'vs Computer' : '2 Player';
     const hintsLabel = letterHintsUsed > 0 ? ` · ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}` : '';
     return `DROID 🧠\n${grid}\n${score}/${maxScore} · ${modeLabel}${hintsLabel}`;
-  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, vsComputer, dailyMode]);
+  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, vsComputer, dailyMode, maxScore, removedSquares]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <div className="game-container">
-      {gameState !== 'start' && (
+      {gameState !== 'start' && gameState !== 'selectShape' && (
         <header className="site-header">
           <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
           {(gameState === 'player2' || gameState === 'end') && (() => {
@@ -489,11 +469,15 @@ const DroidGame = () => {
 
       {gameState === 'start' && (
         <StartScreen
-          onStart={() => setGameState('player1')}
-          onStartVsComputer={handleStartVsComputer}
-          onStartDaily={handleStartDaily}
+          onStart={() => handleModeSelect('player1')}
+          onStartVsComputer={() => handleModeSelect('computer')}
+          onStartDaily={() => handleModeSelect('daily')}
           dailyPlayed={dailyPlayed}
         />
+      )}
+
+      {gameState === 'selectShape' && (
+        <ShapeSelection onSelect={handleShapeSelect} />
       )}
 
       {(gameState === 'player1' || gameState === 'player2') && (
@@ -523,6 +507,7 @@ const DroidGame = () => {
             onDragStart={handleDragStart}
             onDrop={handleDrop}
             interactive={true}
+            removedSquares={removedSquares}
           />
 
           <LetterSelection
@@ -595,7 +580,7 @@ const DroidGame = () => {
                 {' '}= {score}/{maxScore}
               </div>
             )}
-            <div className="score-message">{getScoreMessage(score)}</div>
+            <div className="score-message">{getScoreMessage(score, maxScore)}</div>
           </div>
 
           <div className="legend">
@@ -628,6 +613,7 @@ const DroidGame = () => {
                 onDragStart={() => {}}
                 onDrop={() => {}}
                 interactive={false}
+                removedSquares={removedSquares}
               />
             </div>
             <div className="board-column">
@@ -644,6 +630,7 @@ const DroidGame = () => {
                 onDragStart={() => {}}
                 onDrop={() => {}}
                 interactive={false}
+                removedSquares={removedSquares}
               />
             </div>
           </div>
