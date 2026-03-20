@@ -69,20 +69,18 @@ const fetchHintWord = async (word) => {
   try {
     const lower = word.toLowerCase();
     const [synRes, antRes] = await Promise.all([
-      fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=8`),
-      fetch(`https://api.datamuse.com/words?rel_ant=${lower}&max=5`),
+      fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=5`),
+      fetch(`https://api.datamuse.com/words?rel_ant=${lower}&max=3`),
     ]);
     const [syns, ants] = await Promise.all([synRes.json(), antRes.json()]);
 
-    const hints = [];
-    for (const item of ants) {
-      if (!item.word.includes(' ') && item.word.length >= 3)
-        hints.push(`opposite of "${item.word}"`);
-    }
-    for (const item of syns) {
-      if (!item.word.includes(' ') && item.word.length >= 3)
-        hints.push(`related to "${item.word}"`);
-    }
+    const clean = (w) => /^[a-z]+$/.test(w) && w.length >= 3;
+
+    const hints = [
+      ...ants.slice(0, 1).filter((i) => clean(i.word)).map((i) => `opposite of "${i.word}"`),
+      ...syns.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`),
+    ];
+
     if (hints.length === 0) return null;
     return hints[Math.floor(Math.random() * hints.length)];
   } catch {
