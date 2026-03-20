@@ -473,7 +473,7 @@ const DroidGame = () => {
     <div className="game-container">
       {gameState !== 'start' && (
         <header className="site-header">
-          <span className="site-header-title">Droid</span>
+          <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
           {(gameState === 'player2' || gameState === 'end') && (() => {
             const m = Math.floor(timerSeconds / 60);
             const s = timerSeconds % 60;
