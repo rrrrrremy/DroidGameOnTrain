@@ -253,6 +253,24 @@ body {
 .start-button.vs-computer       { background: var(--teal); }
 .start-button.vs-computer:hover { background: var(--teal-dark); }
 
+.start-button.daily-button       { background: #92400e; border-color: var(--yellow-border); }
+.start-button.daily-button:hover { background: #78350f; }
+.start-button.daily-button:disabled {
+  background: #1c1c1c;
+  border-color: #3a3a3a;
+  color: var(--text-muted);
+  cursor: default;
+  transform: none;
+  opacity: 0.7;
+}
+
+.daily-played-note {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin: -0.25rem 0 0;
+}
+
 /* ─── OR DIVIDER ─── */
 
 .start-or {

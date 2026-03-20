@@ -8,7 +8,7 @@ const STEPS = [
   { icon: '🎯', text: 'More tiles in the right spot means a higher score' },
 ];
 
-const StartScreen = ({ onStart, onStartVsComputer }) => {
+const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, dailyPlayed }) => {
   return (
     <div className="start-screen">
       <div className="start-content">
@@ -31,6 +31,15 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
         </div>
 
         <div className="start-buttons">
+          <button className="start-button daily-button" onClick={onStartDaily} disabled={dailyPlayed}>
+            {dailyPlayed ? '✅ Daily Puzzle Complete' : '📅 Daily Puzzle'}
+          </button>
+          {dailyPlayed && (
+            <p className="daily-played-note">Come back tomorrow for a new puzzle!</p>
+          )}
+
+          <div className="start-or"><span>or</span></div>
+
           <button className="start-button" onClick={onStart}>
             👥 2 Player Game
           </button>

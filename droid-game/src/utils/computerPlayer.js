@@ -325,12 +325,28 @@ const buildIndex = (words) => {
 
 const IDX4 = buildIndex(WORDS_4);
 
+// ── Seeded PRNG (mulberry32) ────────────────────────────────────────────────
+
+const mulberry32 = (seed) => () => {
+  seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+  // eslint-disable-next-line no-mixed-operators
+  let t = Math.imul((seed ^ (seed >>> 15)), 1 | seed);
+  // eslint-disable-next-line no-mixed-operators
+  t = (t + Math.imul((t ^ (t >>> 7)), 61 | t)) ^ t;
+  return (((t ^ (t >>> 14)) >>> 0) / 4294967296);
+};
+
+const todaySeed = () => {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+};
+
 // ── Shuffle helper ─────────────────────────────────────────────────────────
 
-const shuffle = (arr) => {
+const shuffle = (arr, rng = Math.random) => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -368,29 +384,48 @@ export const generateComputerBoard = () => {
   return null;
 };
 
-const tryGenerate = () => {
+/**
+ * Generates the daily board — identical for everyone on the same calendar day.
+ * Seeded by YYYYMMDD so it changes at midnight local time.
+ */
+export const generateDailyBoard = () => {
+  const rng = mulberry32(todaySeed());
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const result = tryGenerate(rng);
+    if (result) return result;
+  }
+  return null;
+};
+
+/** Returns today's date string as YYYY-MM-DD (used for localStorage tracking). */
+export const todayString = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const tryGenerate = (rng = Math.random) => {
   // Step 1: Pick a random 5-letter word for Row 1.
-  const row1Candidates = shuffle(WORDS_5);
+  const row1Candidates = shuffle(WORDS_5, rng);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // Row 1 letters at positions: row1[0]@(0,1), row1[1]@(1,1), row1[2]@(2,1), row1[3]@(3,1), row1[4]@(4,1)
 
     // Step 2: Pick Col 1 (4-letter) where col1[0] = row1[1]
-    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[1] }));
+    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[1] }), rng);
     if (col1Candidates.length === 0) continue;
 
     for (const col1 of col1Candidates.slice(0, 10)) {
       // col1: col1[0]@(1,1), col1[1]@(1,2), col1[2]@(1,3), col1[3]@(1,4)
 
       // Step 3: Pick Col 2 (4-letter) where col2[1] = row1[2]
-      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[2] }));
+      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[2] }), rng);
       if (col2Candidates.length === 0) continue;
 
       for (const col2 of col2Candidates.slice(0, 10)) {
         // col2: col2[0]@(2,0), col2[1]@(2,1), col2[2]@(2,2), col2[3]@(2,3)
 
         // Step 4: Pick Col 3 (4-letter) where col3[0] = row1[3]
-        const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[3] }));
+        const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[3] }), rng);
         if (col3Candidates.length === 0) continue;
 
         for (const col3 of col3Candidates.slice(0, 10)) {

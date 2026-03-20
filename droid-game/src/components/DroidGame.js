@@ -12,7 +12,9 @@ import {
   encodeShareParam,
   decodeShareParam,
 } from '../utils/gameLogic';
-import { generateComputerBoard } from '../utils/computerPlayer';
+import { generateComputerBoard, generateDailyBoard, todayString } from '../utils/computerPlayer';
+
+const DAILY_STORAGE_KEY = 'droid_daily_played';
 
 const emptyBoard = () =>
   Array(5)
@@ -78,6 +80,10 @@ const DroidGame = () => {
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
   const [shareLink, setShareLink] = useState(null);
   const [vsComputer, setVsComputer] = useState(false);
+  const [dailyMode, setDailyMode] = useState(false);
+  const [dailyPlayed, setDailyPlayed] = useState(
+    () => localStorage.getItem(DAILY_STORAGE_KEY) === todayString()
+  );
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
 
@@ -307,6 +313,10 @@ const DroidGame = () => {
       setCorrectTiles(correct);
       setGameState('end');
       setSelectedLetter(null);
+      if (dailyMode) {
+        localStorage.setItem(DAILY_STORAGE_KEY, todayString());
+        setDailyPlayed(true);
+      }
     }
   };
 
@@ -323,6 +333,7 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
     setShareLink(null);
     setVsComputer(false);
+    setDailyMode(false);
     setLetterHintsUsed(0);
     setTimerSeconds(0);
     setGameState('start');
@@ -336,6 +347,28 @@ const DroidGame = () => {
       return;
     }
     setVsComputer(true);
+
+    const p1Board = computerBoard.map((r) => [...r]);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
+
+    setPlayer1Board(p1Board);
+    setPreservedTiles(preservedLetters);
+    setBoard(newBoard);
+    setLetterCounts(countLetters(p1Board));
+    setCurrentPlayer(2);
+    setGameState('player2');
+    setSelectedLetter(null);
+  };
+
+  const handleStartDaily = () => {
+    const computerBoard = generateDailyBoard();
+    if (!computerBoard) {
+      setValidationError('Failed to generate daily board — please try again.');
+      setGameState('start');
+      return;
+    }
+    setVsComputer(true);
+    setDailyMode(true);
 
     const p1Board = computerBoard.map((r) => [...r]);
     const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
@@ -429,10 +462,10 @@ const DroidGame = () => {
         return '⬜';
       }).join('')
     ).join('\n');
-    const modeLabel  = vsComputer ? 'vs Computer' : '2 Player';
+    const modeLabel  = dailyMode ? `Daily ${todayString()}` : vsComputer ? 'vs Computer' : '2 Player';
     const hintsLabel = letterHintsUsed > 0 ? ` · ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}` : '';
     return `DROID 🧠\n${grid}\n${score}/${maxScore} · ${modeLabel}${hintsLabel}`;
-  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, vsComputer]);
+  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, vsComputer, dailyMode]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -458,6 +491,8 @@ const DroidGame = () => {
         <StartScreen
           onStart={() => setGameState('player1')}
           onStartVsComputer={handleStartVsComputer}
+          onStartDaily={handleStartDaily}
+          dailyPlayed={dailyPlayed}
         />
       )}
 
