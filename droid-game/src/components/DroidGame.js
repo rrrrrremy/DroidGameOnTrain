@@ -200,7 +200,7 @@ const DroidGame = () => {
 
     const shapeId = shape || 'droid';
     const fiveLetterWord = extractFiveLetterWord(decoded, shapeId);
-    const combCount = countBoardCombinations(shapeId, fiveLetterWord);
+    const combCount = countBoardCombinations(shapeId, fiveLetterWord, countLetters(decoded));
 
     setBoardShape(shapeId);
     setPlayer1Board(decoded);
@@ -406,7 +406,7 @@ const DroidGame = () => {
 
       const p1Board = board.map((r) => [...r]);
       const fiveLetterWord = extractFiveLetterWord(p1Board, boardShape);
-      const combCount = countBoardCombinations(boardShape, fiveLetterWord);
+      const combCount = countBoardCombinations(boardShape, fiveLetterWord, countLetters(p1Board));
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
       const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
       setPlayer1Board(p1Board);
