@@ -68,26 +68,19 @@ const fetchHintWord = async (word) => {
   if (!word) return null;
   try {
     const lower = word.toLowerCase();
-    const [synRes, antRes] = await Promise.all([
-      fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=5`),
-      fetch(`https://api.datamuse.com/words?rel_ant=${lower}&max=3`),
-    ]);
-    const [syns, ants] = await Promise.all([synRes.json(), antRes.json()]);
+    const synRes = await fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=10`);
+    const syns = await synRes.json();
 
     const clean = (w) => /^[a-z]+$/.test(w) && w.length >= 3;
+    // Only accept strongly-scored synonyms to avoid loose/unrelated results
+    const strongSyns = syns.filter((i) => clean(i.word) && (i.score ?? 0) >= 1000);
 
-    const hints = [
-      ...ants.slice(0, 1).filter((i) => clean(i.word)).map((i) => `opposite of "${i.word}"`),
-      ...syns.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`),
-    ];
+    if (strongSyns.length > 0) {
+      const pick = strongSyns[Math.floor(Math.random() * Math.min(strongSyns.length, 3))];
+      return `synonym of "${pick.word}"`;
+    }
 
-    if (hints.length > 0) return hints[Math.floor(Math.random() * hints.length)];
-
-    // Fallback: ml= (means-like) has much broader coverage than rel_syn
-    const mlRes = await fetch(`https://api.datamuse.com/words?ml=${lower}&max=5`);
-    const ml = await mlRes.json();
-    const mlHints = ml.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`);
-    return mlHints.length > 0 ? mlHints[Math.floor(Math.random() * mlHints.length)] : null;
+    return null;
   } catch {
     return null;
   }
