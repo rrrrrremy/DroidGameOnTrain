@@ -370,6 +370,10 @@ const filterWords = (words, index, constraints) => {
   return candidates ? [...candidates] : [...words];
 };
 
+// A word counts as a "plural" if it ends in S and removing S yields a known word.
+const ALL_WORDS_SET = new Set([...WORDS_3, ...WORDS_4, ...WORDS_5]);
+const isPlural = (word) => word.endsWith('S') && ALL_WORDS_SET.has(word.slice(0, -1));
+
 // ── Crossword generator ─────────────────────────────────────────────────────
 
 /**
@@ -447,6 +451,10 @@ const tryGenerate = (rng = Math.random) => {
               if (counts[ch] > 2) { tooMany = true; break; }
             }
             if (tooMany) continue;
+
+            // Enforce max 1 plural word across all 6 board words
+            const pluralCount = [row1, col1, col2, col3, row2, row3].filter(isPlural).length;
+            if (pluralCount > 1) continue;
 
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
 
