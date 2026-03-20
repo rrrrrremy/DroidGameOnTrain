@@ -22,12 +22,23 @@ const emptyBoard = () =>
     .fill(null)
     .map(() => Array(5).fill(null));
 
-const getScoreMessage = (score, max) => {
-  if (score >= max) return 'Perfect reconstruction!';
-  if (score >= max * 0.75) return 'Excellent word sense!';
-  if (score >= max * 0.5) return 'Good effort!';
-  if (score >= max * 0.25) return 'Keep practising!';
-  return 'Better luck next time!';
+const getGrade = (score, max) => {
+  if (max === 0) return 'F';
+  const n = (score / max) * 12;
+  if (n >= 12) return 'DUX';
+  if (n >= 11.5) return 'A++';
+  if (n >= 11.0) return 'A+';
+  if (n >= 10.5) return 'A';
+  if (n >= 10.0) return 'A−';
+  if (n >= 9.5) return 'B+';
+  if (n >= 9.0) return 'B';
+  if (n >= 8.5) return 'B−';
+  if (n >= 8.0) return 'C+';
+  if (n >= 7.5) return 'C';
+  if (n >= 7.0) return 'C−';
+  if (n >= 6.5) return 'D+';
+  if (n >= 6.0) return 'D';
+  return 'F';
 };
 
 const CopyButton = ({ url, label = 'Copy Link' }) => {
@@ -608,13 +619,13 @@ const DroidGame = () => {
             <h2>Game Over!</h2>
             <div
               className={`score-display ${
-                score >= maxScore * 0.75 ? 'high' : score >= maxScore * 0.42 ? 'mid' : 'low'
+                score >= maxScore * (10 / 12) ? 'high' : score >= maxScore * (7.5 / 12) ? 'mid' : 'low'
               }`}
             >
-              {score}/{maxScore}
+              {getGrade(score, maxScore)}
             </div>
             <div className="score-label">
-              {rawScore} / {maxScore} tiles matched
+              {score}/{maxScore} pts
             </div>
             {(letterHintsUsed > 0 || timePenalty > 0) && (
               <div className="score-penalty">
@@ -624,7 +635,6 @@ const DroidGame = () => {
                 {' '}= {score}/{maxScore}
               </div>
             )}
-            <div className="score-message">{getScoreMessage(score, maxScore)}</div>
           </div>
 
           <div className="legend">
