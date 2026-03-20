@@ -2,6 +2,18 @@ import React, { useState } from 'react';
 
 const LETTERS = 'DROID'.split('');
 
+const STEPS = [
+  { icon: '🧩', text: 'Place real English words on the 5×5 board' },
+  { icon: '📤', text: 'Share the puzzle — your opponent gets the same letters' },
+  { icon: '🎯', text: 'More tiles in the right spot means a higher score' },
+];
+
+const DIFFICULTIES = [
+  { id: 'easy',   label: 'Easy',   desc: '11 pts' },
+  { id: 'normal', label: 'Normal', desc: '12 pts' },
+  { id: 'hard',   label: 'Hard',   desc: '13 pts' },
+];
+
 const StartScreen = ({ onStart, onStartVsComputer }) => {
   const [hovered, setHovered] = useState(null);
   const [difficulty, setDifficulty] = useState('normal');
@@ -9,6 +21,9 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
   return (
     <div className="start-screen">
       <div className="start-content">
+
+        <div className="start-badge">Word Reconstruction</div>
+
         <h1 className="game-title">
           {LETTERS.map((letter, i) => (
             <span
@@ -22,50 +37,44 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
           ))}
         </h1>
 
-        <p className="game-subtitle">Word Reconstruction Challenge</p>
-
         <div className="how-to-play">
-          <div className="how-step">
-            <span className="how-num">1</span>
-            <p>Place real English words on the board</p>
-          </div>
-          <div className="how-step">
-            <span className="how-num">2</span>
-            <p>Your opponent gets the same letters and tries to reconstruct your word arrangement</p>
-          </div>
-          <div className="how-step">
-            <span className="how-num">3</span>
-            <p>More tiles in the right position means a higher score</p>
-          </div>
+          {STEPS.map(({ icon, text }, i) => (
+            <div className="how-step" key={i}>
+              <span className="how-icon">{icon}</span>
+              <p>{text}</p>
+            </div>
+          ))}
         </div>
-
-        <div className="start-divider" />
 
         <div className="start-buttons">
           <button className="start-button" onClick={onStart}>
-            2 Player Game
+            👥 2 Player Game
           </button>
 
+          <div className="start-or"><span>or</span></div>
+
           <div className="vs-computer-section">
-            <div className="hint-count-selector">
-              <span className="hint-label">Difficulty:</span>
+            <div className="difficulty-row">
+              <span className="difficulty-label">Difficulty</span>
               <div className="difficulty-selector">
-                {['easy', 'normal', 'hard'].map((d) => (
+                {DIFFICULTIES.map(({ id, label, desc }) => (
                   <button
-                    key={d}
-                    className={`diff-btn${difficulty === d ? ' active' : ''}`}
-                    onClick={() => setDifficulty(d)}
+                    key={id}
+                    className={`diff-btn${difficulty === id ? ' active' : ''}`}
+                    onClick={() => setDifficulty(id)}
                   >
-                    {d}
+                    <span className="diff-name">{label}</span>
+                    <span className="diff-desc">{desc}</span>
                   </button>
                 ))}
               </div>
             </div>
             <button className="start-button vs-computer" onClick={() => onStartVsComputer(difficulty)}>
-              Play vs Computer
+              🤖 Play vs Computer
             </button>
           </div>
         </div>
+
       </div>
     </div>
   );

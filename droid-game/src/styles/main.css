@@ -107,28 +107,53 @@ body {
   align-items: center;
   min-height: 100vh;
   width: 100%;
-  padding: 2rem 1.5rem;
+  padding: 2.5rem 1.25rem;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(99,102,241,0.18) 0%, transparent 70%);
 }
 
 .start-content {
   text-align: center;
-  max-width: 340px;
+  max-width: 400px;
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
 }
+
+/* ─── BADGE ─── */
+
+.start-badge {
+  display: inline-block;
+  align-self: center;
+  padding: 0.3rem 0.9rem;
+  background: rgba(99,102,241,0.15);
+  border: 1px solid rgba(99,102,241,0.35);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #a5b4fc;
+  margin-bottom: 1rem;
+}
+
+/* ─── TITLE ─── */
 
 .game-title {
   font-family: 'Playfair Display', Georgia, serif;
-  font-size: clamp(3.8rem, 20vw, 5.5rem);
+  font-size: clamp(4rem, 22vw, 5.8rem);
   font-weight: 900;
   letter-spacing: 0.18em;
   display: flex;
   justify-content: center;
   gap: 0.04em;
-  margin-bottom: 0.4rem;
+  margin-bottom: 2rem;
 }
 
 @keyframes float {
-  0%, 100% { transform: translateY(0); }
+  0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-10px); }
 }
 
@@ -136,7 +161,7 @@ body {
   display: inline-block;
   animation: float 3s ease-in-out infinite;
   cursor: default;
-  transition: color 0.2s;
+  transition: color 0.2s, text-shadow 0.2s;
 }
 
 .game-letter:nth-child(1) { color: #a5b4fc; animation-delay: 0s; }
@@ -147,156 +172,167 @@ body {
 
 .game-letter.hovered {
   color: #e0e7ff !important;
-  text-shadow: 0 0 20px rgba(165, 180, 252, 0.7);
+  text-shadow: 0 0 28px rgba(165, 180, 252, 0.8);
 }
-
-.game-subtitle {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-bottom: 2rem;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.start-divider {
-  width: 100%;
-  height: 1px;
-  background: var(--border);
-  margin-bottom: 2rem;
-}
-
-.start-buttons {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.65rem;
-  margin-bottom: 2.5rem;
-}
-
-.start-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.95rem 1rem;
-  background: var(--indigo);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.12s ease;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  touch-action: manipulation;
-}
-
-.start-button:hover   { background: var(--indigo-dark); }
-.start-button:active  { filter: brightness(0.9); }
-
-.start-button.vs-computer       { background: var(--teal); }
-.start-button.vs-computer:hover { background: var(--teal-dark); }
-
-/* ─── VS COMPUTER HINT SELECTOR ─── */
-
-.vs-computer-section {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.45rem;
-}
-
-.hint-count-selector {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.55rem;
-}
-
-.hint-label {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.hint-count-btns { display: flex; gap: 0.3rem; }
-
-.hint-count-btn {
-  width: 2rem;
-  height: 2rem;
-  border-radius: 4px;
-  border: 1px solid var(--border-med);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.12s ease;
-  touch-action: manipulation;
-}
-
-.hint-count-btn:hover  { border-color: var(--teal); color: var(--text); }
-.hint-count-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
-
-/* ─── DIFFICULTY SELECTOR ─── */
-
-.difficulty-selector { display: flex; gap: 0.3rem; }
-
-.diff-btn {
-  padding: 0 0.6rem;
-  height: 2rem;
-  border-radius: 4px;
-  border: 1px solid var(--border-med);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 0.68rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  transition: all 0.12s ease;
-  touch-action: manipulation;
-}
-
-.diff-btn:hover  { border-color: var(--teal); color: var(--text); }
-.diff-btn.active { background: var(--teal); border-color: var(--teal); color: #fff; }
 
 /* ─── HOW TO PLAY ─── */
 
 .how-to-play {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  text-align: left;
-  margin-bottom: 2rem;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  margin-bottom: 1.75rem;
 }
 
 .how-step {
   display: flex;
-  align-items: flex-start;
-  gap: 0.75rem;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
 }
 
-.how-num {
+.how-step:last-child { border-bottom: none; }
+
+.how-icon {
   flex-shrink: 0;
-  width: 1.3rem;
-  height: 1.3rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  border: 1px solid var(--border-med);
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  margin-top: 0.05rem;
+  font-size: 1.25rem;
+  width: 2rem;
+  text-align: center;
 }
 
 .how-step p {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.45;
+}
+
+/* ─── BUTTONS ─── */
+
+.start-buttons {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.start-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 1rem 1.25rem;
+  background: var(--indigo);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  touch-action: manipulation;
+  min-height: 3.2rem;
+}
+
+.start-button:hover  { background: var(--indigo-dark); }
+.start-button:active { transform: scale(0.98); filter: brightness(0.92); }
+
+.start-button.vs-computer       { background: var(--teal); }
+.start-button.vs-computer:hover { background: var(--teal-dark); }
+
+/* ─── OR DIVIDER ─── */
+
+.start-or {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.start-or::before,
+.start-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── VS COMPUTER SECTION ─── */
+
+.vs-computer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+}
+
+/* ─── DIFFICULTY SELECTOR ─── */
+
+.difficulty-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.difficulty-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  text-align: left;
+}
+
+.difficulty-selector {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+}
+
+.diff-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.25rem;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  touch-action: manipulation;
+  min-height: 3rem;
+}
+
+.diff-btn:hover  { border-color: var(--teal); color: var(--text); }
+.diff-btn.active { background: rgba(13,148,136,0.18); border-color: var(--teal); color: #2dd4bf; }
+
+.diff-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.diff-desc {
+  font-size: 0.62rem;
+  opacity: 0.7;
 }
 
 /* ===== BOARD ===== */
@@ -950,6 +986,13 @@ body {
 
   /* ── Hint penalty note ── */
   .hint-penalty-note { text-align: center; }
+
+  /* ── Start screen ── */
+  .start-screen  { padding: 1.75rem 1rem; align-items: flex-start; padding-top: max(2rem, env(safe-area-inset-top, 2rem)); }
+  .game-title    { font-size: clamp(3.5rem, 22vw, 4.5rem); margin-bottom: 1.5rem; }
+  .start-content { max-width: 100%; }
+  .diff-btn      { min-height: 2.75rem; }
+  .start-button  { min-height: 3rem; }
 
   /* ── End screen ── */
   .boards-comparison { grid-template-columns: 1fr; gap: 1.25rem; }
