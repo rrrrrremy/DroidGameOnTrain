@@ -532,6 +532,25 @@ const DroidGame = () => {
             <div className="validation-error">{validationError}</div>
           )}
 
+          {currentPlayer === 2 && (
+            <div className="live-hud">
+              <div className={`live-score-badge ${liveScoreClass}`}>
+                <span className="live-score-grade">{liveGrade}</span>
+                <span className="live-score-pts">{liveScore}/{maxScore} pts · max achievable</span>
+              </div>
+              {(() => {
+                const m = Math.floor(timerSeconds / 60);
+                const s = timerSeconds % 60;
+                const over = timerSeconds > 120;
+                return (
+                  <span className={`hint-timer${over ? ' timer-over' : ''}`}>
+                    {m}:{String(s).padStart(2, '0')}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
+
           <GameBoard
             board={board}
             onTileClick={handleBoardTileClick}
@@ -557,44 +576,20 @@ const DroidGame = () => {
           />
 
           <div className="actions">
-            <div className="clear-score-row">
+            <div className="hint-actions">
               <button className="hint-btn" onClick={handleClearBoard}>
                 Clear board
               </button>
               {currentPlayer === 2 && (
-                <div className={`live-score-badge ${liveScoreClass}`}>
-                  <span className="live-score-grade">{liveGrade}</span>
-                  <span className="live-score-pts">{liveScore}/{maxScore} pts</span>
-                </div>
-              )}
-            </div>
-            {currentPlayer === 2 && (
-              <div className="hint-actions">
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
                   Reveal letter −1pt
                 </button>
-                {(() => {
-                  const m = Math.floor(timerSeconds / 60);
-                  const s = timerSeconds % 60;
-                  const over = timerSeconds > 120;
-                  return (
-                    <span className={`hint-timer${over ? ' timer-over' : ''}`}>
-                      {m}:{String(s).padStart(2, '0')}
-                    </span>
-                  );
-                })()}
-              </div>
-            )}
+              )}
+            </div>
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
             </Button>
           </div>
-
-          {currentPlayer === 2 && letterHintsUsed > 0 && (
-            <div className="hint-penalty-note">
-              −{letterHintsUsed} pt{letterHintsUsed !== 1 ? 's' : ''} ({letterHintsUsed} hint{letterHintsUsed !== 1 ? 's' : ''})
-            </div>
-          )}
         </div>
       )}
 

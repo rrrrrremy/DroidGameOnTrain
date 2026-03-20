@@ -779,15 +779,13 @@ body {
 }
 
 /* Clear board + live score side by side */
-.clear-score-row {
+/* Live score + timer row above the board */
+.live-hud {
   display: flex;
   gap: 0.5rem;
   width: 100%;
   align-items: stretch;
-}
-
-.clear-score-row .hint-btn {
-  flex: 1;
+  margin-bottom: 0.5rem;
 }
 
 .live-score-badge {
@@ -799,9 +797,9 @@ body {
   border: 1px solid var(--border);
   border-radius: 0.5rem;
   background: var(--surface);
-  padding: 0.3rem 0.5rem;
+  padding: 0.35rem 0.5rem;
   line-height: 1.2;
-  transition: color 0.3s;
+  transition: color 0.3s, border-color 0.3s;
 }
 
 .live-score-grade {
@@ -813,7 +811,7 @@ body {
 .live-score-pts {
   font-size: 0.6rem;
   color: var(--text-muted);
-  margin-top: 0.15rem;
+  margin-top: 0.2rem;
 }
 
 .live-score-badge.high { color: var(--green-border); border-color: var(--green-border); }
