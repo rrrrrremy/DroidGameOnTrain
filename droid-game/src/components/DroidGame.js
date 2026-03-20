@@ -405,7 +405,8 @@ const DroidGame = () => {
     }
     const ms = gameDifficulty === 'hard' ? 13 : gameDifficulty === 'easy' ? 11 : 12;
     const total = player1Board.flat().filter(Boolean).length;
-    const raw = Math.min(correctTiles.length, ms);
+    const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
+    const raw = Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, ms);
     const tp = Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10;
     const s = Math.min(ms, Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10));
 
@@ -417,7 +418,7 @@ const DroidGame = () => {
     );
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
-  }, [board, player1Board, correctTiles, gameState, letterHintsUsed, timerSeconds, vsComputer, gameDifficulty]);
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, vsComputer, gameDifficulty]);
 
   const scoreCard = useMemo(() => {
     if (gameState !== 'end' || !player1Board) return '';
@@ -556,7 +557,7 @@ const DroidGame = () => {
               {score}/{maxScore}
             </div>
             <div className="score-label">
-              {correctTiles.length} / {maxScore} tiles matched
+              {rawScore} / {maxScore} tiles matched
             </div>
             {(letterHintsUsed > 0 || timePenalty > 0) && (
               <div className="score-penalty">
