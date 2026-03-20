@@ -92,6 +92,66 @@ const WORDS_5 = [
   'WHEEL','WHERE','WHICH','WHILE','WHITE','WHOLE','WHOSE','WIDER','WOMAN',
   'WORLD','WORRY','WORSE','WORST','WORTH','WOULD','WOUND','WRATH','WRITE',
   'WRONG','WROTE','YACHT','YIELD','YOUNG','YOUTH',
+  // ── Plurals ──
+  'ACIDS','ACRES','ALARM','ANGEL','ASKED','ATOMS','BANDS','BANKS','BARNS',
+  'BEARS','BEATS','BELLS','BIKES','BIRDS','BITES','BLOWS','BOATS','BOLTS',
+  'BOMBS','BONDS','BONES','BOOKS','BOOTS','BOXES','BULLS','BURNS','BUSES',
+  'CAKES','CALLS','CAMPS','CAPES','CARDS','CARTS','CAVES','CELLS','CENTS',
+  'CHIPS','CLAWS','CLIPS','CLUBS','CLUES','COALS','COATS','CODES','COILS',
+  'COINS','CONES','COOKS','CORDS','CORES','COSTS','CREWS','CROPS','CUBES',
+  'CURLS','DARTS','DATES','DEALS','DECKS','DEEDS','DESKS','DIALS','DISCS',
+  'DOCKS','DOMES','DOORS','DOSES','DOVES','DRAWS','DRUMS','DUCKS','DUELS',
+  'DUNES','DUSTS','EARNS','EDGES','ELVES','EXAMS','EXITS','FACES','FACTS',
+  'FAILS','FALLS','FAMES','FANGS','FARMS','FATES','FEARS','FEEDS','FILLS',
+  'FILMS','FINDS','FIRES','FLAGS','FLAPS','FLAWS','FLIES','FLOWS','FOAMS',
+  'FOLDS','FOLKS','FOOLS','FORMS','FORTS','FOULS','FOXES','FUELS','FUNDS',
+  'FUSES','GAINS','GALES','GAMES','GANGS','GATES','GEARS','GEMS','GENES',
+  'GIFTS','GIRLS','GIVES','GOALS','GOATS','GRABS','GRIDS','GRINS','GRIPS',
+  'GROWS','GULFS','GUSTS','HALLS','HANDS','HEADS','HEALS','HEAPS','HEATS',
+  'HEELS','HELPS','HERBS','HERDS','HIKES','HILLS','HINTS','HOLES','HOMES',
+  'HOOKS','HOPES','HORNS','HOSTS','HOURS','HULLS','HUNTS','IDEAS','ITEMS',
+  'JAILS','JEERS','JERKS','JEWEL','JOINS','JOKES','JOLTS','JUMPS','KEELS',
+  'KEEPS','KICKS','KINDS','KINGS','KITES','KNEES','KNOBS','KNOTS','LACES',
+  'LAKES','LAMBS','LAMPS','LANDS','LANES','LAWNS','LEAKS','LEAPS','LIFTS',
+  'LIMBS','LIMES','LINES','LINKS','LIONS','LISTS','LIVES','LOADS','LOANS',
+  'LOCKS','LOFTS','LOOKS','LORDS','LOVES','LUMPS','LUNGS','LURES','MAILS',
+  'MAKES','MALES','MANES','MARKS','MASKS','MATES','MEALS','MEATS','MEETS',
+  'MELTS','MENDS','MENUS','MILES','MILLS','MINDS','MINES','MINTS','MOATS',
+  'MODES','MOLDS','MONKS','MOODS','MOONS','MOVES','MYTHS','NAILS','NAMES',
+  'NESTS','NINES','NODES','NORMS','NOSES','NOTES','OATHS','OMITS','OPENS',
+  'OVENS','PACKS','PAILS','PAINS','PAIRS','PALMS','PANES','PARKS','PARTS',
+  'PATHS','PEAKS','PEARS','PEELS','PEERS','PICKS','PILES','PILLS','PINES',
+  'PIPES','PLANS','PLEAS','PLOTS','PLUGS','PLUMS','POEMS','POETS','POLES',
+  'POLLS','PONDS','POOLS','POPES','PORKS','PORTS','POSES','POSTS','POURS',
+  'PUMPS','RACES','RACKS','RAIDS','RAILS','RAINS','RAMPS','RANKS','RATES',
+  'READS','REEFS','REELS','RENTS','RIDES','RIFTS','RINGS','RIOTS','RISKS',
+  'ROADS','ROCKS','ROLES','ROLLS','ROOFS','ROOMS','ROOTS','ROPES','ROSES',
+  'RUINS','RULES','SAILS','SALES','SALTS','SANDS','SAVES','SEALS','SEAMS',
+  'SEATS','SEEDS','SELLS','SENDS','SHEDS','SHIPS','SHOES','SHOPS','SHOTS',
+  'SHOWS','SIDES','SIGHS','SIGNS','SILKS','SINKS','SITES','SIZES','SKINS',
+  'SKIPS','SLABS','SLAMS','SLAPS','SLIPS','SLOTS','SLUGS','SNAPS','SOAPS',
+  'SOCKS','SOFAS','SOILS','SONGS','SORTS','SOULS','SPANS','SPINS','SPOTS',
+  'SPURS','STABS','STARS','STAYS','STEMS','STEPS','STEWS','STIRS','STOPS',
+  'STUDS','SUITS','SWANS','SWAPS','SWIMS','TAILS','TAKES','TALES','TALKS',
+  'TANKS','TAPES','TASKS','TEAMS','TEARS','TELLS','TENDS','TENTS','TERMS',
+  'TESTS','TEXTS','TIDES','TILES','TILLS','TIMES','TIRES','TOLLS','TOMBS',
+  'TONES','TOOLS','TOURS','TOWNS','TRAPS','TRAYS','TREES','TREKS','TRIPS',
+  'TUBES','TUNES','TURNS','TYPES','UNITS','URGED','USERS','VASES','VEILS',
+  'VEINS','VENTS','VINES','VOIDS','VOLTS','VOTES','WADES','WAGES','WAITS',
+  'WALKS','WALLS','WANDS','WANTS','WARDS','WARNS','WASPS','WAVES','WEEKS',
+  'WELLS','WINDS','WINES','WINGS','WINKS','WIRES','WORDS','WORKS','WORMS',
+  'WRAPS','YARDS','YARNS','YEARS','YELLS','ZONES',
+  // ── Past tense (-ed) ──
+  'ACTED','ADDED','AIMED','ASKED','BAKED','BASED','BORED','BOXED','CAGED',
+  'CARED','CASED','CITED','CODED','COPED','CORED','CURED','DARED','DATED',
+  'DAZED','DRIED','EASED','ENDED','ERRED','FACED','FADED','FAKED','FARED',
+  'FILED','FINED','FIRED','FREED','FUSED','GAZED','GLUED','GREED','HOPED',
+  'IDLED','JOKED','LACED','LAMED','LASED','LIKED','LIMED','LINED','LIVED',
+  'LOVED','MACED','MATED','MINED','MIRED','MIXED','NAMED','OARED','OPTED',
+  'PACED','PAGED','PALED','PAVED','PIKED','PILED','PINED','PLIED','POSED',
+  'RACED','RAGED','RAKED','RATED','RAVED','RAZED','RILED','ROPED','RULED',
+  'SAVED','SIDED','TAMED','TAPED','TILED','TIMED','TONED','TUBED','TUNED',
+  'TYPED','URGED','VOTED','WADED','WAGED','WAVED','WIRED','WISED','ZONED',
 ];
 
 const WORDS_4 = [
@@ -182,6 +242,34 @@ const WORDS_4 = [
   'WIRE','WISE','WISH','WITH','WOKE','WOLF','WOOD','WOOL','WORD','WORE',
   'WORK','WORM','WORN','WOVE','WRAP','YARD','YARN','YEAR','YELL','YOUR',
   'ZEAL','ZERO','ZONE','ZOOM',
+  // ── Plurals ──
+  'ACES','ACTS','AIDS','AIMS','AIRS','ALES','ANTS','APES','ARCS','ARKS',
+  'ARMS','ARTS','AXES','BAGS','BANS','BARS','BATS','BAYS','BEDS','BETS',
+  'BINS','BITS','BOWS','BUDS','BUGS','BUNS','CABS','CAPS','CARS','CATS',
+  'COBS','CODS','COLS','COPS','COTS','COWS','CUBS','CUPS','CURS','CUTS',
+  'DABS','DAMS','DAYS','DENS','DIGS','DIPS','DOCS','DOGS','DOTS','DUBS',
+  'DUDS','DUES','DUGS','DUNS','DUOS','DYES','EARS','EELS','ELMS','EMUS',
+  'ENDS','ERAS','EVES','EWES','EYES','FANS','FATS','FEDS','FEES','FIGS',
+  'FINS','FIRS','FITS','FOES','FOGS','FURS','GABS','GAGS','GAPS','GELS',
+  'GINS','GODS','GUMS','GUNS','GUTS','GUYS','GYMS','HAMS','HATS','HENS',
+  'HIPS','HOBS','HOGS','HOPS','HUBS','HUES','HUGS','HUTS','IMPS','INKS',
+  'INNS','IONS','JABS','JAGS','JAMS','JARS','JAWS','JAYS','JETS','JOGS',
+  'JOTS','JOYS','JUGS','KEGS','KEYS','LABS','LADS','LAGS','LAPS','LAWS',
+  'LEGS','LIDS','LIES','LOGS','MAPS','MATS','MAWS','MOBS','MOPS','MUDS',
+  'MUGS','NABS','NAGS','NAPS','NETS','NITS','NODS','NUBS','NUNS','OAKS',
+  'OARS','OATS','ODES','OILS','OPTS','ORBS','ORES','OWLS','PADS','PANS',
+  'PATS','PAWS','PEAS','PEGS','PENS','PEPS','PETS','PIES','PIGS','PINS',
+  'PITS','PLYS','PODS','POPS','POTS','PUBS','PUGS','PUNS','PUPS','RAGS',
+  'RAMS','RAPS','RATS','RAYS','REFS','RIBS','RIGS','RIMS','RIPS','ROBS',
+  'RODS','ROWS','RUBS','RUGS','RUMS','RUNS','RUTS','RYES','SAGS','SAPS',
+  'SEAS','SETS','SEWS','SINS','SIPS','SITS','SIRS','SKIS','SOBS','SODS',
+  'SOWS','SPAS','TABS','TAGS','TANS','TARS','TEAS','TIES','TINS','TIPS',
+  'TOES','TONS','TOPS','TOYS','TUBS','TUGS','URNS','USES','VANS','VATS',
+  'VETS','VOWS','WADS','WARS','WAYS','WEBS','WEDS','WIGS','WINS','WITS',
+  'WOES','WOKS','YAKS','YAMS','YAPS','YEWS','ZAPS','ZIPS','ZOOS',
+  // ── Past tense (-ed) ──
+  'ABED','ACED','APED','AXED','BRED','CLAD','DYED','EYED','ICED','IRED',
+  'OWED','USED',
 ];
 
 const WORDS_3 = [
@@ -273,7 +361,7 @@ const filterWords = (words, index, constraints) => {
  * Returns a 5x5 2D array or null on failure.
  */
 export const generateComputerBoard = () => {
-  for (let attempt = 0; attempt < 20; attempt++) {
+  for (let attempt = 0; attempt < 40; attempt++) {
     const result = tryGenerate();
     if (result) return result;
   }
@@ -315,6 +403,16 @@ const tryGenerate = () => {
           const row3 = col1[2] + col2[3] + col3[2];
 
           if (WORDS_3.includes(row2) && WORDS_3.includes(row3)) {
+            // Enforce max 2 of any letter across all 14 unique board positions
+            const allLetters = row1 + col1.slice(1) + col2[0] + col2.slice(2) + col3.slice(1);
+            const counts = {};
+            let tooMany = false;
+            for (const ch of allLetters) {
+              counts[ch] = (counts[ch] || 0) + 1;
+              if (counts[ch] > 2) { tooMany = true; break; }
+            }
+            if (tooMany) continue;
+
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
 
             for (let x = 0; x < 5; x++) board[1][x] = row1[x];
