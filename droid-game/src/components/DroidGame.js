@@ -99,6 +99,12 @@ const DroidGame = () => {
   const isPreserved = (x, y) =>
     preservedTiles.some((t) => t.x === x && t.y === y);
 
+  const handleClearBoard = () => {
+    setBoard((prev) =>
+      prev.map((row, y) => row.map((cell, x) => (isPreserved(x, y) ? cell : null)))
+    );
+  };
+
   // Available letters: all 26 for P1; for P2, what P1 used minus what's on board
   const availableLetters = useMemo(() => {
     if (currentPlayer === 1) return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -563,6 +569,9 @@ const DroidGame = () => {
           />
 
           <div className="actions">
+            <button className="hint-btn" onClick={handleClearBoard}>
+              Clear board
+            </button>
             {currentPlayer === 2 && (
               <div className="hint-actions">
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
@@ -691,7 +700,6 @@ const DroidGame = () => {
 
           <div className="score-card">
             <pre className="score-card-grid">{scoreCard}</pre>
-            <CopyButton url={scoreCard} label="Share Result" />
           </div>
 
           <Button onClick={resetGame} primary>
