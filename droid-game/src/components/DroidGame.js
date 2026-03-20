@@ -78,6 +78,7 @@ const DroidGame = () => {
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [boardShape, setBoardShape] = useState('droid');
+  const [player2FullValid, setPlayer2FullValid] = useState(false);
   const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily'
 
   const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
@@ -335,7 +336,40 @@ const DroidGame = () => {
       setGameState('share');
       setSelectedLetter(null);
     } else {
-      const correct = checkCorrectTiles(board, player1Board);
+      // Check if every active tile is filled and every word is valid English.
+      const activeRuns = getActiveRuns(boardShape);
+      const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+
+      let isFullValid = false;
+      if (allFilled) {
+        setIsValidating(true);
+        try {
+          const uniqueWords = [
+            ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+          ];
+          const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+          isFullValid = results.every(Boolean);
+        } finally {
+          setIsValidating(false);
+        }
+      }
+
+      setPlayer2FullValid(isFullValid);
+
+      let correct;
+      if (isFullValid) {
+        // Award all active tiles as correct
+        const seen = new Set();
+        correct = [];
+        activeRuns.flat().forEach(({ x, y }) => {
+          const key = `${x},${y}`;
+          if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+        });
+      } else {
+        // Only tiles that match player 1's exact placement score
+        correct = checkCorrectTiles(board, player1Board);
+      }
+
       setCorrectTiles(correct);
       setGameState('end');
       setSelectedLetter(null);
@@ -364,6 +398,7 @@ const DroidGame = () => {
     setTimerSeconds(0);
     setBoardShape('droid');
     setPendingMode(null);
+    setPlayer2FullValid(false);
     setGameState('start');
   };
 
@@ -414,19 +449,28 @@ const DroidGame = () => {
     }
     const total = player1Board.flat().filter(Boolean).length;
     const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
-    const raw = Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, maxScore);
+
+    // Full-board valid: award maxScore regardless of exact tile positions
+    const raw = player2FullValid
+      ? maxScore
+      : Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, maxScore);
+
     const tp = Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10;
     const s = Math.min(maxScore, Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10));
 
-    const incorrect = [];
-    board.forEach((row, y) =>
-      row.forEach((letter, x) => {
-        if (letter && letter !== player1Board[y][x]) incorrect.push({ x, y });
-      })
-    );
+    // Incomplete puzzle: only matched tiles score; full-valid puzzle has no incorrect tiles
+    const incorrect = player2FullValid ? [] : (() => {
+      const arr = [];
+      board.forEach((row, y) =>
+        row.forEach((letter, x) => {
+          if (letter && letter !== player1Board[y][x]) arr.push({ x, y });
+        })
+      );
+      return arr;
+    })();
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
-  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore]);
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid]);
 
   const scoreCard = useMemo(() => {
     if (gameState !== 'end' || !player1Board) return '';
