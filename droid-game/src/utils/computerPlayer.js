@@ -220,155 +220,9 @@ const WORDS_3 = [
   'YEA','YES','YET','YEW','YOU','ZAP','ZEN','ZIP','ZIT','ZOO',
 ];
 
-// ── Difficulty word tiers ───────────────────────────────────────────────────
-
-// Easy: recognisable everyday words (subset of the normal lists)
-const WORDS_5_EASY = [
-  'ABOUT','ABOVE','AFTER','AGAIN','ANGEL','ANGRY','APART','APPLE','AWARD',
-  'BASIC','BEACH','BLACK','BLANK','BLAST','BLEND','BLESS','BLIND','BLOCK',
-  'BLOWN','BOARD','BONUS','BOOST','BOUND','BRAIN','BRAND','BRAVE','BREAD',
-  'BREAK','BRICK','BRIEF','BRING','BROKE','BROWN','BRUSH','BUILD','BUNCH',
-  'BURST','CABIN','CANDY','CARRY','CATCH','CAUSE','CHAIN','CHAIR','CHALK',
-  'CHARM','CHASE','CHEAP','CHECK','CHEST','CHILD','CHINA','CHUNK','CLASS',
-  'CLEAN','CLEAR','CLIFF','CLIMB','CLOCK','CLOSE','CLOTH','CLOUD','COACH',
-  'COAST','COUNT','COURT','COVER','CRACK','CRAFT','CRASH','CRAZY','CREAM',
-  'CRISP','CROSS','CROWD','CROWN','CRUSH','CURVE','DANCE','DEATH','DIRTY',
-  'DOUBT','DRAFT','DRAMA','DREAM','DRESS','DRINK','DRIVE','DRUNK','EAGLE',
-  'EARLY','EARTH','EIGHT','EMPTY','ENEMY','ENJOY','ENTER','ERROR','EVERY',
-  'EXTRA','FAITH','FEAST','FENCE','FEVER','FIELD','FIFTH','FIFTY','FIGHT',
-  'FINAL','FIRST','FLAME','FLASH','FLESH','FLOAT','FLOOD','FLOOR','FLOUR',
-  'FORCE','FORGE','FOUND','FRAME','FRESH','FRONT','FRUIT','FUNNY','GHOST',
-  'GIANT','GLASS','GLOBE','GLORY','GOING','GRACE','GRADE','GRAND','GRAPE',
-  'GRASS','GRAVE','GREAT','GREED','GREEN','GRIEF','GROUP','GUARD','GUESS',
-  'GUIDE','HABIT','HAPPY','HARSH','HEART','HEAVY','HERBS','HORSE','HOTEL',
-  'HOUSE','HUMAN','IMAGE','JUICE','KNIFE','KNOCK','KNOWN','LABEL','LARGE',
-  'LAUGH','LAYER','LEARN','LEAVE','LEGAL','LEVEL','LIGHT','LIMIT','LIVER',
-  'LOGIC','LOOSE','LOYAL','LUNCH','MAGIC','MAJOR','MAPLE','MARCH','MATCH',
-  'MAYOR','MEDIA','MERCY','METAL','MIGHT','MONEY','MONTH','MORAL','MOTOR',
-  'MOUNT','MOUSE','MOUTH','MOVIE','MUSIC','NERVE','NEVER','NIGHT','NOBLE',
-  'NOISE','NORTH','NOVEL','NURSE','OCEAN','OFFER','OFTEN','ORDER','OTHER',
-  'PAINT','PANIC','PARTY','PAUSE','PEACE','PEACH','PEARL','PENNY','PHONE',
-  'PHOTO','PIANO','PIECE','PILOT','PITCH','PLACE','PLAIN','PLANE','PLANT',
-  'PLATE','POINT','POUND','POWER','PRESS','PRICE','PRIDE','PRIME','PRINT',
-  'PRIZE','PROOF','PROUD','QUEEN','QUEST','QUICK','QUIET','QUITE','QUOTE',
-  'RADAR','RADIO','RAISE','RANCH','RANGE','RAPID','REACH','READY','REALM',
-  'RELAX','REPLY','RIGHT','RIDER','RIVER','ROCKY','ROUGH','ROUND','ROUTE',
-  'ROYAL','RULER','SAINT','SALAD','SAUCE','SCALE','SCENE','SCORE','SENSE',
-  'SERVE','SEVEN','SHAME','SHAPE','SHARE','SHARP','SHELF','SHELL','SHIFT',
-  'SHINE','SHIRT','SHOCK','SHORE','SHORT','SHOUT','SIGHT','SINCE','SKILL',
-  'SLEEP','SLICE','SLIDE','SLOPE','SMALL','SMART','SMELL','SMILE','SMOKE',
-  'SOLAR','SOLID','SOLVE','SOUTH','SPACE','SPARE','SPARK','SPEAK','SPEND',
-  'SPORT','SPRAY','STACK','STAFF','STAGE','STAMP','STAND','START','STATE',
-  'STEAM','STEEL','STICK','STILL','STOCK','STONE','STORE','STORM','STORY',
-  'STUFF','STYLE','SUGAR','SWEET','SWING','SWORD','TEACH','TEETH','THANK',
-  'THEME','THICK','THING','THINK','THIRD','THREE','THROW','THUMB','TIGER',
-  'TIGHT','TIRED','TITLE','TODAY','TOTAL','TOUCH','TOUGH','TOWER','TRACK',
-  'TRADE','TRAIL','TRAIN','TRAIT','TRASH','TREAT','TREND','TRIAL','TRICK',
-  'TRUCK','TRULY','TRUST','TRUTH','UNDER','UNION','UNTIL','UPSET','USAGE',
-  'USUAL','VALID','VALUE','VIDEO','VISIT','VITAL','VOICE','WAGES','WASTE',
-  'WATCH','WATER','WEIRD','WHALE','WHEAT','WHEEL','WHILE','WHITE','WHOLE',
-  'WOMAN','WORLD','WORRY','WRITE','WRONG','YOUTH',
-];
-
-const WORDS_4_EASY = [
-  'ABLE','ACID','AGED','ALLY','ARCH','AREA','ARMY','AUNT','BACK','BAKE',
-  'BALL','BAND','BANK','BARN','BASE','BATH','BEAD','BEAM','BEAN','BEAR',
-  'BEAT','BEEN','BEER','BELL','BELT','BEND','BEST','BIKE','BILL','BIRD',
-  'BITE','BLOW','BLUE','BOAT','BODY','BOLD','BOLT','BOND','BONE','BOOK',
-  'BOOM','BOOT','BORN','BOSS','BOTH','BOWL','BULL','BURN','BUSY','CAFE',
-  'CAKE','CALL','CALM','CAME','CAMP','CARD','CARE','CART','CASE','CASH',
-  'CAVE','CHAT','CHIP','CITY','CLAY','CLUB','COAL','COAT','CODE','COIN',
-  'COLD','COME','COOK','COOL','COPE','COPY','CORN','COST','CREW','CURE',
-  'CUTE','DAMP','DARE','DARK','DASH','DATA','DATE','DAWN','DEAD','DEAL',
-  'DEAR','DEBT','DECK','DEEP','DEER','DENY','DESK','DICE','DIET','DIRT',
-  'DISH','DOME','DONE','DOOR','DOWN','DRAW','DROP','DRUM','DUCK','DULL',
-  'DUSK','DUST','DUTY','EARN','EASE','EAST','EASY','EDGE','EPIC','EVEN',
-  'EVER','EVIL','FACE','FACT','FAIR','FAKE','FALL','FAME','FARM','FAST',
-  'FATE','FEAR','FEED','FEEL','FEET','FILE','FILL','FILM','FIND','FINE',
-  'FIRE','FIRM','FISH','FLAG','FLAT','FLED','FLIP','FLOW','FOAM','FOLD',
-  'FOLK','FOND','FOOD','FOOL','FOOT','FORD','FORM','FORT','FOUR','FREE',
-  'FUEL','FULL','FUND','FURY','GAME','GATE','GEAR','GIFT','GIRL','GIVE',
-  'GLAD','GLOW','GOLD','GOLF','GONE','GOOD','GRAY','GREW','GRIP','GROW',
-  'HACK','HAIL','HAIR','HALF','HALL','HAND','HANG','HARD','HARM','HATE',
-  'HAVE','HEAD','HEAL','HEAR','HEAT','HEEL','HELD','HELP','HERB','HERD',
-  'HERE','HERO','HIDE','HIGH','HIKE','HILL','HINT','HIRE','HOLD','HOLE',
-  'HOME','HOOD','HOOK','HOPE','HORN','HOST','HOUR','HUGE','HUNG','HUNT',
-  'HURT','ICON','IDEA','INTO','IRON','ITEM','JADE','JAIL','JOBS','JOIN',
-  'JOKE','JUMP','JURY','JUST','KEEN','KEEP','KEPT','KICK','KIDS','KILL',
-  'KIND','KING','KISS','KNEE','KNEW','KNOW','LACK','LAID','LAKE','LAMB',
-  'LAMP','LAND','LANE','LAST','LATE','LAWN','LEAD','LEAN','LEAP','LEFT',
-  'LEND','LESS','LICK','LIFE','LIFT','LIKE','LIMB','LIME','LINE','LINK',
-  'LION','LIST','LIVE','LOAD','LOAN','LOCK','LONE','LONG','LOOK','LORD',
-  'LOSE','LOSS','LOST','LOUD','LOVE','LUCK','LUNG','MADE','MAIL','MAIN',
-  'MAKE','MALE','MANY','MARK','MASK','MASS','MATE','MEAL','MEAN','MEAT',
-  'MEET','MELT','MEMO','MEND','MENU','MILD','MILE','MILK','MILL','MIND',
-  'MINE','MINT','MISS','MIST','MODE','MOOD','MOON','MOSS','MOST','MOVE',
-  'MUCH','MUST','MYTH','NAIL','NAME','NAVY','NEAR','NEAT','NECK','NEED',
-  'NEST','NEWS','NEXT','NICE','NINE','NOSE','NOTE','NOUN','ONCE','OPEN',
-  'ORAL','OVEN','OVER','PACK','PAGE','PAID','PAIN','PAIR','PALE','PALM',
-  'PARK','PART','PASS','PAST','PATH','PEAK','PEAR','PEEL','PEST','PICK',
-  'PILE','PILL','PINE','PINK','PIPE','PLAN','PLAY','PLOT','PLUM','PLUS',
-  'POEM','POLE','POND','POOL','POOR','PORK','PORT','POSE','POST','POUR',
-  'PRAY','PREY','PULL','PUMP','PURE','PUSH','RACE','RAGE','RAIL','RAIN',
-  'RANK','RARE','RATE','READ','REAL','REEF','RELY','RENT','REST','RICE',
-  'RICH','RIDE','RING','RIOT','RISE','RISK','ROAD','ROCK','ROLE','ROLL',
-  'ROOF','ROOM','ROOT','ROPE','ROSE','RUIN','RULE','RUSH','RUST','SAFE',
-  'SAGE','SAID','SAIL','SAKE','SALE','SALT','SAME','SAND','SAVE','SEAL',
-  'SEAT','SEED','SEEK','SEEM','SEEN','SELF','SELL','SEND','SENT','SHIN',
-  'SHIP','SHOE','SHOP','SHOT','SHOW','SHUT','SICK','SIDE','SIGN','SILK',
-  'SINK','SITE','SIZE','SKIN','SKIP','SLAB','SLAM','SLIM','SLIP','SLOT',
-  'SLOW','SNAP','SNOW','SOAK','SOAP','SOAR','SOCK','SOFA','SOFT','SOIL',
-  'SOLD','SOLE','SOME','SONG','SOON','SORE','SORT','SOUL','SOUR','SPIN',
-  'SPOT','SPUR','STAR','STAY','STEM','STEP','STIR','STOP','SUCH','SUIT',
-  'SUNG','SURE','SURF','SWAP','SWIM','TAIL','TAKE','TALE','TALK','TALL',
-  'TAME','TANK','TAPE','TASK','TEAM','TEAR','TEEN','TELL','TEND','TENT',
-  'TERM','TEST','TEXT','THEM','THEN','THEY','THIN','THIS','TICK','TIDE',
-  'TILE','TILL','TIME','TINY','TIRE','TOLD','TOLL','TONE','TOOK','TOOL',
-  'TOPS','TORN','TOSS','TOUR','TOWN','TRAP','TRAY','TREE','TREK','TRIM',
-  'TRIP','TRUE','TUBE','TUNA','TUNE','TURN','TWIN','TYPE','UNDO','UNIT',
-  'UPON','URGE','USED','USER','VAIN','VARY','VASE','VAST','VERB','VERY',
-  'VIEW','VINE','VOID','VOTE','WADE','WAGE','WAIT','WAKE','WALK','WALL',
-  'WAND','WANT','WARD','WARM','WARN','WASH','WASP','WAVE','WEAK','WEAR',
-  'WEED','WEEK','WELL','WENT','WERE','WEST','WIDE','WIFE','WILD','WILL',
-  'WIND','WINE','WING','WINK','WIRE','WISE','WISH','WITH','WOLF','WOOD',
-  'WOOL','WORD','WORK','WORN','WRAP','YARD','YARN','YEAR','YELL','YOUR',
-  'ZERO','ZONE','ZOOM',
-];
-
-// Hard: obscure but valid English words
-const WORDS_5_HARD = [
-  'ABBOT','ABYSS','ADAGE','AEGIS','ARGOT','ASKEW','ATOLL','AXIOM','AZURE',
-  'BALMY','BASTE','BRASH','BRAWL','BRAWN','BROOD','CHANT','CHASM','CLEFT',
-  'CLOAK','CLOUT','CRAVE','CREAK','CROON','CRYPT','DAUNT','DRAWL','DWARF',
-  'EXALT','EXPEL','EXUDE','FETID','FJORD','FLECK','FORAY','GAUDY','GAUNT',
-  'GIRTH','GLEAN','GLINT','GLOAT','GNASH','GROAN','GRUEL','GUILE','GUSTO',
-  'HAVOC','HEIST','HELIX','HOIST','INEPT','IRONY','JOUST','KNAVE','LADEN',
-  'LARVA','LEACH','LITHE','LIVID','LUCID','MAXIM','MINCE','MOGUL','MURKY',
-  'MUSTY','NOTCH','NYMPH','OPTIC','OUNCE','PIQUE','PLUCK','POISE','PRIVY',
-  'PROWL','PSALM','QUAFF','QUASH','RABBI','RELIC','RHYME','RIVET','ROUGE',
-  'SCALD','SCANT','SCONE','SCORN','SCOWL','SEIZE','SHACK','SHAWL','SHEEN',
-];
-
-const WORDS_4_HARD = [
-  'AMOK','ANKH','APEX','BALK','BALM','BAWL','BLOB','BODE','BOOR','BRAE',
-  'BRAY','BRIG','BROW','BURP','CEDE','CLOD','CODA','COIF','COMA','CONK',
-  'CRAG','CRUX','CZAR','DANK','DAUB','DOTE','DRAB','DRUB','DUCT','DUPE',
-  'ENVY','ESPY','FAWN','FAZE','FLEX','FLIT','FUME','GIBE','GILD','GILT',
-  'GIST','GLUT','GNAW','GORE','GOUT','GOWN','GRUB','GULL','HOAX','HONE',
-  'HOOF','HOOP','HUSK','ITCH','JIBE','JOWL','LANK','LAUD','LAVA','LEWD',
-  'LILT','LISP','LODE','LOIN','LUTE','LYNX','MESA','MIEN','MIRE','MOAT',
-  'MOLT','MUTT','NARC','NEWT','NOSH','NULL','OBOE','OKRA','OMEN','OPUS',
-  'ORCA','PLOP','PLOW','PLOY','PURL','QUAY','RIFE','RIME','ROAN','ROIL',
-  'ROUT','RUFF','RUSE','SCUD','SKEW','SKIT','SLAG','SLOP','SMOG','SMUG',
-  'SNAG','SNIP','SNUB','SNUG','SPUD','STUB','SWAY','TALC','TAUT','TEAK',
-  'TEEM','TORC','TROD','TUFT','VAMP','VEER','VOLE','WAFT','WEAN','WEEP',
-  'WHAM','WHIM','WHIP','WISP','WREN','YORE',
-];
-
 // ── Index words by letter at each position ─────────────────────────────────
 
 const buildIndex = (words) => {
-  // index[pos][letter] = [words...]
   const index = {};
   for (const word of words) {
     for (let i = 0; i < word.length; i++) {
@@ -381,19 +235,7 @@ const buildIndex = (words) => {
   return index;
 };
 
-const IDX4_EASY        = buildIndex(WORDS_4_EASY);
-const IDX4_NORMAL      = buildIndex(WORDS_4);
-const IDX4_HARD        = buildIndex(WORDS_4_HARD);
-// Combined index for hard mode — lets normal words fill gaps while hard words are preferred
-const IDX4_HARD_MIXED  = buildIndex([...WORDS_4_HARD, ...WORDS_4]);
-
-// Returns an array with hard words first (shuffled within each group), normal words after.
-// Used so col candidates always try hard words before falling back to normal words.
-const hardSet4 = new Set(WORDS_4_HARD);
-const hardBias = (arr) => [
-  ...shuffle(arr.filter(w => hardSet4.has(w))),
-  ...shuffle(arr.filter(w => !hardSet4.has(w))),
-];
+const IDX4 = buildIndex(WORDS_4);
 
 // ── Shuffle helper ─────────────────────────────────────────────────────────
 
@@ -424,65 +266,43 @@ const filterWords = (words, index, constraints) => {
   return candidates ? [...candidates] : [...words];
 };
 
-// ── Crossword generator using backtracking ─────────────────────────────────
+// ── Crossword generator ─────────────────────────────────────────────────────
 
 /**
  * Generates a valid crossword board.
  * Returns a 5x5 2D array or null on failure.
  */
-export const generateComputerBoard = (difficulty = 'normal') => {
-  // Hard mode needs more attempts due to smaller word pool
-  const maxAttempts = difficulty === 'hard' ? 50 : 20;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = tryGenerate(difficulty);
+export const generateComputerBoard = () => {
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const result = tryGenerate();
     if (result) return result;
   }
   return null;
 };
 
-const tryGenerate = (difficulty) => {
-  const isHard = difficulty === 'hard';
-
-  // Hard mode: row1 pool = hard words first, then normal as fallback for variety.
-  // Easy mode: restricted recognisable-word pool only.
-  const words5 = difficulty === 'easy' ? WORDS_5_EASY
-               : isHard ? [...shuffle(WORDS_5_HARD), ...shuffle(WORDS_5)]
-               : WORDS_5;
-  // Hard mode: combined index so filterWords can find normal-word fallbacks.
-  const idx4   = difficulty === 'easy' ? IDX4_EASY
-               : isHard ? IDX4_HARD_MIXED
-               : IDX4_NORMAL;
-  // The 4-letter word pool used for filterWords — combined for hard so Set works correctly.
-  const words4 = difficulty === 'easy' ? WORDS_4_EASY
-               : isHard ? [...WORDS_4_HARD, ...WORDS_4]
-               : WORDS_4;
-
+const tryGenerate = () => {
   // Step 1: Pick a random 5-letter word for Row 1.
-  // For hard mode the array is already ordered (hard first), so slicing 50 almost
-  // always picks from the hard list; normal words only surface if hard words exhaust.
-  const row1Candidates = isHard ? words5 : shuffle(words5);
+  const row1Candidates = shuffle(WORDS_5);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // Row 1 letters at positions: row1[0]@(0,1), row1[1]@(1,1), row1[2]@(2,1), row1[3]@(3,1), row1[4]@(4,1)
 
     // Step 2: Pick Col 1 (4-letter) where col1[0] = row1[1]
-    // Hard mode: hardBias sorts hard words first so they're always preferred.
-    const applyBias = isHard ? hardBias : shuffle;
-    const col1Candidates = applyBias(filterWords(words4, idx4, { 0: row1[1] }));
+    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[1] }));
     if (col1Candidates.length === 0) continue;
 
     for (const col1 of col1Candidates.slice(0, 10)) {
       // col1: col1[0]@(1,1), col1[1]@(1,2), col1[2]@(1,3), col1[3]@(1,4)
 
       // Step 3: Pick Col 2 (4-letter) where col2[1] = row1[2]
-      const col2Candidates = applyBias(filterWords(words4, idx4, { 1: row1[2] }));
+      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[2] }));
       if (col2Candidates.length === 0) continue;
 
       for (const col2 of col2Candidates.slice(0, 10)) {
         // col2: col2[0]@(2,0), col2[1]@(2,1), col2[2]@(2,2), col2[3]@(2,3)
 
         // Step 4: Pick Col 3 (4-letter) where col3[0] = row1[3]
-        const col3Candidates = applyBias(filterWords(words4, idx4, { 0: row1[3] }));
+        const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[3] }));
         if (col3Candidates.length === 0) continue;
 
         for (const col3 of col3Candidates.slice(0, 10)) {
@@ -494,26 +314,13 @@ const tryGenerate = (difficulty) => {
           // Step 6: Row 3 (3-letter) must be: col1[2], col2[3], col3[2]
           const row3 = col1[2] + col2[3] + col3[2];
 
-          // Check Row 2 and Row 3 are real words (always use full WORDS_3 for max intersection hits)
           if (WORDS_3.includes(row2) && WORDS_3.includes(row3)) {
-            // Build the board!
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
 
-            // Row 1: y=1, x=0..4
             for (let x = 0; x < 5; x++) board[1][x] = row1[x];
-
-            // Col 1: x=1, y=1..4
             for (let i = 0; i < 4; i++) board[1 + i][1] = col1[i];
-
-            // Col 2: x=2, y=0..3
             for (let i = 0; i < 4; i++) board[i][2] = col2[i];
-
-            // Col 3: x=3, y=1..4
             for (let i = 0; i < 4; i++) board[1 + i][3] = col3[i];
-
-            // Row 2 & Row 3 are already set by the column fills
-            // Just verify:
-            // board[2][1]=col1[1], board[2][2]=col2[2], board[2][3]=col3[1] ✓
 
             return board;
           }

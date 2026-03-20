@@ -274,72 +274,6 @@ body {
   background: var(--border);
 }
 
-/* ─── VS COMPUTER SECTION ─── */
-
-.vs-computer-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1rem;
-}
-
-/* ─── DIFFICULTY SELECTOR ─── */
-
-.difficulty-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.difficulty-label {
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  text-align: left;
-}
-
-.difficulty-selector {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.4rem;
-}
-
-.diff-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.15rem;
-  padding: 0.55rem 0.25rem;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  touch-action: manipulation;
-  min-height: 3rem;
-}
-
-.diff-btn:hover  { border-color: var(--teal); color: var(--text); }
-.diff-btn.active { background: rgba(13,148,136,0.18); border-color: var(--teal); color: #2dd4bf; }
-
-.diff-name {
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.diff-desc {
-  font-size: 0.62rem;
-  opacity: 0.7;
-}
 
 /* ===== BOARD ===== */
 
@@ -997,7 +931,6 @@ body {
   .start-screen  { padding: 1.75rem 1rem; align-items: flex-start; padding-top: max(2rem, env(safe-area-inset-top, 2rem)); }
   .game-title    { font-size: clamp(3.5rem, 22vw, 4.5rem); margin-bottom: 1.5rem; }
   .start-content { max-width: 100%; }
-  .diff-btn      { min-height: 2.75rem; }
   .start-button  { min-height: 3rem; }
 
   /* ── End screen ── */

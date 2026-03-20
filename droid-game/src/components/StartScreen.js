@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const LETTERS = 'DROID'.split('');
 
@@ -8,16 +8,7 @@ const STEPS = [
   { icon: '🎯', text: 'More tiles in the right spot means a higher score' },
 ];
 
-const DIFFICULTIES = [
-  { id: 'easy',   label: 'Easy',   desc: '11 pts' },
-  { id: 'normal', label: 'Normal', desc: '12 pts' },
-  { id: 'hard',   label: 'Hard',   desc: '13 pts' },
-];
-
 const StartScreen = ({ onStart, onStartVsComputer }) => {
-  const [hovered, setHovered] = useState(null);
-  const [difficulty, setDifficulty] = useState('normal');
-
   return (
     <div className="start-screen">
       <div className="start-content">
@@ -26,14 +17,7 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
 
         <h1 className="game-title">
           {LETTERS.map((letter, i) => (
-            <span
-              key={i}
-              className={`game-letter${hovered === i ? ' hovered' : ''}`}
-              onMouseEnter={() => setHovered(i)}
-              onMouseLeave={() => setHovered(null)}
-            >
-              {letter}
-            </span>
+            <span key={i} className="game-letter">{letter}</span>
           ))}
         </h1>
 
@@ -53,26 +37,9 @@ const StartScreen = ({ onStart, onStartVsComputer }) => {
 
           <div className="start-or"><span>or</span></div>
 
-          <div className="vs-computer-section">
-            <div className="difficulty-row">
-              <span className="difficulty-label">Difficulty</span>
-              <div className="difficulty-selector">
-                {DIFFICULTIES.map(({ id, label, desc }) => (
-                  <button
-                    key={id}
-                    className={`diff-btn${difficulty === id ? ' active' : ''}`}
-                    onClick={() => setDifficulty(id)}
-                  >
-                    <span className="diff-name">{label}</span>
-                    <span className="diff-desc">{desc}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <button className="start-button vs-computer" onClick={() => onStartVsComputer(difficulty)}>
-              🤖 Play vs Computer
-            </button>
-          </div>
+          <button className="start-button vs-computer" onClick={onStartVsComputer}>
+            🤖 Play vs Computer
+          </button>
         </div>
 
       </div>

@@ -78,7 +78,6 @@ const DroidGame = () => {
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
   const [shareLink, setShareLink] = useState(null);
   const [vsComputer, setVsComputer] = useState(false);
-  const [gameDifficulty, setGameDifficulty] = useState('normal');
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
 
@@ -324,25 +323,22 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
     setShareLink(null);
     setVsComputer(false);
-    setGameDifficulty('normal');
     setLetterHintsUsed(0);
     setTimerSeconds(0);
     setGameState('start');
   };
 
-  const handleStartVsComputer = (difficulty = 'normal') => {
-    const computerBoard = generateComputerBoard(difficulty);
+  const handleStartVsComputer = () => {
+    const computerBoard = generateComputerBoard();
     if (!computerBoard) {
       setValidationError('Failed to generate board — please try again.');
       setGameState('start');
       return;
     }
     setVsComputer(true);
-    setGameDifficulty(difficulty);
 
-    const preRevealed = difficulty === 'easy' ? 3 : difficulty === 'hard' ? 1 : 2;
     const p1Board = computerBoard.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, preRevealed);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
 
     setPlayer1Board(p1Board);
     setPreservedTiles(preservedLetters);
@@ -397,18 +393,17 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const maxScore = gameDifficulty === 'hard' ? 13 : gameDifficulty === 'easy' ? 11 : 12;
+  const maxScore = 12;
 
   const { score, rawScore, incorrectTiles, totalPlaced, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
       return { score: 0, rawScore: 0, incorrectTiles: [], totalPlaced: 0, timePenalty: 0 };
     }
-    const ms = gameDifficulty === 'hard' ? 13 : gameDifficulty === 'easy' ? 11 : 12;
     const total = player1Board.flat().filter(Boolean).length;
     const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
-    const raw = Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, ms);
+    const raw = Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, maxScore);
     const tp = Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10;
-    const s = Math.min(ms, Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10));
+    const s = Math.min(maxScore, Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10));
 
     const incorrect = [];
     board.forEach((row, y) =>
@@ -418,7 +413,7 @@ const DroidGame = () => {
     );
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
-  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, vsComputer, gameDifficulty]);
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds]);
 
   const scoreCard = useMemo(() => {
     if (gameState !== 'end' || !player1Board) return '';
@@ -434,12 +429,10 @@ const DroidGame = () => {
         return '⬜';
       }).join('')
     ).join('\n');
-    const diffLabel  = vsComputer
-      ? gameDifficulty.charAt(0).toUpperCase() + gameDifficulty.slice(1)
-      : '2 Player';
+    const modeLabel  = vsComputer ? 'vs Computer' : '2 Player';
     const hintsLabel = letterHintsUsed > 0 ? ` · ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}` : '';
-    return `DROID 🧠\n${grid}\n${score}/${maxScore} · ${diffLabel}${hintsLabel}`;
-  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, gameDifficulty, vsComputer]);
+    return `DROID 🧠\n${grid}\n${score}/${maxScore} · ${modeLabel}${hintsLabel}`;
+  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, vsComputer]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
