@@ -22,8 +22,6 @@ import {
   countBoardCombinations,
 } from '../utils/computerPlayer';
 
-import SYNONYMS from '../utils/synonyms.json';
-
 const DAILY_STORAGE_KEY = 'droid_daily_played';
 
 // Per-shape hint penalty (points subtracted per reveal)
@@ -65,13 +63,31 @@ const calcTimePenalty = (seconds, shapeId) => {
   return Math.floor(Math.max(0, seconds - 120) / interval) * 0.1;
 };
 
-/** Pick a random hint string for a word from SYNONYMS data. */
-const getHintWord = (word) => {
+/** Fetch a hint string for a word via Datamuse API at runtime. */
+const fetchHintWord = async (word) => {
   if (!word) return null;
-  const entries = SYNONYMS[word];
-  if (!entries || entries.length === 0) return null;
-  const entry = entries[Math.floor(Math.random() * entries.length)];
-  return entry ? `${entry.type === 'antonym' ? 'opposite of' : 'related to'} "${entry.word}"` : null;
+  try {
+    const lower = word.toLowerCase();
+    const [synRes, antRes] = await Promise.all([
+      fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=8`),
+      fetch(`https://api.datamuse.com/words?rel_ant=${lower}&max=5`),
+    ]);
+    const [syns, ants] = await Promise.all([synRes.json(), antRes.json()]);
+
+    const hints = [];
+    for (const item of ants) {
+      if (!item.word.includes(' ') && item.word.length >= 3)
+        hints.push(`opposite of "${item.word}"`);
+    }
+    for (const item of syns) {
+      if (!item.word.includes(' ') && item.word.length >= 3)
+        hints.push(`related to "${item.word}"`);
+    }
+    if (hints.length === 0) return null;
+    return hints[Math.floor(Math.random() * hints.length)];
+  } catch {
+    return null;
+  }
 };
 
 const CopyButton = ({ url, label = 'Copy Link' }) => {
@@ -190,7 +206,8 @@ const DroidGame = () => {
     setLetterCounts(countLetters(decoded));
     setCurrentPlayer(2);
     setCombinationCount(combCount);
-    setHintWord(getHintWord(fiveLetterWord));
+    setHintWord(null);
+    fetchHintWord(fiveLetterWord).then(setHintWord);
     setGameState('player2');
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -304,7 +321,8 @@ const DroidGame = () => {
     setLetterCounts(countLetters(p1Board));
     setCurrentPlayer(2);
     setCombinationCount(combCount);
-    setHintWord(getHintWord(fiveLetterWord));
+    setHintWord(null);
+    fetchHintWord(fiveLetterWord).then(setHintWord);
     setGameState('player2');
     setSelectedLetter(null);
   };
@@ -394,7 +412,8 @@ const DroidGame = () => {
       setLetterCounts(countLetters(p1Board));
       setShareLink(url);
       setCombinationCount(combCount);
-      setHintWord(getHintWord(fiveLetterWord));
+      setHintWord(null);
+      fetchHintWord(fiveLetterWord).then(setHintWord);
       setGameState('share');
       setSelectedLetter(null);
     } else {
