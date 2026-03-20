@@ -60,7 +60,7 @@ const getTimerClass = (secs) => {
 /** Compute time penalty given elapsed seconds and shape. */
 const calcTimePenalty = (seconds, shapeId) => {
   const interval = TIME_INTERVAL[shapeId] || 10;
-  return Math.floor(Math.max(0, seconds - 120) / interval) * 0.1;
+  return Math.floor(Math.max(0, seconds - 120) / interval) / 10;
 };
 
 /** Fetch a hint string for a word via Datamuse API at runtime. */
