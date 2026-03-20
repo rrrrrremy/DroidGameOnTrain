@@ -455,7 +455,7 @@ const DroidGame = () => {
       ? maxScore
       : Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, maxScore);
 
-    const tp = Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10;
+    const tp = Math.round(Math.max(0, timerSeconds - 120) / 10) * 0.1;
     const s = Math.min(maxScore, Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10));
 
     // Incomplete puzzle: only matched tiles score; full-valid puzzle has no incorrect tiles
