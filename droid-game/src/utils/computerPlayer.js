@@ -92,6 +92,66 @@ const WORDS_5 = [
   'WHEEL','WHERE','WHICH','WHILE','WHITE','WHOLE','WHOSE','WIDER','WOMAN',
   'WORLD','WORRY','WORSE','WORST','WORTH','WOULD','WOUND','WRATH','WRITE',
   'WRONG','WROTE','YACHT','YIELD','YOUNG','YOUTH',
+  // ── Plurals ──
+  'ACIDS','ACRES','ALARM','ANGEL','ASKED','ATOMS','BANDS','BANKS','BARNS',
+  'BEARS','BEATS','BELLS','BIKES','BIRDS','BITES','BLOWS','BOATS','BOLTS',
+  'BOMBS','BONDS','BONES','BOOKS','BOOTS','BOXES','BULLS','BURNS','BUSES',
+  'CAKES','CALLS','CAMPS','CAPES','CARDS','CARTS','CAVES','CELLS','CENTS',
+  'CHIPS','CLAWS','CLIPS','CLUBS','CLUES','COALS','COATS','CODES','COILS',
+  'COINS','CONES','COOKS','CORDS','CORES','COSTS','CREWS','CROPS','CUBES',
+  'CURLS','DARTS','DATES','DEALS','DECKS','DEEDS','DESKS','DIALS','DISCS',
+  'DOCKS','DOMES','DOORS','DOSES','DOVES','DRAWS','DRUMS','DUCKS','DUELS',
+  'DUNES','DUSTS','EARNS','EDGES','ELVES','EXAMS','EXITS','FACES','FACTS',
+  'FAILS','FALLS','FAMES','FANGS','FARMS','FATES','FEARS','FEEDS','FILLS',
+  'FILMS','FINDS','FIRES','FLAGS','FLAPS','FLAWS','FLIES','FLOWS','FOAMS',
+  'FOLDS','FOLKS','FOOLS','FORMS','FORTS','FOULS','FOXES','FUELS','FUNDS',
+  'FUSES','GAINS','GALES','GAMES','GANGS','GATES','GEARS','GEMS','GENES',
+  'GIFTS','GIRLS','GIVES','GOALS','GOATS','GRABS','GRIDS','GRINS','GRIPS',
+  'GROWS','GULFS','GUSTS','HALLS','HANDS','HEADS','HEALS','HEAPS','HEATS',
+  'HEELS','HELPS','HERBS','HERDS','HIKES','HILLS','HINTS','HOLES','HOMES',
+  'HOOKS','HOPES','HORNS','HOSTS','HOURS','HULLS','HUNTS','IDEAS','ITEMS',
+  'JAILS','JEERS','JERKS','JEWEL','JOINS','JOKES','JOLTS','JUMPS','KEELS',
+  'KEEPS','KICKS','KINDS','KINGS','KITES','KNEES','KNOBS','KNOTS','LACES',
+  'LAKES','LAMBS','LAMPS','LANDS','LANES','LAWNS','LEAKS','LEAPS','LIFTS',
+  'LIMBS','LIMES','LINES','LINKS','LIONS','LISTS','LIVES','LOADS','LOANS',
+  'LOCKS','LOFTS','LOOKS','LORDS','LOVES','LUMPS','LUNGS','LURES','MAILS',
+  'MAKES','MALES','MANES','MARKS','MASKS','MATES','MEALS','MEATS','MEETS',
+  'MELTS','MENDS','MENUS','MILES','MILLS','MINDS','MINES','MINTS','MOATS',
+  'MODES','MOLDS','MONKS','MOODS','MOONS','MOVES','MYTHS','NAILS','NAMES',
+  'NESTS','NINES','NODES','NORMS','NOSES','NOTES','OATHS','OMITS','OPENS',
+  'OVENS','PACKS','PAILS','PAINS','PAIRS','PALMS','PANES','PARKS','PARTS',
+  'PATHS','PEAKS','PEARS','PEELS','PEERS','PICKS','PILES','PILLS','PINES',
+  'PIPES','PLANS','PLEAS','PLOTS','PLUGS','PLUMS','POEMS','POETS','POLES',
+  'POLLS','PONDS','POOLS','POPES','PORKS','PORTS','POSES','POSTS','POURS',
+  'PUMPS','RACES','RACKS','RAIDS','RAILS','RAINS','RAMPS','RANKS','RATES',
+  'READS','REEFS','REELS','RENTS','RIDES','RIFTS','RINGS','RIOTS','RISKS',
+  'ROADS','ROCKS','ROLES','ROLLS','ROOFS','ROOMS','ROOTS','ROPES','ROSES',
+  'RUINS','RULES','SAILS','SALES','SALTS','SANDS','SAVES','SEALS','SEAMS',
+  'SEATS','SEEDS','SELLS','SENDS','SHEDS','SHIPS','SHOES','SHOPS','SHOTS',
+  'SHOWS','SIDES','SIGHS','SIGNS','SILKS','SINKS','SITES','SIZES','SKINS',
+  'SKIPS','SLABS','SLAMS','SLAPS','SLIPS','SLOTS','SLUGS','SNAPS','SOAPS',
+  'SOCKS','SOFAS','SOILS','SONGS','SORTS','SOULS','SPANS','SPINS','SPOTS',
+  'SPURS','STABS','STARS','STAYS','STEMS','STEPS','STEWS','STIRS','STOPS',
+  'STUDS','SUITS','SWANS','SWAPS','SWIMS','TAILS','TAKES','TALES','TALKS',
+  'TANKS','TAPES','TASKS','TEAMS','TEARS','TELLS','TENDS','TENTS','TERMS',
+  'TESTS','TEXTS','TIDES','TILES','TILLS','TIMES','TIRES','TOLLS','TOMBS',
+  'TONES','TOOLS','TOURS','TOWNS','TRAPS','TRAYS','TREES','TREKS','TRIPS',
+  'TUBES','TUNES','TURNS','TYPES','UNITS','URGED','USERS','VASES','VEILS',
+  'VEINS','VENTS','VINES','VOIDS','VOLTS','VOTES','WADES','WAGES','WAITS',
+  'WALKS','WALLS','WANDS','WANTS','WARDS','WARNS','WASPS','WAVES','WEEKS',
+  'WELLS','WINDS','WINES','WINGS','WINKS','WIRES','WORDS','WORKS','WORMS',
+  'WRAPS','YARDS','YARNS','YEARS','YELLS','ZONES',
+  // ── Past tense (-ed) ──
+  'ACTED','ADDED','AIMED','ASKED','BAKED','BASED','BORED','BOXED','CAGED',
+  'CARED','CASED','CITED','CODED','COPED','CORED','CURED','DARED','DATED',
+  'DAZED','DRIED','EASED','ENDED','ERRED','FACED','FADED','FAKED','FARED',
+  'FILED','FINED','FIRED','FREED','FUSED','GAZED','GLUED','GREED','HOPED',
+  'IDLED','JOKED','LACED','LAMED','LASED','LIKED','LIMED','LINED','LIVED',
+  'LOVED','MACED','MATED','MINED','MIRED','MIXED','NAMED','OARED','OPTED',
+  'PACED','PAGED','PALED','PAVED','PIKED','PILED','PINED','PLIED','POSED',
+  'RACED','RAGED','RAKED','RATED','RAVED','RAZED','RILED','ROPED','RULED',
+  'SAVED','SIDED','TAMED','TAPED','TILED','TIMED','TONED','TUBED','TUNED',
+  'TYPED','URGED','VOTED','WADED','WAGED','WAVED','WIRED','WISED','ZONED',
 ];
 
 const WORDS_4 = [
@@ -182,6 +242,34 @@ const WORDS_4 = [
   'WIRE','WISE','WISH','WITH','WOKE','WOLF','WOOD','WOOL','WORD','WORE',
   'WORK','WORM','WORN','WOVE','WRAP','YARD','YARN','YEAR','YELL','YOUR',
   'ZEAL','ZERO','ZONE','ZOOM',
+  // ── Plurals ──
+  'ACES','ACTS','AIDS','AIMS','AIRS','ALES','ANTS','APES','ARCS','ARKS',
+  'ARMS','ARTS','AXES','BAGS','BANS','BARS','BATS','BAYS','BEDS','BETS',
+  'BINS','BITS','BOWS','BUDS','BUGS','BUNS','CABS','CAPS','CARS','CATS',
+  'COBS','CODS','COLS','COPS','COTS','COWS','CUBS','CUPS','CURS','CUTS',
+  'DABS','DAMS','DAYS','DENS','DIGS','DIPS','DOCS','DOGS','DOTS','DUBS',
+  'DUDS','DUES','DUGS','DUNS','DUOS','DYES','EARS','EELS','ELMS','EMUS',
+  'ENDS','ERAS','EVES','EWES','EYES','FANS','FATS','FEDS','FEES','FIGS',
+  'FINS','FIRS','FITS','FOES','FOGS','FURS','GABS','GAGS','GAPS','GELS',
+  'GINS','GODS','GUMS','GUNS','GUTS','GUYS','GYMS','HAMS','HATS','HENS',
+  'HIPS','HOBS','HOGS','HOPS','HUBS','HUES','HUGS','HUTS','IMPS','INKS',
+  'INNS','IONS','JABS','JAGS','JAMS','JARS','JAWS','JAYS','JETS','JOGS',
+  'JOTS','JOYS','JUGS','KEGS','KEYS','LABS','LADS','LAGS','LAPS','LAWS',
+  'LEGS','LIDS','LIES','LOGS','MAPS','MATS','MAWS','MOBS','MOPS','MUDS',
+  'MUGS','NABS','NAGS','NAPS','NETS','NITS','NODS','NUBS','NUNS','OAKS',
+  'OARS','OATS','ODES','OILS','OPTS','ORBS','ORES','OWLS','PADS','PANS',
+  'PATS','PAWS','PEAS','PEGS','PENS','PEPS','PETS','PIES','PIGS','PINS',
+  'PITS','PLYS','PODS','POPS','POTS','PUBS','PUGS','PUNS','PUPS','RAGS',
+  'RAMS','RAPS','RATS','RAYS','REFS','RIBS','RIGS','RIMS','RIPS','ROBS',
+  'RODS','ROWS','RUBS','RUGS','RUMS','RUNS','RUTS','RYES','SAGS','SAPS',
+  'SEAS','SETS','SEWS','SINS','SIPS','SITS','SIRS','SKIS','SOBS','SODS',
+  'SOWS','SPAS','TABS','TAGS','TANS','TARS','TEAS','TIES','TINS','TIPS',
+  'TOES','TONS','TOPS','TOYS','TUBS','TUGS','URNS','USES','VANS','VATS',
+  'VETS','VOWS','WADS','WARS','WAYS','WEBS','WEDS','WIGS','WINS','WITS',
+  'WOES','WOKS','YAKS','YAMS','YAPS','YEWS','ZAPS','ZIPS','ZOOS',
+  // ── Past tense (-ed) ──
+  'ABED','ACED','APED','AXED','BRED','CLAD','DYED','EYED','ICED','IRED',
+  'OWED','USED',
 ];
 
 const WORDS_3 = [
@@ -220,68 +308,9 @@ const WORDS_3 = [
   'YEA','YES','YET','YEW','YOU','ZAP','ZEN','ZIP','ZIT','ZOO',
 ];
 
-// ── Difficulty word tiers ───────────────────────────────────────────────────
-
-// Easy: recognisable everyday words (subset of the normal lists)
-const WORDS_5_EASY = [
-  'ABOUT','AFTER','AGAIN','BEACH','BLACK','BLANK','BOARD','BRAIN','BRAND',
-  'BRAVE','BREAD','BREAK','BRING','BROWN','BUILD','CARRY','CATCH','CAUSE',
-  'CHAIR','CHARM','CHASE','CHEAP','CHECK','CHILD','CLASS','CLEAN','CLEAR',
-  'CLIMB','CLOCK','CLOSE','CLOUD','COACH','COUNT','COURT','COVER','CREAM',
-  'CROSS','CROWD','CROWN','CRUSH','DANCE','DREAM','DRESS','DRINK','DRIVE',
-  'EARLY','EARTH','EIGHT','EVERY','EXTRA','FAITH','FIELD','FIGHT','FIRST',
-  'FLASH','FLOOD','FLOOR','FORCE','FOUND','FRAME','FRESH','FRUIT','GIANT',
-  'GLASS','GRAND','GRASS','GREAT','GREEN','GROUP','GUARD','HAPPY','HEART',
-  'HEAVY','HOUSE','HUMAN','JUICE','LARGE','LAUGH','LIGHT','LUNCH',
-];
-
-const WORDS_4_EASY = [
-  'ABLE','BACK','BALL','BAND','BANK','BARE','BARN','BASE','BEAR','BEAT',
-  'BEEN','BELL','BELT','BEST','BILL','BIRD','BLOW','BLUE','BOAT','BODY',
-  'BOLD','BOND','BONE','BOOK','BOOT','BORN','BOSS','BOTH','BOWL','BULL',
-  'BURN','BUSY','CALL','CALM','CAME','CAMP','CARD','CARE','CART','CASE',
-  'CASH','CAVE','CHAT','CHIP','CITY','CLAY','CLUB','COAL','COAT','CODE',
-  'COIN','COLD','COME','COOK','COOL','COPY','CORN','COST','CREW','DARK',
-  'DEAD','DEAL','DEAR','DEEP','DESK','DIRT','DISH','DOOR','DOWN','DRAW',
-  'DROP','DRUM','DUCK','DUTY','EARN','EASE','EAST','EASY','EDGE','FACE',
-  'FACT','FAIR','FALL','FAME','FARM','FAST','FATE','FEAR','FEED','FEEL',
-  'FILE','FILL','FILM','FIND','FINE','FIRE','FIRM','FISH','FLAG','FLOW',
-];
-
-// Hard: obscure but valid English words
-const WORDS_5_HARD = [
-  'ABBOT','ABYSS','ADAGE','AEGIS','ARGOT','ASKEW','ATOLL','AXIOM','AZURE',
-  'BALMY','BASTE','BRASH','BRAWL','BRAWN','BROOD','CHANT','CHASM','CLEFT',
-  'CLOAK','CLOUT','CRAVE','CREAK','CROON','CRYPT','DAUNT','DRAWL','DWARF',
-  'EXALT','EXPEL','EXUDE','FETID','FJORD','FLECK','FORAY','GAUDY','GAUNT',
-  'GIRTH','GLEAN','GLINT','GLOAT','GNASH','GROAN','GRUEL','GUILE','GUSTO',
-  'HAVOC','HEIST','HELIX','HOIST','INEPT','IRONY','JOUST','KNAVE','LADEN',
-  'LARVA','LEACH','LITHE','LIVID','LUCID','MAXIM','MINCE','MOGUL','MURKY',
-  'MUSTY','NOTCH','NYMPH','OPTIC','OUNCE','PIQUE','PLUCK','POISE','PRIVY',
-  'PROWL','PSALM','QUAFF','QUASH','RABBI','RELIC','RHYME','RIVET','ROUGE',
-  'SCALD','SCANT','SCONE','SCORN','SCOWL','SEIZE','SHACK','SHAWL','SHEEN',
-];
-
-const WORDS_4_HARD = [
-  'AMOK','ANKH','APEX','BALK','BALM','BAWL','BLOB','BODE','BOOR','BRAE',
-  'BRAY','BRIG','BROW','BURP','CEDE','CLOD','CODA','COIF','COMA','CONK',
-  'CRAG','CRUX','CZAR','DANK','DAUB','DOTE','DRAB','DRUB','DUCT','DUPE',
-  'ENVY','ESPY','FAWN','FAZE','FLEX','FLIT','FUME','GIBE','GILD','GILT',
-  'GIST','GLUT','GNAW','GORE','GOUT','GOWN','GRUB','GULL','HOAX','HONE',
-  'HOOF','HOOP','HUSK','ITCH','JIBE','JOWL','LANK','LAUD','LAVA','LEWD',
-  'LILT','LISP','LODE','LOIN','LUTE','LYNX','MESA','MIEN','MIRE','MOAT',
-  'MOLT','MUTT','NARC','NEWT','NOSH','NULL','OBOE','OKRA','OMEN','OPUS',
-  'ORCA','PLOP','PLOW','PLOY','PURL','QUAY','RIFE','RIME','ROAN','ROIL',
-  'ROUT','RUFF','RUSE','SCUD','SKEW','SKIT','SLAG','SLOP','SMOG','SMUG',
-  'SNAG','SNIP','SNUB','SNUG','SPUD','STUB','SWAY','TALC','TAUT','TEAK',
-  'TEEM','TORC','TROD','TUFT','VAMP','VEER','VOLE','WAFT','WEAN','WEEP',
-  'WHAM','WHIM','WHIP','WISP','WREN','YORE',
-];
-
 // ── Index words by letter at each position ─────────────────────────────────
 
 const buildIndex = (words) => {
-  // index[pos][letter] = [words...]
   const index = {};
   for (const word of words) {
     for (let i = 0; i < word.length; i++) {
@@ -294,26 +323,30 @@ const buildIndex = (words) => {
   return index;
 };
 
-const IDX4_EASY        = buildIndex(WORDS_4_EASY);
-const IDX4_NORMAL      = buildIndex(WORDS_4);
-const IDX4_HARD        = buildIndex(WORDS_4_HARD);
-// Combined index for hard mode — lets normal words fill gaps while hard words are preferred
-const IDX4_HARD_MIXED  = buildIndex([...WORDS_4_HARD, ...WORDS_4]);
+const IDX4 = buildIndex(WORDS_4);
 
-// Returns an array with hard words first (shuffled within each group), normal words after.
-// Used so col candidates always try hard words before falling back to normal words.
-const hardSet4 = new Set(WORDS_4_HARD);
-const hardBias = (arr) => [
-  ...shuffle(arr.filter(w => hardSet4.has(w))),
-  ...shuffle(arr.filter(w => !hardSet4.has(w))),
-];
+// ── Seeded PRNG (mulberry32) ────────────────────────────────────────────────
+
+const mulberry32 = (seed) => () => {
+  seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+  // eslint-disable-next-line no-mixed-operators
+  let t = Math.imul((seed ^ (seed >>> 15)), 1 | seed);
+  // eslint-disable-next-line no-mixed-operators
+  t = (t + Math.imul((t ^ (t >>> 7)), 61 | t)) ^ t;
+  return (((t ^ (t >>> 14)) >>> 0) / 4294967296);
+};
+
+const todaySeed = () => {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+};
 
 // ── Shuffle helper ─────────────────────────────────────────────────────────
 
-const shuffle = (arr) => {
+const shuffle = (arr, rng = Math.random) => {
   const a = [...arr];
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]];
   }
   return a;
@@ -337,65 +370,66 @@ const filterWords = (words, index, constraints) => {
   return candidates ? [...candidates] : [...words];
 };
 
-// ── Crossword generator using backtracking ─────────────────────────────────
+// A word counts as a "plural" if it ends in S and removing S yields a known word.
+const ALL_WORDS_SET = new Set([...WORDS_3, ...WORDS_4, ...WORDS_5]);
+const isPlural = (word) => word.endsWith('S') && ALL_WORDS_SET.has(word.slice(0, -1));
+
+// ── Crossword generator ─────────────────────────────────────────────────────
 
 /**
  * Generates a valid crossword board.
  * Returns a 5x5 2D array or null on failure.
  */
-export const generateComputerBoard = (difficulty = 'normal') => {
-  // Hard mode needs more attempts due to smaller word pool
-  const maxAttempts = difficulty === 'hard' ? 50 : 20;
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    const result = tryGenerate(difficulty);
+export const generateComputerBoard = () => {
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const result = tryGenerate();
     if (result) return result;
   }
   return null;
 };
 
-const tryGenerate = (difficulty) => {
-  const isHard = difficulty === 'hard';
+/**
+ * Generates the daily board — identical for everyone on the same calendar day.
+ * Seeded by YYYYMMDD so it changes at midnight local time.
+ */
+export const generateDailyBoard = () => {
+  const rng = mulberry32(todaySeed());
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const result = tryGenerate(rng);
+    if (result) return result;
+  }
+  return null;
+};
 
-  // Hard mode: row1 pool = hard words first, then normal as fallback for variety.
-  // Easy mode: restricted recognisable-word pool only.
-  const words5 = difficulty === 'easy' ? WORDS_5_EASY
-               : isHard ? [...shuffle(WORDS_5_HARD), ...shuffle(WORDS_5)]
-               : WORDS_5;
-  // Hard mode: combined index so filterWords can find normal-word fallbacks.
-  const idx4   = difficulty === 'easy' ? IDX4_EASY
-               : isHard ? IDX4_HARD_MIXED
-               : IDX4_NORMAL;
-  // The 4-letter word pool used for filterWords — combined for hard so Set works correctly.
-  const words4 = difficulty === 'easy' ? WORDS_4_EASY
-               : isHard ? [...WORDS_4_HARD, ...WORDS_4]
-               : WORDS_4;
+/** Returns today's date string as YYYY-MM-DD (used for localStorage tracking). */
+export const todayString = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
+const tryGenerate = (rng = Math.random) => {
   // Step 1: Pick a random 5-letter word for Row 1.
-  // For hard mode the array is already ordered (hard first), so slicing 50 almost
-  // always picks from the hard list; normal words only surface if hard words exhaust.
-  const row1Candidates = isHard ? words5 : shuffle(words5);
+  const row1Candidates = shuffle(WORDS_5, rng);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // Row 1 letters at positions: row1[0]@(0,1), row1[1]@(1,1), row1[2]@(2,1), row1[3]@(3,1), row1[4]@(4,1)
 
     // Step 2: Pick Col 1 (4-letter) where col1[0] = row1[1]
-    // Hard mode: hardBias sorts hard words first so they're always preferred.
-    const applyBias = isHard ? hardBias : shuffle;
-    const col1Candidates = applyBias(filterWords(words4, idx4, { 0: row1[1] }));
+    const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[1] }), rng);
     if (col1Candidates.length === 0) continue;
 
     for (const col1 of col1Candidates.slice(0, 10)) {
       // col1: col1[0]@(1,1), col1[1]@(1,2), col1[2]@(1,3), col1[3]@(1,4)
 
       // Step 3: Pick Col 2 (4-letter) where col2[1] = row1[2]
-      const col2Candidates = applyBias(filterWords(words4, idx4, { 1: row1[2] }));
+      const col2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: row1[2] }), rng);
       if (col2Candidates.length === 0) continue;
 
       for (const col2 of col2Candidates.slice(0, 10)) {
         // col2: col2[0]@(2,0), col2[1]@(2,1), col2[2]@(2,2), col2[3]@(2,3)
 
         // Step 4: Pick Col 3 (4-letter) where col3[0] = row1[3]
-        const col3Candidates = applyBias(filterWords(words4, idx4, { 0: row1[3] }));
+        const col3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: row1[3] }), rng);
         if (col3Candidates.length === 0) continue;
 
         for (const col3 of col3Candidates.slice(0, 10)) {
@@ -407,26 +441,27 @@ const tryGenerate = (difficulty) => {
           // Step 6: Row 3 (3-letter) must be: col1[2], col2[3], col3[2]
           const row3 = col1[2] + col2[3] + col3[2];
 
-          // Check Row 2 and Row 3 are real words (always use full WORDS_3 for max intersection hits)
           if (WORDS_3.includes(row2) && WORDS_3.includes(row3)) {
-            // Build the board!
+            // Enforce max 2 of any letter across all 14 unique board positions
+            const allLetters = row1 + col1.slice(1) + col2[0] + col2.slice(2) + col3.slice(1);
+            const counts = {};
+            let tooMany = false;
+            for (const ch of allLetters) {
+              counts[ch] = (counts[ch] || 0) + 1;
+              if (counts[ch] > 2) { tooMany = true; break; }
+            }
+            if (tooMany) continue;
+
+            // Enforce max 1 plural word across all 6 board words
+            const pluralCount = [row1, col1, col2, col3, row2, row3].filter(isPlural).length;
+            if (pluralCount > 1) continue;
+
             const board = Array(5).fill(null).map(() => Array(5).fill(null));
 
-            // Row 1: y=1, x=0..4
             for (let x = 0; x < 5; x++) board[1][x] = row1[x];
-
-            // Col 1: x=1, y=1..4
             for (let i = 0; i < 4; i++) board[1 + i][1] = col1[i];
-
-            // Col 2: x=2, y=0..3
             for (let i = 0; i < 4; i++) board[i][2] = col2[i];
-
-            // Col 3: x=3, y=1..4
             for (let i = 0; i < 4; i++) board[1 + i][3] = col3[i];
-
-            // Row 2 & Row 3 are already set by the column fills
-            // Just verify:
-            // board[2][1]=col1[1], board[2][2]=col2[2], board[2][3]=col3[1] ✓
 
             return board;
           }
