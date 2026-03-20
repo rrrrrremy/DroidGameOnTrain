@@ -489,24 +489,6 @@ const DroidGame = () => {
     return { score: s, rawScore: raw, incorrectTiles: incorrect, totalPlaced: total, timePenalty: tp };
   }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid]);
 
-  const scoreCard = useMemo(() => {
-    if (gameState !== 'end' || !player1Board) return '';
-    const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
-    const correctSet   = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
-    const grid = board.map((row, y) =>
-      row.map((letter, x) => {
-        if (removedSquares.has(y * 5 + x + 1)) return '⬛';
-        const key = `${x},${y}`;
-        if (preservedSet.has(key)) return '🟨';
-        if (correctSet.has(key))   return '🟩';
-        if (letter)                return '🟥';
-        return '⬜';
-      }).join('')
-    ).join('\n');
-    const modeLabel  = dailyMode ? `Daily ${todayString()}` : vsComputer ? 'vs Computer' : '2 Player';
-    const hintsLabel = letterHintsUsed > 0 ? ` · ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}` : '';
-    return `DROID 🧠\n${grid}\n${score}/${maxScore} · ${modeLabel}${hintsLabel}`;
-  }, [gameState, board, player1Board, preservedTiles, correctTiles, letterHintsUsed, score, vsComputer, dailyMode, maxScore, removedSquares]);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -696,10 +678,6 @@ const DroidGame = () => {
                 removedSquares={removedSquares}
               />
             </div>
-          </div>
-
-          <div className="score-card">
-            <pre className="score-card-grid">{scoreCard}</pre>
           </div>
 
           <Button onClick={resetGame} primary>
