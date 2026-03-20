@@ -125,12 +125,12 @@ const DroidGame = () => {
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Timer: only runs during vs-computer player2 phase
+  // Timer: runs during player2 phase (both vs-computer and two-player)
   useEffect(() => {
-    if (!vsComputer || gameState !== 'player2') return;
+    if (gameState !== 'player2') return;
     const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [vsComputer, gameState]);
+  }, [gameState]);
 
   // ── Interactions ──────────────────────────────────────────────────────────
 
@@ -405,7 +405,7 @@ const DroidGame = () => {
     }
     const total = player1Board.flat().filter(Boolean).length;
     const raw = correctTiles.length;
-    const tp = vsComputer ? Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10 : 0;
+    const tp = Math.round(Math.max(0, (timerSeconds - 120) / 60) * 0.2 * 10) / 10;
     const s = Math.max(0, Math.round((raw - letterHintsUsed - tp) * 10) / 10);
 
     const incorrect = [];
@@ -446,7 +446,7 @@ const DroidGame = () => {
       {gameState !== 'start' && (
         <header className="site-header">
           <span className="site-header-title">Droid</span>
-          {vsComputer && (gameState === 'player2' || gameState === 'end') && (() => {
+          {(gameState === 'player2' || gameState === 'end') && (() => {
             const m = Math.floor(timerSeconds / 60);
             const s = timerSeconds % 60;
             const over = timerSeconds > 120;
@@ -503,7 +503,7 @@ const DroidGame = () => {
           />
 
           <div className="actions">
-            {vsComputer && currentPlayer === 2 && (
+            {currentPlayer === 2 && (
               <div className="hint-actions">
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
                   Reveal letter −1pt
@@ -515,7 +515,7 @@ const DroidGame = () => {
             </Button>
           </div>
 
-          {vsComputer && currentPlayer === 2 && letterHintsUsed > 0 && (
+          {currentPlayer === 2 && letterHintsUsed > 0 && (
             <div className="hint-penalty-note">
               −{letterHintsUsed} pt{letterHintsUsed !== 1 ? 's' : ''} ({letterHintsUsed} hint{letterHintsUsed !== 1 ? 's' : ''})
             </div>
@@ -557,7 +557,7 @@ const DroidGame = () => {
             <div className="score-label">
               {correctTiles.length} / {maxScore} tiles matched
             </div>
-            {vsComputer && (letterHintsUsed > 0 || timePenalty > 0) && (
+            {(letterHintsUsed > 0 || timePenalty > 0) && (
               <div className="score-penalty">
                 {rawScore}/{maxScore}
                 {letterHintsUsed > 0 && ` − ${letterHintsUsed} hint${letterHintsUsed !== 1 ? 's' : ''}`}
