@@ -778,6 +778,48 @@ body {
   color: #f59e0b;
 }
 
+/* Clear board + live score side by side */
+.clear-score-row {
+  display: flex;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: stretch;
+}
+
+.clear-score-row .hint-btn {
+  flex: 1;
+}
+
+.live-score-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--surface);
+  padding: 0.3rem 0.5rem;
+  line-height: 1.2;
+  transition: color 0.3s;
+}
+
+.live-score-grade {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.1rem;
+  font-weight: 400;
+}
+
+.live-score-pts {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.live-score-badge.high { color: var(--green-border); border-color: var(--green-border); }
+.live-score-badge.mid  { color: var(--yellow-border); border-color: var(--yellow-border); }
+.live-score-badge.low  { color: #ef4444; border-color: #ef4444; }
+
 /* Finish / End Turn always full width */
 .actions .button { width: 100%; }
 

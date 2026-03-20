@@ -490,6 +490,12 @@ const DroidGame = () => {
   }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid]);
 
 
+  // ── Live score (player 2 turn) ────────────────────────────────────────────
+  const liveTimePenalty = Math.round(Math.max(0, timerSeconds - 120) / 10) / 10;
+  const liveScore = Math.max(0, Math.round((maxScore - letterHintsUsed - liveTimePenalty) * 10) / 10);
+  const liveGrade = getGrade(liveScore, maxScore);
+  const liveScoreClass = liveScore >= maxScore * (10 / 12) ? 'high' : liveScore >= maxScore * (7.5 / 12) ? 'mid' : 'low';
+
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
@@ -551,9 +557,17 @@ const DroidGame = () => {
           />
 
           <div className="actions">
-            <button className="hint-btn" onClick={handleClearBoard}>
-              Clear board
-            </button>
+            <div className="clear-score-row">
+              <button className="hint-btn" onClick={handleClearBoard}>
+                Clear board
+              </button>
+              {currentPlayer === 2 && (
+                <div className={`live-score-badge ${liveScoreClass}`}>
+                  <span className="live-score-grade">{liveGrade}</span>
+                  <span className="live-score-pts">{liveScore}/{maxScore} pts</span>
+                </div>
+              )}
+            </div>
             {currentPlayer === 2 && (
               <div className="hint-actions">
                 <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
