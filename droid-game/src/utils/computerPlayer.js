@@ -415,8 +415,10 @@ export const SHAPE_IDS = Object.keys(BOARD_SHAPES);
 //          . . . X .    col3[4] at (3,4)
 // Cols: col1 x=1 y=1..3 (3-letter), col2 x=2 y=1..3 (3-letter), col3 x=3 y=0..4 (5-letter)
 
-function tryGenerateBolt(rng = Math.random) {
-  const col3Candidates = shuffle(WORDS_5_NON_PLURAL, rng);
+function tryGenerateBolt(rng = Math.random, avoid = null) {
+  let pool = avoid ? WORDS_5_NON_PLURAL.filter((w) => !avoid.has(w)) : WORDS_5_NON_PLURAL;
+  if (pool.length === 0) pool = WORDS_5_NON_PLURAL;
+  const col3Candidates = shuffle(pool, rng);
 
   for (const col3 of col3Candidates.slice(0, 50)) {
     // row1 (y=1, x=0..3): 4-letter, row1[3] = col3[1]
@@ -599,15 +601,37 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
   return count;
 };
 
+const RECENT_WORDS_KEY = 'droid_recent_words';
+const MAX_RECENT_WORDS = 30;
+
+const getRecentWords = () => {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_WORDS_KEY) || '[]');
+  } catch { return []; }
+};
+
+const recordRecentWord = (word) => {
+  try {
+    const recent = getRecentWords();
+    recent.push(word);
+    if (recent.length > MAX_RECENT_WORDS) recent.splice(0, recent.length - MAX_RECENT_WORDS);
+    localStorage.setItem(RECENT_WORDS_KEY, JSON.stringify(recent));
+  } catch { /* ignore */ }
+};
+
 export const generateComputerBoard = (shape = 'droid') => {
   const gen = GENERATORS[shape] || GENERATORS.droid;
+  const recentSet = new Set(getRecentWords());
+  // Try with avoidance first (40 attempts), then relax (20 more)
   for (let attempt = 0; attempt < 60; attempt++) {
-    const result = gen();
+    const avoid = attempt < 40 ? recentSet : null;
+    const result = gen(undefined, avoid);
     if (result) {
       const { board, fiveLetterWord } = result;
       const letterPool = {};
       board.flat().forEach((ch) => { if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1; });
       const combinationCount = countBoardCombinations(shape, fiveLetterWord, letterPool);
+      recordRecentWord(fiveLetterWord);
       return { board, fiveLetterWord, combinationCount };
     }
   }
@@ -636,9 +660,11 @@ export const todayString = () => {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
 
-function tryGenerateDroid(rng = Math.random) {
+function tryGenerateDroid(rng = Math.random, avoid = null) {
   // Step 1: Pick a random non-plural 5-letter word for Row 1.
-  const row1Candidates = shuffle(WORDS_5_NON_PLURAL, rng);
+  let row1Pool = avoid ? WORDS_5_NON_PLURAL.filter((w) => !avoid.has(w)) : WORDS_5_NON_PLURAL;
+  if (row1Pool.length === 0) row1Pool = WORDS_5_NON_PLURAL;
+  const row1Candidates = shuffle(row1Pool, rng);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // Row 1 letters at positions: row1[0]@(0,1), row1[1]@(1,1), row1[2]@(2,1), row1[3]@(3,1), row1[4]@(4,1)
@@ -714,8 +740,10 @@ function tryGenerateDroid(rng = Math.random) {
 //          . X . . .    col1[3] at (1,4)
 // Cols: col1 x=1 y=1..4 (4-letter), col2 x=2 y=0..3 (4-letter), col3 x=3 y=1..3 (3-letter)
 
-function tryGenerateInvader(rng = Math.random) {
-  const row1Candidates = shuffle(WORDS_5_NON_PLURAL, rng);
+function tryGenerateInvader(rng = Math.random, avoid = null) {
+  let pool = avoid ? WORDS_5_NON_PLURAL.filter((w) => !avoid.has(w)) : WORDS_5_NON_PLURAL;
+  if (pool.length === 0) pool = WORDS_5_NON_PLURAL;
+  const row1Candidates = shuffle(pool, rng);
 
   for (const row1 of row1Candidates.slice(0, 50)) {
     // col1 (x=1, y=1..4): 4-letter, col1[0] = row1[1]
@@ -781,8 +809,10 @@ function tryGenerateInvader(rng = Math.random) {
 //          . X . X .    col1[3] at (1,4), col3[3] at (3,4)
 // Cols: col1 x=1 y=1..4 (4-letter), col2 x=2 y=0..3 (4-letter), col3 x=3 y=1..4 (4-letter)
 
-function tryGenerateCross(rng = Math.random) {
-  const row2Candidates = shuffle(WORDS_5_NON_PLURAL, rng);
+function tryGenerateCross(rng = Math.random, avoid = null) {
+  let pool = avoid ? WORDS_5_NON_PLURAL.filter((w) => !avoid.has(w)) : WORDS_5_NON_PLURAL;
+  if (pool.length === 0) pool = WORDS_5_NON_PLURAL;
+  const row2Candidates = shuffle(pool, rng);
 
   for (const row2 of row2Candidates.slice(0, 50)) {
     // col1 (x=1, y=1..4): 4-letter, col1[1] = row2[1]

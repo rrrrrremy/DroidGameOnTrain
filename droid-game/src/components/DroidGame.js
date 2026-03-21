@@ -75,43 +75,51 @@ const stemVariants = (word) => {
   return variants;
 };
 
-/** Fetch a hint string for a word via Datamuse API at runtime. */
+/** Fetch a hint string for a word via Datamuse API at runtime.
+ *  Uses "triggered by" (statistical association) for the sweet spot:
+ *  related & thematic but not a dead giveaway like a synonym. */
 const fetchHintWord = async (word) => {
   if (!word) return null;
   try {
     const clean = (w) => /^[a-z]+$/.test(w) && w.length >= 3;
+    const lower = word.toLowerCase();
+    const candidates = [lower, ...stemVariants(lower)];
 
-    const trySynonyms = async (w) => {
-      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${w}&max=10`);
-      const syns = await res.json();
-      return syns.filter((i) => clean(i.word) && (i.score ?? 0) >= 1000);
-    };
+    // 1. Try "triggered by" — words statistically associated in text
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?rel_trg=${candidate}&max=15`);
+      const items = await res.json();
+      const good = items.filter((i) => clean(i.word) && i.word !== candidate);
+      if (good.length > 0) {
+        // Pick a random one from top results for variety
+        const pick = good[Math.floor(Math.random() * Math.min(good.length, 5))];
+        return `think: ${pick.word}`;
+      }
+    }
 
-    const tryDescription = async (w) => {
+    // 2. Fallback: "means like" but skip near-synonyms by taking further-down results
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=20`);
+      const items = await res.json();
+      // Skip top 3 (too close to synonyms), take from rank 4–15
+      const pool = items.slice(3).filter((i) => clean(i.word) && i.word !== candidate);
+      if (pool.length > 0) {
+        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 5))];
+        return `related: ${pick.word}`;
+      }
+    }
+
+    // 3. Last resort: two-word description
+    for (const candidate of candidates) {
       const [adjRes, spcRes] = await Promise.all([
-        fetch(`https://api.datamuse.com/words?rel_jjb=${w}&max=5`),
-        fetch(`https://api.datamuse.com/words?rel_spc=${w}&max=5`),
+        fetch(`https://api.datamuse.com/words?rel_jjb=${candidate}&max=5`),
+        fetch(`https://api.datamuse.com/words?rel_spc=${candidate}&max=5`),
       ]);
       const [adjs, spcs] = await Promise.all([adjRes.json(), spcRes.json()]);
       const bestAdj = adjs.find((i) => clean(i.word));
       const bestSpc = spcs.find((i) => clean(i.word));
       if (bestAdj && bestSpc) return `${bestAdj.word} ${bestSpc.word}`;
       if (bestSpc) return `a type of ${bestSpc.word}`;
-      return null;
-    };
-
-    const lower = word.toLowerCase();
-    const candidates = [lower, ...stemVariants(lower)];
-
-    for (const candidate of candidates) {
-      const strongSyns = await trySynonyms(candidate);
-      if (strongSyns.length > 0) return `synonym of "${strongSyns[0].word}"`;
-    }
-
-    // Fallback: two-word description using base form
-    for (const candidate of candidates) {
-      const desc = await tryDescription(candidate);
-      if (desc) return desc;
     }
 
     return null;
@@ -186,6 +194,7 @@ const DroidGame = () => {
   // Per-game metadata
   const [combinationCount, setCombinationCount] = useState(null);
   const [hintWord, setHintWord] = useState(null);
+  const [wordHintUsed, setWordHintUsed] = useState(false);
 
   // ── Ghost mode state ──────────────────────────────────────────────────────
   const [ghostMode, setGhostMode] = useState(false);
@@ -587,6 +596,7 @@ const DroidGame = () => {
     setPlayer2FullValid(false);
     setCombinationCount(null);
     setHintWord(null);
+    setWordHintUsed(false);
     setSessionPlayedShapes([]);
     setSessionScores({});
     resetGhostState();
@@ -617,6 +627,7 @@ const DroidGame = () => {
     setPlayer2FullValid(false);
     setCombinationCount(null);
     setHintWord(null);
+    setWordHintUsed(false);
     resetGhostState();
     setSessionPlayedShapes(newPlayed);
     setSessionScores(newScores);
@@ -831,7 +842,8 @@ const DroidGame = () => {
 
     const tp = calcTimePenalty(timerSeconds, boardShape);
     const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-    const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - tp) * 10) / 10));
+    const wordHintDeduction = wordHintUsed ? 2 : 0;
+    const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction - tp) * 10) / 10));
 
     const incorrect = player2FullValid ? [] : (() => {
       const arr = [];
@@ -844,14 +856,15 @@ const DroidGame = () => {
     })();
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: tp };
-  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty]);
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty, wordHintUsed]);
 
   const scorePercent = maxScore > 0 ? Math.round(score / maxScore * 100) : 0;
 
   // ── Live score (player 2 turn) ────────────────────────────────────────────
   const liveTimePenalty = calcTimePenalty(timerSeconds, boardShape);
   const hintDeductionLive = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-  const liveScore = Math.max(0, Math.round((maxScore - hintDeductionLive - liveTimePenalty) * 10) / 10);
+  const wordHintDeductionLive = wordHintUsed ? 2 : 0;
+  const liveScore = Math.max(0, Math.round((maxScore - hintDeductionLive - wordHintDeductionLive - liveTimePenalty) * 10) / 10);
   const liveScoreClass = getScoreColorClass(liveScore, maxScore);
   const livePercent = maxScore > 0 ? Math.round(liveScore / maxScore * 100) : 0;
 
@@ -919,7 +932,7 @@ const DroidGame = () => {
                   );
                 })()}
               </div>
-              {hintWord && (
+              {wordHintUsed && hintWord && (
                 <div className="hint-word-display">
                   Hint: {hintWord}
                 </div>
@@ -966,6 +979,11 @@ const DroidGame = () => {
                   Reveal letter −{hintPenalty}pt
                 </button>
               )}
+              {currentPlayer === 2 && !wordHintUsed && hintWord && (
+                <button className="hint-btn letter-hint-btn" onClick={() => setWordHintUsed(true)}>
+                  Word hint −2pt
+                </button>
+              )}
             </div>
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
@@ -1000,7 +1018,7 @@ const DroidGame = () => {
             })()}
           </div>
 
-          {hintWord && (
+          {wordHintUsed && hintWord && (
             <div className="hint-word-display">
               Hint: {hintWord}
             </div>
@@ -1087,6 +1105,12 @@ const DroidGame = () => {
                   Lock letter −{hintPenalty}pt
                 </button>
               )}
+              {/* Word hint */}
+              {!wordHintUsed && hintWord && (
+                <button className="hint-btn letter-hint-btn" onClick={() => setWordHintUsed(true)}>
+                  Word hint −2pt
+                </button>
+              )}
             </div>
             {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && !ghostIsLastLetter && (
               <Button onClick={handleGhostNextLetter} primary>
@@ -1125,7 +1149,8 @@ const DroidGame = () => {
       {gameState === 'end' && (() => {
         const thisScoreClass = getScoreColorClass(score, maxScore);
         const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-        const hasPenalties = letterHintsUsed > 0 || timePenalty > 0;
+        const wordHintDeduction = wordHintUsed ? 2 : 0;
+        const hasPenalties = letterHintsUsed > 0 || wordHintUsed || timePenalty > 0;
         const allPlayed = [...sessionPlayedShapes, boardShape];
         const allScores = { ...sessionScores, [boardShape]: scorePercent };
         const combinedTotal = Object.values(allScores).reduce((a, b) => a + b, 0);
@@ -1153,6 +1178,7 @@ const DroidGame = () => {
                 <div className="score-penalty">
                   {rawScore}/{maxScore}
                   {letterHintsUsed > 0 && ` − ${hintDeduction} hint${letterHintsUsed !== 1 ? 's' : ''}`}
+                  {wordHintUsed && ` − ${wordHintDeduction} word hint`}
                   {timePenalty > 0 && ` − ${timePenalty} time`}
                   {' '}= {score}/{maxScore}
                 </div>
