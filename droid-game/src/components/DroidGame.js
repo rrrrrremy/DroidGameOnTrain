@@ -348,9 +348,9 @@ const DroidGame = () => {
     for (let i = 0; i < ghostCurrentIndex; i++) {
       if (ghostLetterQueue[i] === ghostCurrentLetter) expectedPrev++;
     }
-    // Also count preserved tiles with this letter
+    // Only count hint-locked preserved tiles (not the initial 2 preserved tiles from game start)
     let preservedCount = 0;
-    preservedTiles.forEach((t) => { if (board[t.y]?.[t.x] === ghostCurrentLetter) preservedCount++; });
+    preservedTiles.forEach((t) => { if (t.isHint && board[t.y]?.[t.x] === ghostCurrentLetter) preservedCount++; });
     return placedCount + preservedCount > expectedPrev;
   })();
   const ghostAllPlaced = ghostMode && ghostCurrentIndex >= ghostLetterQueue.length;
@@ -662,24 +662,51 @@ const DroidGame = () => {
     setLetterHintsUsed((prev) => prev + 1);
   };
 
-  // ── Ghost mode: reveal/lock from board letters ────────────────────────────
+  // ── Ghost mode: move a board letter to its correct position and lock it ──
   const handleGhostRevealHint = () => {
     if (!player1Board || !ghostMode) return;
-    // Only letters already placed on the board (non-preserved) can be locked
-    const candidates = [];
+
+    // Prefer letters currently in the WRONG position that have an empty correct destination.
+    // Fallback: letters already in the correct position (just lock them).
+    const wrongPosCandidates = [];
+    const correctPosCandidates = [];
+
     board.forEach((row, y) =>
       row.forEach((letter, x) => {
-        if (letter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
-          // Only lock if letter matches P1's board at this position
-          if (player1Board[y][x] === letter) {
-            candidates.push({ x, y, letter });
-          }
+        if (!letter) return;
+        if (preservedTiles.some((t) => t.x === x && t.y === y)) return;
+
+        if (player1Board[y][x] === letter) {
+          // Already correct — can lock in place
+          correctPosCandidates.push({ fromX: x, fromY: y, toX: x, toY: y, letter });
+        } else {
+          // Find correct positions for this letter on P1's board
+          player1Board.forEach((p1Row, py) =>
+            p1Row.forEach((p1Letter, px) => {
+              if (p1Letter !== letter) return;
+              if (preservedTiles.some((t) => t.x === px && t.y === py)) return;
+              wrongPosCandidates.push({ fromX: x, fromY: y, toX: px, toY: py, letter });
+            })
+          );
         }
       })
     );
-    if (candidates.length === 0) return;
-    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
-    setPreservedTiles([...preservedTiles, { x: chosen.x, y: chosen.y, letter: chosen.letter }]);
+
+    const pool = wrongPosCandidates.length > 0 ? wrongPosCandidates : correctPosCandidates;
+    if (pool.length === 0) return;
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    const newBoard = board.map((r) => [...r]);
+
+    if (chosen.fromX !== chosen.toX || chosen.fromY !== chosen.toY) {
+      // Move letter to correct position; displace any occupant to the vacated spot
+      const displaced = newBoard[chosen.toY][chosen.toX];
+      newBoard[chosen.toY][chosen.toX] = chosen.letter;
+      newBoard[chosen.fromY][chosen.fromX] = displaced;
+    }
+
+    setBoard(newBoard);
+    setPreservedTiles([...preservedTiles, { x: chosen.toX, y: chosen.toY, letter: chosen.letter, isHint: true }]);
     setLetterHintsUsed((prev) => prev + 1);
   };
 
