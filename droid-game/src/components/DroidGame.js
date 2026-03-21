@@ -1070,7 +1070,7 @@ const DroidGame = () => {
                 </button>
               )}
               {/* MOVE button */}
-              {!ghostMoveUsed && !ghostAllPlaced && !ghostIsLastLetter && (
+              {!ghostMoveUsed && !ghostAllPlaced && (
                 <button
                   className={`hint-btn ghost-action-btn${ghostAction?.startsWith('move') ? ' active' : ''}`}
                   onClick={() => {
