@@ -613,7 +613,7 @@ const DroidGame = () => {
     setLetterHintsUsed(0);
     setTimerSeconds(0);
     setBoardShape('droid');
-    setPendingMode(null);
+    setPendingMode(ghostMode ? 'ghost' : null);
     setPlayer2FullValid(false);
     setCombinationCount(null);
     setHintWord(null);
@@ -754,6 +754,14 @@ const DroidGame = () => {
       setGhostMoveUsed(true);
       setGhostAction(null);
       setGhostActionTile(null);
+      return;
+    }
+
+    // Allow un-placing the current letter by clicking it again (so player can reposition)
+    if (ghostLetterPlaced && board[y][x] === ghostCurrentLetter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+      const newBoard = board.map((r) => [...r]);
+      newBoard[y][x] = null;
+      setBoard(newBoard);
       return;
     }
 
@@ -1080,12 +1088,12 @@ const DroidGame = () => {
                 </button>
               )}
             </div>
-            {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && (
+            {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && !ghostIsLastLetter && (
               <Button onClick={handleGhostNextLetter} primary>
                 Next Letter
               </Button>
             )}
-            {ghostAllPlaced && (
+            {(ghostAllPlaced || (ghostIsLastLetter && ghostLetterPlaced && !ghostAction)) && (
               <Button onClick={handleGhostFinish} primary disabled={isValidating}>
                 {isValidating ? 'Checking…' : 'Finish'}
               </Button>
