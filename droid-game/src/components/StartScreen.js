@@ -2,7 +2,7 @@ import React from 'react';
 
 const LETTERS = 'DROID'.split('');
 
-const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, onStartGhost, dailyPlayed }) => {
+const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, onStartGhost, onShowLeaderboard, dailyPlayed }) => {
   return (
     <div className="start-screen">
       <div className="start-content">
@@ -18,7 +18,12 @@ const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, onStartGhost, d
             {dailyPlayed ? '✅ Daily Puzzle Complete' : '📅 Daily Puzzle'}
           </button>
           {dailyPlayed && (
-            <p className="daily-played-note">Come back tomorrow for a new puzzle!</p>
+            <div className="daily-played-row">
+              <p className="daily-played-note">Come back tomorrow for a new puzzle!</p>
+              <button className="start-button leaderboard-button" onClick={onShowLeaderboard}>
+                🏆 Leaderboard
+              </button>
+            </div>
           )}
 
           <div className="start-or"><span>or</span></div>

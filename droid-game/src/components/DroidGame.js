@@ -17,10 +17,12 @@ import {
   generateComputerBoard,
   generateDailyBoard,
   todayString,
+  dailyShape,
   BOARD_SHAPES,
   extractFiveLetterWord,
   countBoardCombinations,
 } from '../utils/computerPlayer';
+import Leaderboard from './Leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
 
@@ -226,6 +228,9 @@ const DroidGame = () => {
   const [ghostAction, setGhostAction] = useState(null); // null | 'swap-select-first' | 'swap-select-second' | 'move-select' | 'move-place'
   const [ghostActionTile, setGhostActionTile] = useState(null); // first tile selected for swap/move
 
+  // ── Leaderboard state ──────────────────────────────────────────────────────
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
   const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
   const activeTileCount = 25 - removedSquares.size;
   const maxScore = activeTileCount - 2; // minus 2 preserved tiles
@@ -358,11 +363,6 @@ const DroidGame = () => {
 
   // ── Mode → Shape selection ─────────────────────────────────────────────────
 
-  const handleModeSelect = (mode) => {
-    setPendingMode(mode);
-    setGameState('selectShape');
-  };
-
   // Ghost-mode derived state
   const ghostCurrentLetter = ghostMode && ghostCurrentIndex < ghostLetterQueue.length
     ? ghostLetterQueue[ghostCurrentIndex]
@@ -449,6 +449,15 @@ const DroidGame = () => {
     } else {
       setGameState('player2');
     }
+  };
+
+  const handleModeSelect = (mode) => {
+    setPendingMode(mode);
+    if (mode === 'daily') {
+      handleShapeSelect(dailyShape());
+      return;
+    }
+    setGameState('selectShape');
   };
 
   // ── Turn management ───────────────────────────────────────────────────────
@@ -581,6 +590,7 @@ const DroidGame = () => {
       if (dailyMode) {
         localStorage.setItem(DAILY_STORAGE_KEY, todayString());
         setDailyPlayed(true);
+        setShowLeaderboard(true);
       }
     }
   };
@@ -621,6 +631,7 @@ const DroidGame = () => {
     setSessionPlayedShapes([]);
     setSessionScores({});
     resetGhostState();
+    setShowLeaderboard(false);
     setGameState('start');
   };
 
@@ -912,13 +923,25 @@ const DroidGame = () => {
         </header>
       )}
 
-      {gameState === 'start' && (
+      {gameState === 'start' && !showLeaderboard && (
         <StartScreen
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('computer')}
           onStartDaily={() => handleModeSelect('daily')}
           onStartGhost={() => handleModeSelect('ghost')}
+          onShowLeaderboard={() => setShowLeaderboard(true)}
           dailyPlayed={dailyPlayed}
+        />
+      )}
+
+      {gameState === 'start' && showLeaderboard && (
+        <Leaderboard
+          date={todayString()}
+          shape={dailyShape()}
+          score={0}
+          maxScore={0}
+          canSubmit={false}
+          onClose={() => setShowLeaderboard(false)}
         />
       )}
 
@@ -1267,13 +1290,29 @@ const DroidGame = () => {
               </div>
             </div>
 
+            {dailyMode && showLeaderboard && (
+              <Leaderboard
+                date={todayString()}
+                shape={boardShape}
+                score={score}
+                maxScore={maxScore}
+                canSubmit={true}
+                onClose={() => setShowLeaderboard(false)}
+              />
+            )}
+
             <div className="end-actions">
-              {gamesPlayed < 4 && (
+              {dailyMode && !showLeaderboard && (
+                <Button primary onClick={() => setShowLeaderboard(true)}>
+                  🏆 Leaderboard
+                </Button>
+              )}
+              {gamesPlayed < 4 && !dailyMode && (
                 <Button primary onClick={() => resetForNextDroid(scorePercent)}>
                   Play Next Droid
                 </Button>
               )}
-              <Button onClick={resetGame} primary={gamesPlayed >= 4}>
+              <Button onClick={resetGame} primary={gamesPlayed >= 4 || dailyMode}>
                 Play New Game
               </Button>
             </div>

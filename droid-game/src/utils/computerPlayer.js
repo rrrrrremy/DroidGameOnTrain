@@ -654,6 +654,12 @@ export const generateDailyBoard = (shape = 'droid') => {
   return null;
 };
 
+/** Returns today's board shape deterministically (rotates through shapes). */
+export const dailyShape = () => {
+  const seed = todaySeed();
+  return SHAPE_IDS[seed % SHAPE_IDS.length];
+};
+
 /** Returns today's date string as YYYY-MM-DD (used for localStorage tracking). */
 export const todayString = () => {
   const d = new Date();
