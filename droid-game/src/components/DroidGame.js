@@ -109,6 +109,28 @@ const fetchHintWord = async (word) => {
       if (best) return best;
     }
 
+    // Fallback: Datamuse rel_syn, then "means like"
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${candidate}&max=10`);
+      if (!res.ok) continue;
+      const syns = await res.json();
+      const best = syns
+        .map((i) => i.word.toLowerCase())
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
+    }
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=10`);
+      if (!res.ok) continue;
+      const items = await res.json();
+      const best = items
+        .map((i) => i.word.toLowerCase())
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
+    }
+
     return null;
   } catch {
     return null;
