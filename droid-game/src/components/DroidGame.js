@@ -147,6 +147,14 @@ const CopyButton = ({ url, label = 'Copy Link' }) => {
   );
 };
 
+/** Order letters for ghost mode: vowels first (alphabetical), then consonants (alphabetical). */
+const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
+const ghostLetterOrder = (letters) => {
+  const vowels = letters.filter((l) => VOWELS.has(l)).sort();
+  const consonants = letters.filter((l) => !VOWELS.has(l)).sort();
+  return [...vowels, ...consonants];
+};
+
 const DroidGame = () => {
   const [gameState, setGameState] = useState('start');
   const [board, setBoard] = useState(emptyBoard());
@@ -169,7 +177,7 @@ const DroidGame = () => {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [boardShape, setBoardShape] = useState('droid');
   const [player2FullValid, setPlayer2FullValid] = useState(false);
-  const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily'
+  const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
 
   // Session tracking (persists across the 4-droid game)
   const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
@@ -178,6 +186,15 @@ const DroidGame = () => {
   // Per-game metadata
   const [combinationCount, setCombinationCount] = useState(null);
   const [hintWord, setHintWord] = useState(null);
+
+  // ── Ghost mode state ──────────────────────────────────────────────────────
+  const [ghostMode, setGhostMode] = useState(false);
+  const [ghostLetterQueue, setGhostLetterQueue] = useState([]); // ordered letters to reveal
+  const [ghostCurrentIndex, setGhostCurrentIndex] = useState(0); // which letter is being placed
+  const [ghostSwapUsed, setGhostSwapUsed] = useState(false);
+  const [ghostMoveUsed, setGhostMoveUsed] = useState(false);
+  const [ghostAction, setGhostAction] = useState(null); // null | 'swap-select-first' | 'swap-select-second' | 'move-select' | 'move-place'
+  const [ghostActionTile, setGhostActionTile] = useState(null); // first tile selected for swap/move
 
   const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
   const activeTileCount = 25 - removedSquares.size;
@@ -242,9 +259,9 @@ const DroidGame = () => {
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Timer: runs during player2 phase (both vs-computer and two-player)
+  // Timer: runs during player2 and ghost phases
   useEffect(() => {
-    if (gameState !== 'player2') return;
+    if (gameState !== 'player2' && gameState !== 'ghost') return;
     const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [gameState]);
@@ -316,6 +333,29 @@ const DroidGame = () => {
     setGameState('selectShape');
   };
 
+  // Ghost-mode derived state
+  const ghostCurrentLetter = ghostMode && ghostCurrentIndex < ghostLetterQueue.length
+    ? ghostLetterQueue[ghostCurrentIndex]
+    : null;
+  const ghostLetterPlaced = ghostMode && ghostCurrentLetter && (() => {
+    // Check if the current letter has been placed on a non-preserved tile
+    let placedCount = 0;
+    board.forEach((row, y) => row.forEach((letter, x) => {
+      if (letter === ghostCurrentLetter && !preservedTiles.some((t) => t.x === x && t.y === y)) placedCount++;
+    }));
+    // Count how many of this letter should have been placed from previous reveals
+    let expectedPrev = 0;
+    for (let i = 0; i < ghostCurrentIndex; i++) {
+      if (ghostLetterQueue[i] === ghostCurrentLetter) expectedPrev++;
+    }
+    // Also count preserved tiles with this letter
+    let preservedCount = 0;
+    preservedTiles.forEach((t) => { if (board[t.y]?.[t.x] === ghostCurrentLetter) preservedCount++; });
+    return placedCount + preservedCount > expectedPrev;
+  })();
+  const ghostAllPlaced = ghostMode && ghostCurrentIndex >= ghostLetterQueue.length;
+  const ghostIsLastLetter = ghostMode && ghostCurrentIndex === ghostLetterQueue.length - 1;
+
   const handleShapeSelect = (shape) => {
     setBoardShape(shape);
 
@@ -326,7 +366,7 @@ const DroidGame = () => {
       return;
     }
 
-    // Computer or daily mode — generate the board
+    // Computer, daily, or ghost mode — generate the board
     const result = pendingMode === 'daily'
       ? generateDailyBoard(shape)
       : generateComputerBoard(shape);
@@ -353,8 +393,32 @@ const DroidGame = () => {
     setCombinationCount(combCount);
     setHintWord(null);
     fetchHintWord(fiveLetterWord).then(setHintWord);
-    setGameState('player2');
     setSelectedLetter(null);
+
+    if (pendingMode === 'ghost') {
+      // Build the ghost letter queue: all non-preserved letters, ordered vowels-first
+      const removed = BOARD_SHAPES[shape]?.removed ?? BOARD_SHAPES.droid.removed;
+      const preservedSet = new Set(preservedLetters.map((t) => `${t.x},${t.y}`));
+      const letters = [];
+      p1Board.forEach((row, y) =>
+        row.forEach((letter, x) => {
+          const sq = y * 5 + x + 1;
+          if (letter && !removed.has(sq) && !preservedSet.has(`${x},${y}`)) {
+            letters.push(letter);
+          }
+        })
+      );
+      setGhostMode(true);
+      setGhostLetterQueue(ghostLetterOrder(letters));
+      setGhostCurrentIndex(0);
+      setGhostSwapUsed(false);
+      setGhostMoveUsed(false);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      setGameState('ghost');
+    } else {
+      setGameState('player2');
+    }
   };
 
   // ── Turn management ───────────────────────────────────────────────────────
@@ -491,6 +555,16 @@ const DroidGame = () => {
     }
   };
 
+  const resetGhostState = () => {
+    setGhostMode(false);
+    setGhostLetterQueue([]);
+    setGhostCurrentIndex(0);
+    setGhostSwapUsed(false);
+    setGhostMoveUsed(false);
+    setGhostAction(null);
+    setGhostActionTile(null);
+  };
+
   // Full reset including session
   const resetGame = () => {
     setBoard(emptyBoard());
@@ -515,6 +589,7 @@ const DroidGame = () => {
     setHintWord(null);
     setSessionPlayedShapes([]);
     setSessionScores({});
+    resetGhostState();
     setGameState('start');
   };
 
@@ -542,6 +617,7 @@ const DroidGame = () => {
     setPlayer2FullValid(false);
     setCombinationCount(null);
     setHintWord(null);
+    resetGhostState();
     setSessionPlayedShapes(newPlayed);
     setSessionScores(newScores);
     setGameState('selectShape');
@@ -584,6 +660,126 @@ const DroidGame = () => {
     setBoard(newBoard);
     setPreservedTiles([...preservedTiles, { x: chosen.x, y: chosen.y, letter: chosen.letter }]);
     setLetterHintsUsed((prev) => prev + 1);
+  };
+
+  // ── Ghost mode: reveal/lock from board letters ────────────────────────────
+  const handleGhostRevealHint = () => {
+    if (!player1Board || !ghostMode) return;
+    // Only letters already placed on the board (non-preserved) can be locked
+    const candidates = [];
+    board.forEach((row, y) =>
+      row.forEach((letter, x) => {
+        if (letter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+          // Only lock if letter matches P1's board at this position
+          if (player1Board[y][x] === letter) {
+            candidates.push({ x, y, letter });
+          }
+        }
+      })
+    );
+    if (candidates.length === 0) return;
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    setPreservedTiles([...preservedTiles, { x: chosen.x, y: chosen.y, letter: chosen.letter }]);
+    setLetterHintsUsed((prev) => prev + 1);
+  };
+
+  // ── Ghost mode: place current letter on a tile ─────────────────────────
+  const handleGhostTileClick = (x, y) => {
+    if (removedSquares.has(y * 5 + x + 1)) return;
+    if (preservedTiles.some((t) => t.x === x && t.y === y)) return;
+
+    // Handle SWAP action
+    if (ghostAction === 'swap-select-first') {
+      if (!board[y][x]) return; // must pick a filled tile
+      setGhostActionTile({ x, y });
+      setGhostAction('swap-select-second');
+      return;
+    }
+    if (ghostAction === 'swap-select-second') {
+      if (!board[y][x]) return; // must pick a filled tile
+      const { x: ax, y: ay } = ghostActionTile;
+      if (ax === x && ay === y) { setGhostAction(null); setGhostActionTile(null); return; } // cancel
+      const newBoard = board.map((r) => [...r]);
+      const temp = newBoard[ay][ax];
+      newBoard[ay][ax] = newBoard[y][x];
+      newBoard[y][x] = temp;
+      setBoard(newBoard);
+      setGhostSwapUsed(true);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      return;
+    }
+
+    // Handle MOVE action
+    if (ghostAction === 'move-select') {
+      if (!board[y][x]) return; // must pick a filled tile
+      setGhostActionTile({ x, y, letter: board[y][x] });
+      setGhostAction('move-place');
+      return;
+    }
+    if (ghostAction === 'move-place') {
+      if (board[y][x]) return; // must pick an empty tile
+      const { x: ax, y: ay, letter } = ghostActionTile;
+      const newBoard = board.map((r) => [...r]);
+      newBoard[ay][ax] = null;
+      newBoard[y][x] = letter;
+      setBoard(newBoard);
+      setGhostMoveUsed(true);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      return;
+    }
+
+    // Normal ghost placement: place the current letter on an empty tile
+    if (!ghostCurrentLetter || ghostLetterPlaced) return;
+    if (board[y][x]) return; // tile already filled
+
+    const newBoard = board.map((r) => [...r]);
+    newBoard[y][x] = ghostCurrentLetter;
+    setBoard(newBoard);
+  };
+
+  // Ghost: advance to next letter
+  const handleGhostNextLetter = () => {
+    if (!ghostLetterPlaced) return;
+    setGhostCurrentIndex((prev) => prev + 1);
+  };
+
+  // Ghost: finish game — trigger scoring
+  const handleGhostFinish = async () => {
+    const activeRuns = getActiveRuns(boardShape);
+    const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+
+    let isFullValid = false;
+    if (allFilled) {
+      setIsValidating(true);
+      try {
+        const uniqueWords = [
+          ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+        ];
+        const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+        isFullValid = results.every(Boolean);
+      } finally {
+        setIsValidating(false);
+      }
+    }
+
+    setPlayer2FullValid(isFullValid);
+
+    let correct;
+    if (isFullValid) {
+      const seen = new Set();
+      correct = [];
+      activeRuns.flat().forEach(({ x, y }) => {
+        const key = `${x},${y}`;
+        if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+      });
+    } else {
+      correct = checkCorrectTiles(board, player1Board);
+    }
+
+    setCorrectTiles(correct);
+    setGameState('end');
   };
 
   // ── Derived end-screen data ───────────────────────────────────────────────
@@ -643,6 +839,7 @@ const DroidGame = () => {
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('computer')}
           onStartDaily={() => handleModeSelect('daily')}
+          onStartGhost={() => handleModeSelect('ghost')}
           dailyPlayed={dailyPlayed}
         />
       )}
@@ -738,6 +935,134 @@ const DroidGame = () => {
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'ghost' && (
+        <div className="game-play ghost-play">
+          {isValidating && (
+            <div className="validation-loading">
+              <div className="spinner" />
+              Checking words…
+            </div>
+          )}
+
+          {/* HUD: live score + timer */}
+          <div className="live-hud">
+            <div className={`live-score-badge ${liveScoreClass}`}>
+              <span className="live-score-grade">{livePercent}%</span>
+              <span className="live-score-pts">max achievable</span>
+            </div>
+            {(() => {
+              const m = Math.floor(timerSeconds / 60);
+              const s = timerSeconds % 60;
+              return (
+                <span className={`hint-timer ${getTimerClass(timerSeconds)}`}>
+                  {m}:{String(s).padStart(2, '0')}
+                </span>
+              );
+            })()}
+          </div>
+
+          {hintWord && (
+            <div className="hint-word-display">
+              Hint: {hintWord}
+            </div>
+          )}
+          {combinationCount !== null && (
+            <div className="combo-count">
+              {combinationCount} valid board combination{combinationCount !== 1 ? 's' : ''}
+            </div>
+          )}
+
+          {/* Ghost letter indicator */}
+          {!ghostAllPlaced && ghostCurrentLetter && (
+            <div className="ghost-letter-indicator">
+              <div className="ghost-progress">
+                Letter {ghostCurrentIndex + 1} of {ghostLetterQueue.length}
+                {ghostCurrentIndex < ghostLetterQueue.filter((l) => VOWELS.has(l)).length
+                  ? ' (vowels)'
+                  : ' (consonants)'}
+              </div>
+              <div className={`ghost-current-letter${ghostLetterPlaced ? ' placed' : ''}`}>
+                {ghostCurrentLetter}
+              </div>
+              {ghostAction && (
+                <div className="ghost-action-prompt">
+                  {ghostAction === 'swap-select-first' && 'Tap the first tile to swap'}
+                  {ghostAction === 'swap-select-second' && 'Tap the second tile to swap'}
+                  {ghostAction === 'move-select' && 'Tap a tile to move'}
+                  {ghostAction === 'move-place' && 'Tap an empty tile to place it'}
+                </div>
+              )}
+            </div>
+          )}
+          {ghostAllPlaced && (
+            <div className="ghost-letter-indicator">
+              <div className="ghost-progress">All letters placed!</div>
+            </div>
+          )}
+
+          <GameBoard
+            board={board}
+            onTileClick={handleGhostTileClick}
+            preservedTiles={preservedTiles}
+            correctTiles={[]}
+            incorrectTiles={[]}
+            invalidWordTiles={[]}
+            selectedLetter={(!ghostAllPlaced && !ghostLetterPlaced && !ghostAction) ? ghostCurrentLetter : null}
+            selectedTile={ghostActionTile}
+            currentPlayer={2}
+            onDragStart={() => {}}
+            onDrop={() => {}}
+            interactive={true}
+            removedSquares={removedSquares}
+          />
+
+          <div className="actions">
+            <div className="hint-actions">
+              {/* SWAP button */}
+              {!ghostSwapUsed && !ghostAllPlaced && !ghostIsLastLetter && (
+                <button
+                  className={`hint-btn ghost-action-btn${ghostAction?.startsWith('swap') ? ' active' : ''}`}
+                  onClick={() => {
+                    if (ghostAction?.startsWith('swap')) { setGhostAction(null); setGhostActionTile(null); }
+                    else { setGhostAction('swap-select-first'); setGhostActionTile(null); }
+                  }}
+                >
+                  Swap
+                </button>
+              )}
+              {/* MOVE button */}
+              {!ghostMoveUsed && !ghostAllPlaced && !ghostIsLastLetter && (
+                <button
+                  className={`hint-btn ghost-action-btn${ghostAction?.startsWith('move') ? ' active' : ''}`}
+                  onClick={() => {
+                    if (ghostAction?.startsWith('move')) { setGhostAction(null); setGhostActionTile(null); }
+                    else { setGhostAction('move-select'); setGhostActionTile(null); }
+                  }}
+                >
+                  Move
+                </button>
+              )}
+              {/* Reveal & lock hint */}
+              {!ghostAllPlaced && (
+                <button className="hint-btn letter-hint-btn" onClick={handleGhostRevealHint}>
+                  Lock letter −{hintPenalty}pt
+                </button>
+              )}
+            </div>
+            {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && (
+              <Button onClick={handleGhostNextLetter} primary>
+                Next Letter
+              </Button>
+            )}
+            {ghostAllPlaced && (
+              <Button onClick={handleGhostFinish} primary disabled={isValidating}>
+                {isValidating ? 'Checking…' : 'Finish'}
+              </Button>
+            )}
           </div>
         </div>
       )}

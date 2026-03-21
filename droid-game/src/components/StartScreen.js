@@ -2,7 +2,7 @@ import React from 'react';
 
 const LETTERS = 'DROID'.split('');
 
-const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, dailyPlayed }) => {
+const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, onStartGhost, dailyPlayed }) => {
   return (
     <div className="start-screen">
       <div className="start-content">
@@ -31,6 +31,12 @@ const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, dailyPlayed }) 
 
           <button className="start-button vs-computer" onClick={onStartVsComputer}>
             🤖 Play vs Computer
+          </button>
+
+          <div className="start-or"><span>or</span></div>
+
+          <button className="start-button ghost-button" onClick={onStartGhost}>
+            👻 Ghost Droid
           </button>
         </div>
 
