@@ -25,13 +25,12 @@ export const submitScore = async ({ name, score, maxScore, date, shape }) => {
   });
 };
 
-/** Fetch today's leaderboard (top 50, sorted by percent desc then score desc). */
+/** Fetch today's leaderboard (top 50, sorted by percent desc). */
 export const fetchLeaderboard = async (date) => {
   const q = query(
     collection(db, COLLECTION),
     where('date', '==', date),
     orderBy('percent', 'desc'),
-    orderBy('score', 'desc'),
     limit(50),
   );
   const snap = await getDocs(q);

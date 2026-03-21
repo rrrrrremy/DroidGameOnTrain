@@ -1,0 +1,13 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /daily_scores/{doc} {
+      allow read: if true;
+      allow create: if request.resource.data.keys().hasAll(['name','score','maxScore','percent','date','shape'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.score is number
+        && request.resource.data.percent is number;
+    }
+  }
+}

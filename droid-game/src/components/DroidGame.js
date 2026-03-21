@@ -917,13 +917,25 @@ const DroidGame = () => {
 
   return (
     <div className="game-container">
+      {/* Leaderboard overlay — sits above everything */}
+      {showLeaderboard && (
+        <Leaderboard
+          date={todayString()}
+          shape={boardShape || dailyShape()}
+          score={gameState === 'end' && dailyMode ? score : 0}
+          maxScore={gameState === 'end' && dailyMode ? maxScore : 0}
+          canSubmit={gameState === 'end' && dailyMode}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
+
       {gameState !== 'start' && gameState !== 'selectShape' && (
         <header className="site-header">
           <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
         </header>
       )}
 
-      {gameState === 'start' && !showLeaderboard && (
+      {gameState === 'start' && (
         <StartScreen
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('computer')}
@@ -931,17 +943,6 @@ const DroidGame = () => {
           onStartGhost={() => handleModeSelect('ghost')}
           onShowLeaderboard={() => setShowLeaderboard(true)}
           dailyPlayed={dailyPlayed}
-        />
-      )}
-
-      {gameState === 'start' && showLeaderboard && (
-        <Leaderboard
-          date={todayString()}
-          shape={dailyShape()}
-          score={0}
-          maxScore={0}
-          canSubmit={false}
-          onClose={() => setShowLeaderboard(false)}
         />
       )}
 
@@ -1290,29 +1291,18 @@ const DroidGame = () => {
               </div>
             </div>
 
-            {dailyMode && showLeaderboard && (
-              <Leaderboard
-                date={todayString()}
-                shape={boardShape}
-                score={score}
-                maxScore={maxScore}
-                canSubmit={true}
-                onClose={() => setShowLeaderboard(false)}
-              />
-            )}
-
             <div className="end-actions">
-              {dailyMode && !showLeaderboard && (
+              {dailyMode && (
                 <Button primary onClick={() => setShowLeaderboard(true)}>
                   🏆 Leaderboard
                 </Button>
               )}
-              {gamesPlayed < 4 && !dailyMode && (
+              {!dailyMode && gamesPlayed < 4 && (
                 <Button primary onClick={() => resetForNextDroid(scorePercent)}>
                   Play Next Droid
                 </Button>
               )}
-              <Button onClick={resetGame} primary={gamesPlayed >= 4 || dailyMode}>
+              <Button onClick={resetGame} primary={!dailyMode && gamesPlayed >= 4}>
                 Play New Game
               </Button>
             </div>

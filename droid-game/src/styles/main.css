@@ -1283,22 +1283,35 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   Leaderboard
+   Leaderboard overlay
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.leaderboard {
+.leaderboard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: center;
+  z-index: 1000;
+  overflow-y: auto;
   padding: 1.5rem 1rem;
+}
+
+.leaderboard-modal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
   width: 100%;
   max-width: 420px;
-  margin: 0 auto;
+  padding: 1.5rem 1.25rem;
+  position: relative;
 }
 
 .leaderboard-header {
   text-align: center;
   margin-bottom: 1.25rem;
+  padding-right: 1.5rem;
 }
 
 .leaderboard-header h2 {
@@ -1312,15 +1325,28 @@ body {
   color: var(--text-muted);
 }
 
+.leaderboard-x-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+}
+
+.leaderboard-x-btn:hover { color: var(--text); }
+
 .leaderboard-form {
   width: 100%;
   margin-bottom: 1.25rem;
-  text-align: center;
 }
 
 .leaderboard-your-score {
   font-size: 0.85rem;
-  font-weight: 600;
   margin-bottom: 0.75rem;
   color: var(--yellow-border);
 }
@@ -1332,12 +1358,12 @@ body {
 
 .leaderboard-name-input {
   flex: 1;
-  padding: 0.5rem 0.75rem;
+  padding: 0.6rem 0.75rem;
   border-radius: 6px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: var(--surface2);
   color: var(--text);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   outline: none;
 }
 
@@ -1346,45 +1372,53 @@ body {
 }
 
 .leaderboard-submit-btn {
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: 6px;
   border: 1px solid var(--yellow-border);
   background: #92400e;
   color: var(--text);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
+.leaderboard-submit-btn:hover:not(:disabled) { background: #78350f; }
+
 .leaderboard-submit-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
 
 .leaderboard-submitted {
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   color: var(--green-border);
   margin-bottom: 1rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .leaderboard-error {
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   color: var(--red-border);
   margin-bottom: 1rem;
+  text-align: center;
+}
+
+.leaderboard-list-wrap {
+  max-height: 50vh;
+  overflow-y: auto;
+  margin-bottom: 1.25rem;
 }
 
 .leaderboard-loading,
 .leaderboard-empty {
   font-size: 0.8rem;
   color: var(--text-muted);
-  padding: 2rem 0;
+  padding: 1.5rem 0;
+  text-align: center;
 }
 
-.leaderboard-list {
-  width: 100%;
-  margin-bottom: 1.25rem;
-}
+.leaderboard-list { width: 100%; }
 
 .leaderboard-row {
   display: grid;
@@ -1398,7 +1432,7 @@ body {
 
 .leaderboard-row-header {
   font-weight: 700;
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--text-muted);
@@ -1411,12 +1445,11 @@ body {
 .lb-pct { text-align: right; font-weight: 700; }
 
 .leaderboard-actions {
-  width: 100%;
   text-align: center;
 }
 
 .leaderboard-close-btn {
-  padding: 0.5rem 1.5rem;
+  padding: 0.55rem 1.5rem;
   border-radius: 6px;
   border: 1px solid var(--border);
   background: var(--surface2);
@@ -1425,10 +1458,9 @@ body {
   cursor: pointer;
 }
 
-.leaderboard-close-btn:hover {
-  background: var(--border);
-}
+.leaderboard-close-btn:hover { background: var(--border); }
 
+/* Start screen leaderboard button */
 .leaderboard-button {
   background: transparent;
   border-color: var(--yellow-border);
