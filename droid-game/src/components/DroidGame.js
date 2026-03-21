@@ -90,23 +90,35 @@ const fetchHintWord = async (word) => {
     const lower = word.toLowerCase();
     const candidates = [lower, ...stemVariants(lower)];
 
+    const collectSyns = (meanings) => {
+      const syns = [];
+      for (const meaning of meanings) {
+        for (const s of meaning.synonyms || []) syns.push(s.toLowerCase());
+        for (const def of meaning.definitions || []) {
+          for (const s of def.synonyms || []) syns.push(s.toLowerCase());
+        }
+      }
+      return syns;
+    };
+
     for (const candidate of candidates) {
       const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${candidate}`);
       if (!res.ok) continue;
       const entries = await res.json();
-      const syns = [];
-      for (const entry of entries) {
-        for (const meaning of entry.meanings || []) {
-          for (const s of meaning.synonyms || []) syns.push(s.toLowerCase());
-          for (const def of meaning.definitions || []) {
-            for (const s of def.synonyms || []) syns.push(s.toLowerCase());
-          }
-        }
-      }
-      const best = syns
+
+      // Primary meaning first (index 0 of first entry) to avoid obscure senses
+      const primaryMeaning = entries[0]?.meanings?.slice(0, 1) || [];
+      const primarySyns = collectSyns(primaryMeaning)
         .filter((s) => clean(s) && s !== lower)
-        .sort((a, b) => a.length - b.length)[0];
-      if (best) return best;
+        .sort((a, b) => a.length - b.length);
+      if (primarySyns[0]) return primarySyns[0];
+
+      // Expand to all meanings if primary had nothing
+      const allMeanings = entries.flatMap((e) => e.meanings || []);
+      const allSyns = collectSyns(allMeanings)
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length);
+      if (allSyns[0]) return allSyns[0];
     }
 
     // Fallback: Datamuse rel_syn, then "means like"
