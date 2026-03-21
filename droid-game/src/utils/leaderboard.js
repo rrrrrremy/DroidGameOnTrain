@@ -4,8 +4,6 @@ import {
   addDoc,
   query,
   where,
-  orderBy,
-  limit,
   getDocs,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -25,14 +23,15 @@ export const submitScore = async ({ name, score, maxScore, date, shape }) => {
   });
 };
 
-/** Fetch today's leaderboard (top 50, sorted by percent desc). */
+/** Fetch today's leaderboard — filter by date only (no composite index needed),
+ *  sort and cap client-side. */
 export const fetchLeaderboard = async (date) => {
   const q = query(
     collection(db, COLLECTION),
     where('date', '==', date),
-    orderBy('percent', 'desc'),
-    limit(50),
   );
   const snap = await getDocs(q);
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  const entries = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  entries.sort((a, b) => b.percent - a.percent || b.score - a.score);
+  return entries.slice(0, 50);
 };
