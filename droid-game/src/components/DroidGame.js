@@ -82,7 +82,7 @@ const stemVariants = (word) => {
   return variants;
 };
 
-/** Fetch the strongest synonym for a word via Datamuse API. */
+/** Fetch a synonym for a word via Free Dictionary API. */
 const fetchHintWord = async (word) => {
   if (!word) return null;
   try {
@@ -90,20 +90,23 @@ const fetchHintWord = async (word) => {
     const lower = word.toLowerCase();
     const candidates = [lower, ...stemVariants(lower)];
 
-    // 1. Best synonym (rel_syn) — try the word itself, then base forms
     for (const candidate of candidates) {
-      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${candidate}&max=5`);
-      const syns = await res.json();
-      const best = syns.find((i) => clean(i.word) && i.word !== lower);
-      if (best) return best.word;
-    }
-
-    // 2. Fallback: top "means like" result
-    for (const candidate of candidates) {
-      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=5`);
-      const items = await res.json();
-      const best = items.find((i) => clean(i.word) && i.word !== lower);
-      if (best) return best.word;
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${candidate}`);
+      if (!res.ok) continue;
+      const entries = await res.json();
+      const syns = [];
+      for (const entry of entries) {
+        for (const meaning of entry.meanings || []) {
+          for (const s of meaning.synonyms || []) syns.push(s.toLowerCase());
+          for (const def of meaning.definitions || []) {
+            for (const s of def.synonyms || []) syns.push(s.toLowerCase());
+          }
+        }
+      }
+      const best = syns
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
     }
 
     return null;
