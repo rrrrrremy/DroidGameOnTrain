@@ -64,20 +64,25 @@ const calcTimePenalty = (seconds, shapeId) => {
 };
 
 /** Return candidate base forms to try when the original word yields no results. */
+// Returns base-form candidates to try when the inflected form has no synonyms.
 const stemVariants = (word) => {
   const variants = [];
   if (word.endsWith('ed')) {
-    variants.push(word.slice(0, -1)); // piked → pike, framed → frame
-    variants.push(word.slice(0, -2)); // fruited → fruit, locked → lock
+    variants.push(word.slice(0, -1)); // loved → love, raced → race
+    variants.push(word.slice(0, -2)); // acted → act, ended → end
+  } else if (word.endsWith('er') && word.length >= 5) {
+    variants.push(word.slice(0, -1)); // maker → make, rider → ride
+    variants.push(word.slice(0, -2)); // owner → own, dryer → dry
+  } else if (word.endsWith('es') && word.length >= 5) {
+    variants.push(word.slice(0, -1)); // lives → live
+    variants.push(word.slice(0, -2)); // boxes → box, buses → bus
   } else if (word.endsWith('s') && word.length > 4) {
-    variants.push(word.slice(0, -1)); // fruits → fruit, lakes → lake
+    variants.push(word.slice(0, -1)); // bears → bear, coins → coin
   }
   return variants;
 };
 
-/** Fetch a hint string for a word via Datamuse API at runtime.
- *  Uses "triggered by" (statistical association) for the sweet spot:
- *  related & thematic but not a dead giveaway like a synonym. */
+/** Fetch the strongest synonym for a word via Datamuse API. */
 const fetchHintWord = async (word) => {
   if (!word) return null;
   try {
@@ -85,41 +90,20 @@ const fetchHintWord = async (word) => {
     const lower = word.toLowerCase();
     const candidates = [lower, ...stemVariants(lower)];
 
-    // 1. Try "triggered by" — words statistically associated in text.
-    //    Require score >= 1000 to filter out weak/spurious associations,
-    //    and only pick from the top 2 results to ensure quality.
+    // 1. Best synonym (rel_syn) — try the word itself, then base forms
     for (const candidate of candidates) {
-      const res = await fetch(`https://api.datamuse.com/words?rel_trg=${candidate}&max=10`);
-      const items = await res.json();
-      const good = items.filter((i) => clean(i.word) && i.word !== candidate && (i.score ?? 0) >= 1000);
-      if (good.length > 0) {
-        const pick = good[Math.floor(Math.random() * Math.min(good.length, 2))];
-        return `think: ${pick.word}`;
-      }
+      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${candidate}&max=5`);
+      const syns = await res.json();
+      const best = syns.find((i) => clean(i.word) && i.word !== lower);
+      if (best) return best.word;
     }
 
-    // 2. Fallback: "means like" — skip top 2 (near-synonyms), take rank 3–8.
+    // 2. Fallback: top "means like" result
     for (const candidate of candidates) {
-      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=15`);
+      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=5`);
       const items = await res.json();
-      const pool = items.slice(2, 8).filter((i) => clean(i.word) && i.word !== candidate);
-      if (pool.length > 0) {
-        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 3))];
-        return `related: ${pick.word}`;
-      }
-    }
-
-    // 3. Last resort: two-word description
-    for (const candidate of candidates) {
-      const [adjRes, spcRes] = await Promise.all([
-        fetch(`https://api.datamuse.com/words?rel_jjb=${candidate}&max=5`),
-        fetch(`https://api.datamuse.com/words?rel_spc=${candidate}&max=5`),
-      ]);
-      const [adjs, spcs] = await Promise.all([adjRes.json(), spcRes.json()]);
-      const bestAdj = adjs.find((i) => clean(i.word));
-      const bestSpc = spcs.find((i) => clean(i.word));
-      if (bestAdj && bestSpc) return `${bestAdj.word} ${bestSpc.word}`;
-      if (bestSpc) return `a type of ${bestSpc.word}`;
+      const best = items.find((i) => clean(i.word) && i.word !== lower);
+      if (best) return best.word;
     }
 
     return null;
