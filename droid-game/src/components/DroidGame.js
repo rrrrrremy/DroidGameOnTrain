@@ -63,34 +63,56 @@ const calcTimePenalty = (seconds, shapeId) => {
   return Math.floor(Math.max(0, seconds - 120) / interval) / 10;
 };
 
+/** Return candidate base forms to try when the original word yields no results. */
+const stemVariants = (word) => {
+  const variants = [];
+  if (word.endsWith('ed')) {
+    variants.push(word.slice(0, -1)); // piked → pike, framed → frame
+    variants.push(word.slice(0, -2)); // fruited → fruit, locked → lock
+  } else if (word.endsWith('s') && word.length > 4) {
+    variants.push(word.slice(0, -1)); // fruits → fruit, lakes → lake
+  }
+  return variants;
+};
+
 /** Fetch a hint string for a word via Datamuse API at runtime. */
 const fetchHintWord = async (word) => {
   if (!word) return null;
   try {
-    const lower = word.toLowerCase();
-    const synRes = await fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=10`);
-    const syns = await synRes.json();
-
     const clean = (w) => /^[a-z]+$/.test(w) && w.length >= 3;
-    // Only accept strongly-scored synonyms to avoid loose/unrelated results
-    const strongSyns = syns.filter((i) => clean(i.word) && (i.score ?? 0) >= 1000);
 
-    if (strongSyns.length > 0) {
-      return `synonym of "${strongSyns[0].word}"`;
+    const trySynonyms = async (w) => {
+      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${w}&max=10`);
+      const syns = await res.json();
+      return syns.filter((i) => clean(i.word) && (i.score ?? 0) >= 1000);
+    };
+
+    const tryDescription = async (w) => {
+      const [adjRes, spcRes] = await Promise.all([
+        fetch(`https://api.datamuse.com/words?rel_jjb=${w}&max=5`),
+        fetch(`https://api.datamuse.com/words?rel_spc=${w}&max=5`),
+      ]);
+      const [adjs, spcs] = await Promise.all([adjRes.json(), spcRes.json()]);
+      const bestAdj = adjs.find((i) => clean(i.word));
+      const bestSpc = spcs.find((i) => clean(i.word));
+      if (bestAdj && bestSpc) return `${bestAdj.word} ${bestSpc.word}`;
+      if (bestSpc) return `a type of ${bestSpc.word}`;
+      return null;
+    };
+
+    const lower = word.toLowerCase();
+    const candidates = [lower, ...stemVariants(lower)];
+
+    for (const candidate of candidates) {
+      const strongSyns = await trySynonyms(candidate);
+      if (strongSyns.length > 0) return `synonym of "${strongSyns[0].word}"`;
     }
 
-    // Fallback: build a two-word description from an adjective + hypernym
-    const [adjRes, spcRes] = await Promise.all([
-      fetch(`https://api.datamuse.com/words?rel_jjb=${lower}&max=5`),
-      fetch(`https://api.datamuse.com/words?rel_spc=${lower}&max=5`),
-    ]);
-    const [adjs, spcs] = await Promise.all([adjRes.json(), spcRes.json()]);
-
-    const bestAdj = adjs.find((i) => clean(i.word));
-    const bestSpc = spcs.find((i) => clean(i.word));
-
-    if (bestAdj && bestSpc) return `${bestAdj.word} ${bestSpc.word}`;
-    if (bestSpc) return `a type of ${bestSpc.word}`;
+    // Fallback: two-word description using base form
+    for (const candidate of candidates) {
+      const desc = await tryDescription(candidate);
+      if (desc) return desc;
+    }
 
     return null;
   } catch {
