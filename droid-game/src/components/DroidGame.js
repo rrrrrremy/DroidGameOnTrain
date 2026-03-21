@@ -1058,7 +1058,7 @@ const DroidGame = () => {
           <div className="actions">
             <div className="hint-actions">
               {/* SWAP button */}
-              {!ghostSwapUsed && !ghostAllPlaced && !ghostIsLastLetter && (
+              {!ghostSwapUsed && (
                 <button
                   className={`hint-btn ghost-action-btn${ghostAction?.startsWith('swap') ? ' active' : ''}`}
                   onClick={() => {
