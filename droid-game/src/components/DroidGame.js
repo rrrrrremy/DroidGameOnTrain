@@ -386,10 +386,11 @@ const DroidGame = () => {
   const ghostAllPlaced = ghostMode && ghostCurrentIndex >= ghostLetterQueue.length;
   const ghostIsLastLetter = ghostMode && ghostCurrentIndex === ghostLetterQueue.length - 1;
 
-  const handleShapeSelect = (shape) => {
+  const handleShapeSelect = (shape, modeOverride) => {
+    const mode = modeOverride ?? pendingMode;
     setBoardShape(shape);
 
-    if (pendingMode === 'player1') {
+    if (mode === 'player1') {
       setCombinationCount(null);
       setHintWord(null);
       setGameState('player1');
@@ -397,7 +398,7 @@ const DroidGame = () => {
     }
 
     // Computer, daily, or ghost mode — generate the board
-    const result = pendingMode === 'daily'
+    const result = mode === 'daily'
       ? generateDailyBoard(shape)
       : generateComputerBoard(shape);
 
@@ -410,7 +411,7 @@ const DroidGame = () => {
     const { board: computerBoardRaw, fiveLetterWord, combinationCount: combCount } = result;
 
     setVsComputer(true);
-    if (pendingMode === 'daily') setDailyMode(true);
+    if (mode === 'daily') setDailyMode(true);
 
     const p1Board = computerBoardRaw.map((r) => [...r]);
     const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
@@ -425,7 +426,7 @@ const DroidGame = () => {
     fetchHintWord(fiveLetterWord).then(setHintWord);
     setSelectedLetter(null);
 
-    if (pendingMode === 'ghost') {
+    if (mode === 'ghost') {
       // Build the ghost letter queue: all non-preserved letters, ordered vowels-first
       const removed = BOARD_SHAPES[shape]?.removed ?? BOARD_SHAPES.droid.removed;
       const preservedSet = new Set(preservedLetters.map((t) => `${t.x},${t.y}`));
@@ -454,7 +455,7 @@ const DroidGame = () => {
   const handleModeSelect = (mode) => {
     setPendingMode(mode);
     if (mode === 'daily') {
-      handleShapeSelect(dailyShape());
+      handleShapeSelect(dailyShape(), 'daily');
       return;
     }
     setGameState('selectShape');
@@ -1215,8 +1216,8 @@ const DroidGame = () => {
             <div className="end-header">
               <h2>Game Over!</h2>
 
-              {/* Session combined total if more than one game played */}
-              {gamesPlayed > 1 && (
+              {/* Session combined total if more than one game played (non-daily only) */}
+              {!dailyMode && gamesPlayed > 1 && (
                 <div className="session-combined">
                   Combined total ({gamesPlayed} droids): {combinedTotal}%
                 </div>
