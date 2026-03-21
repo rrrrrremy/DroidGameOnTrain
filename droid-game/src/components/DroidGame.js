@@ -818,6 +818,7 @@ const DroidGame = () => {
     const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
 
     let isFullValid = false;
+    let validWordSet = new Set();
     if (allFilled) {
       setIsValidating(true);
       try {
@@ -826,6 +827,7 @@ const DroidGame = () => {
         ];
         const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
         isFullValid = results.every(Boolean);
+        if (!isFullValid) validWordSet = new Set(uniqueWords.filter((_, i) => results[i]));
       } finally {
         setIsValidating(false);
       }
@@ -833,16 +835,22 @@ const DroidGame = () => {
 
     setPlayer2FullValid(isFullValid);
 
-    let correct;
+    const seen = new Set();
+    const correct = [];
+    const addTile = (x, y) => {
+      const key = `${x},${y}`;
+      if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+    };
+
     if (isFullValid) {
-      const seen = new Set();
-      correct = [];
-      activeRuns.flat().forEach(({ x, y }) => {
-        const key = `${x},${y}`;
-        if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
-      });
+      activeRuns.flat().forEach(({ x, y }) => addTile(x, y));
     } else {
-      correct = checkCorrectTiles(board, player1Board);
+      // Award tiles in valid English words, plus tiles matching player1's placement
+      activeRuns.forEach((run) => {
+        if (validWordSet.has(run.map(({ x, y }) => board[y][x]).join('')))
+          run.forEach(({ x, y }) => addTile(x, y));
+      });
+      checkCorrectTiles(board, player1Board).forEach(({ x, y }) => addTile(x, y));
     }
 
     setCorrectTiles(correct);
@@ -867,10 +875,11 @@ const DroidGame = () => {
     const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction - tp) * 10) / 10));
 
     const incorrect = player2FullValid ? [] : (() => {
+      const correctSet = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
       const arr = [];
       board.forEach((row, y) =>
         row.forEach((letter, x) => {
-          if (letter && letter !== player1Board[y][x]) arr.push({ x, y });
+          if (letter && !correctSet.has(`${x},${y}`)) arr.push({ x, y });
         })
       );
       return arr;
