@@ -85,26 +85,26 @@ const fetchHintWord = async (word) => {
     const lower = word.toLowerCase();
     const candidates = [lower, ...stemVariants(lower)];
 
-    // 1. Try "triggered by" — words statistically associated in text
+    // 1. Try "triggered by" — words statistically associated in text.
+    //    Require score >= 1000 to filter out weak/spurious associations,
+    //    and only pick from the top 2 results to ensure quality.
     for (const candidate of candidates) {
-      const res = await fetch(`https://api.datamuse.com/words?rel_trg=${candidate}&max=15`);
+      const res = await fetch(`https://api.datamuse.com/words?rel_trg=${candidate}&max=10`);
       const items = await res.json();
-      const good = items.filter((i) => clean(i.word) && i.word !== candidate);
+      const good = items.filter((i) => clean(i.word) && i.word !== candidate && (i.score ?? 0) >= 1000);
       if (good.length > 0) {
-        // Pick a random one from top results for variety
-        const pick = good[Math.floor(Math.random() * Math.min(good.length, 5))];
+        const pick = good[Math.floor(Math.random() * Math.min(good.length, 2))];
         return `think: ${pick.word}`;
       }
     }
 
-    // 2. Fallback: "means like" but skip near-synonyms by taking further-down results
+    // 2. Fallback: "means like" — skip top 2 (near-synonyms), take rank 3–8.
     for (const candidate of candidates) {
-      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=20`);
+      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=15`);
       const items = await res.json();
-      // Skip top 3 (too close to synonyms), take from rank 4–15
-      const pool = items.slice(3).filter((i) => clean(i.word) && i.word !== candidate);
+      const pool = items.slice(2, 8).filter((i) => clean(i.word) && i.word !== candidate);
       if (pool.length > 0) {
-        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 5))];
+        const pick = pool[Math.floor(Math.random() * Math.min(pool.length, 3))];
         return `related: ${pick.word}`;
       }
     }
