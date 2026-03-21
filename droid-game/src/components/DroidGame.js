@@ -17,10 +17,12 @@ import {
   generateComputerBoard,
   generateDailyBoard,
   todayString,
+  dailyShape,
   BOARD_SHAPES,
   extractFiveLetterWord,
   countBoardCombinations,
 } from '../utils/computerPlayer';
+import Leaderboard from './Leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
 
@@ -60,34 +62,90 @@ const getTimerClass = (secs) => {
 /** Compute time penalty given elapsed seconds and shape. */
 const calcTimePenalty = (seconds, shapeId) => {
   const interval = TIME_INTERVAL[shapeId] || 10;
-  return Math.floor(Math.max(0, seconds - 120) / interval) * 0.1;
+  return Math.floor(Math.max(0, seconds - 120) / interval) / 10;
 };
 
-/** Fetch a hint string for a word via Datamuse API at runtime. */
+/** Return candidate base forms to try when the original word yields no results. */
+// Returns base-form candidates to try when the inflected form has no synonyms.
+const stemVariants = (word) => {
+  const variants = [];
+  if (word.endsWith('ed')) {
+    variants.push(word.slice(0, -1)); // loved → love, raced → race
+    variants.push(word.slice(0, -2)); // acted → act, ended → end
+  } else if (word.endsWith('er') && word.length >= 5) {
+    variants.push(word.slice(0, -1)); // maker → make, rider → ride
+    variants.push(word.slice(0, -2)); // owner → own, dryer → dry
+  } else if (word.endsWith('es') && word.length >= 5) {
+    variants.push(word.slice(0, -1)); // lives → live
+    variants.push(word.slice(0, -2)); // boxes → box, buses → bus
+  } else if (word.endsWith('s') && word.length > 4) {
+    variants.push(word.slice(0, -1)); // bears → bear, coins → coin
+  }
+  return variants;
+};
+
+/** Fetch a synonym for a word via Free Dictionary API. */
 const fetchHintWord = async (word) => {
   if (!word) return null;
   try {
-    const lower = word.toLowerCase();
-    const [synRes, antRes] = await Promise.all([
-      fetch(`https://api.datamuse.com/words?rel_syn=${lower}&max=5`),
-      fetch(`https://api.datamuse.com/words?rel_ant=${lower}&max=3`),
-    ]);
-    const [syns, ants] = await Promise.all([synRes.json(), antRes.json()]);
-
     const clean = (w) => /^[a-z]+$/.test(w) && w.length >= 3;
+    const lower = word.toLowerCase();
+    const candidates = [lower, ...stemVariants(lower)];
 
-    const hints = [
-      ...ants.slice(0, 1).filter((i) => clean(i.word)).map((i) => `opposite of "${i.word}"`),
-      ...syns.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`),
-    ];
+    const collectSyns = (meanings) => {
+      const syns = [];
+      for (const meaning of meanings) {
+        for (const s of meaning.synonyms || []) syns.push(s.toLowerCase());
+        for (const def of meaning.definitions || []) {
+          for (const s of def.synonyms || []) syns.push(s.toLowerCase());
+        }
+      }
+      return syns;
+    };
 
-    if (hints.length > 0) return hints[Math.floor(Math.random() * hints.length)];
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${candidate}`);
+      if (!res.ok) continue;
+      const entries = await res.json();
 
-    // Fallback: ml= (means-like) has much broader coverage than rel_syn
-    const mlRes = await fetch(`https://api.datamuse.com/words?ml=${lower}&max=5`);
-    const ml = await mlRes.json();
-    const mlHints = ml.slice(0, 2).filter((i) => clean(i.word)).map((i) => `related to "${i.word}"`);
-    return mlHints.length > 0 ? mlHints[Math.floor(Math.random() * mlHints.length)] : null;
+      // Primary meaning first (index 0 of first entry) to avoid obscure senses
+      const primaryMeaning = entries[0]?.meanings?.slice(0, 1) || [];
+      const primarySyns = collectSyns(primaryMeaning)
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length);
+      if (primarySyns[0]) return primarySyns[0];
+
+      // Expand to all meanings if primary had nothing
+      const allMeanings = entries.flatMap((e) => e.meanings || []);
+      const allSyns = collectSyns(allMeanings)
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length);
+      if (allSyns[0]) return allSyns[0];
+    }
+
+    // Fallback: Datamuse rel_syn, then "means like"
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${candidate}&max=10`);
+      if (!res.ok) continue;
+      const syns = await res.json();
+      const best = syns
+        .map((i) => i.word.toLowerCase())
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
+    }
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=10`);
+      if (!res.ok) continue;
+      const items = await res.json();
+      const best = items
+        .map((i) => i.word.toLowerCase())
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -120,6 +178,14 @@ const CopyButton = ({ url, label = 'Copy Link' }) => {
   );
 };
 
+/** Order letters for ghost mode: vowels first (alphabetical), then consonants (alphabetical). */
+const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
+const ghostLetterOrder = (letters) => {
+  const vowels = letters.filter((l) => VOWELS.has(l)).sort();
+  const consonants = letters.filter((l) => !VOWELS.has(l)).sort();
+  return [...vowels, ...consonants];
+};
+
 const DroidGame = () => {
   const [gameState, setGameState] = useState('start');
   const [board, setBoard] = useState(emptyBoard());
@@ -142,7 +208,7 @@ const DroidGame = () => {
   const [timerSeconds, setTimerSeconds] = useState(0);
   const [boardShape, setBoardShape] = useState('droid');
   const [player2FullValid, setPlayer2FullValid] = useState(false);
-  const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily'
+  const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
 
   // Session tracking (persists across the 4-droid game)
   const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
@@ -151,6 +217,19 @@ const DroidGame = () => {
   // Per-game metadata
   const [combinationCount, setCombinationCount] = useState(null);
   const [hintWord, setHintWord] = useState(null);
+  const [wordHintUsed, setWordHintUsed] = useState(false);
+
+  // ── Ghost mode state ──────────────────────────────────────────────────────
+  const [ghostMode, setGhostMode] = useState(false);
+  const [ghostLetterQueue, setGhostLetterQueue] = useState([]); // ordered letters to reveal
+  const [ghostCurrentIndex, setGhostCurrentIndex] = useState(0); // which letter is being placed
+  const [ghostSwapUsed, setGhostSwapUsed] = useState(false);
+  const [ghostMoveUsed, setGhostMoveUsed] = useState(false);
+  const [ghostAction, setGhostAction] = useState(null); // null | 'swap-select-first' | 'swap-select-second' | 'move-select' | 'move-place'
+  const [ghostActionTile, setGhostActionTile] = useState(null); // first tile selected for swap/move
+
+  // ── Leaderboard state ──────────────────────────────────────────────────────
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
   const activeTileCount = 25 - removedSquares.size;
@@ -200,7 +279,7 @@ const DroidGame = () => {
 
     const shapeId = shape || 'droid';
     const fiveLetterWord = extractFiveLetterWord(decoded, shapeId);
-    const combCount = countBoardCombinations(shapeId, fiveLetterWord);
+    const combCount = countBoardCombinations(shapeId, fiveLetterWord, countLetters(decoded));
 
     setBoardShape(shapeId);
     setPlayer1Board(decoded);
@@ -215,9 +294,9 @@ const DroidGame = () => {
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Timer: runs during player2 phase (both vs-computer and two-player)
+  // Timer: runs during player2 and ghost phases
   useEffect(() => {
-    if (gameState !== 'player2') return;
+    if (gameState !== 'player2' && gameState !== 'ghost') return;
     const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
   }, [gameState]);
@@ -284,10 +363,28 @@ const DroidGame = () => {
 
   // ── Mode → Shape selection ─────────────────────────────────────────────────
 
-  const handleModeSelect = (mode) => {
-    setPendingMode(mode);
-    setGameState('selectShape');
-  };
+  // Ghost-mode derived state
+  const ghostCurrentLetter = ghostMode && ghostCurrentIndex < ghostLetterQueue.length
+    ? ghostLetterQueue[ghostCurrentIndex]
+    : null;
+  const ghostLetterPlaced = ghostMode && ghostCurrentLetter && (() => {
+    // Check if the current letter has been placed on a non-preserved tile
+    let placedCount = 0;
+    board.forEach((row, y) => row.forEach((letter, x) => {
+      if (letter === ghostCurrentLetter && !preservedTiles.some((t) => t.x === x && t.y === y)) placedCount++;
+    }));
+    // Count how many of this letter should have been placed from previous reveals
+    let expectedPrev = 0;
+    for (let i = 0; i < ghostCurrentIndex; i++) {
+      if (ghostLetterQueue[i] === ghostCurrentLetter) expectedPrev++;
+    }
+    // Only count hint-locked preserved tiles (not the initial 2 preserved tiles from game start)
+    let preservedCount = 0;
+    preservedTiles.forEach((t) => { if (t.isHint && board[t.y]?.[t.x] === ghostCurrentLetter) preservedCount++; });
+    return placedCount + preservedCount > expectedPrev;
+  })();
+  const ghostAllPlaced = ghostMode && ghostCurrentIndex >= ghostLetterQueue.length;
+  const ghostIsLastLetter = ghostMode && ghostCurrentIndex === ghostLetterQueue.length - 1;
 
   const handleShapeSelect = (shape) => {
     setBoardShape(shape);
@@ -299,7 +396,7 @@ const DroidGame = () => {
       return;
     }
 
-    // Computer or daily mode — generate the board
+    // Computer, daily, or ghost mode — generate the board
     const result = pendingMode === 'daily'
       ? generateDailyBoard(shape)
       : generateComputerBoard(shape);
@@ -326,8 +423,41 @@ const DroidGame = () => {
     setCombinationCount(combCount);
     setHintWord(null);
     fetchHintWord(fiveLetterWord).then(setHintWord);
-    setGameState('player2');
     setSelectedLetter(null);
+
+    if (pendingMode === 'ghost') {
+      // Build the ghost letter queue: all non-preserved letters, ordered vowels-first
+      const removed = BOARD_SHAPES[shape]?.removed ?? BOARD_SHAPES.droid.removed;
+      const preservedSet = new Set(preservedLetters.map((t) => `${t.x},${t.y}`));
+      const letters = [];
+      p1Board.forEach((row, y) =>
+        row.forEach((letter, x) => {
+          const sq = y * 5 + x + 1;
+          if (letter && !removed.has(sq) && !preservedSet.has(`${x},${y}`)) {
+            letters.push(letter);
+          }
+        })
+      );
+      setGhostMode(true);
+      setGhostLetterQueue(ghostLetterOrder(letters));
+      setGhostCurrentIndex(0);
+      setGhostSwapUsed(false);
+      setGhostMoveUsed(false);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      setGameState('ghost');
+    } else {
+      setGameState('player2');
+    }
+  };
+
+  const handleModeSelect = (mode) => {
+    setPendingMode(mode);
+    if (mode === 'daily') {
+      handleShapeSelect(dailyShape());
+      return;
+    }
+    setGameState('selectShape');
   };
 
   // ── Turn management ───────────────────────────────────────────────────────
@@ -406,7 +536,7 @@ const DroidGame = () => {
 
       const p1Board = board.map((r) => [...r]);
       const fiveLetterWord = extractFiveLetterWord(p1Board, boardShape);
-      const combCount = countBoardCombinations(boardShape, fiveLetterWord);
+      const combCount = countBoardCombinations(boardShape, fiveLetterWord, countLetters(p1Board));
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
       const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
       setPlayer1Board(p1Board);
@@ -460,8 +590,19 @@ const DroidGame = () => {
       if (dailyMode) {
         localStorage.setItem(DAILY_STORAGE_KEY, todayString());
         setDailyPlayed(true);
+        setShowLeaderboard(true);
       }
     }
+  };
+
+  const resetGhostState = () => {
+    setGhostMode(false);
+    setGhostLetterQueue([]);
+    setGhostCurrentIndex(0);
+    setGhostSwapUsed(false);
+    setGhostMoveUsed(false);
+    setGhostAction(null);
+    setGhostActionTile(null);
   };
 
   // Full reset including session
@@ -486,8 +627,11 @@ const DroidGame = () => {
     setPlayer2FullValid(false);
     setCombinationCount(null);
     setHintWord(null);
+    setWordHintUsed(false);
     setSessionPlayedShapes([]);
     setSessionScores({});
+    resetGhostState();
+    setShowLeaderboard(false);
     setGameState('start');
   };
 
@@ -511,10 +655,12 @@ const DroidGame = () => {
     setLetterHintsUsed(0);
     setTimerSeconds(0);
     setBoardShape('droid');
-    setPendingMode(null);
+    setPendingMode(ghostMode ? 'ghost' : null);
     setPlayer2FullValid(false);
     setCombinationCount(null);
     setHintWord(null);
+    setWordHintUsed(false);
+    resetGhostState();
     setSessionPlayedShapes(newPlayed);
     setSessionScores(newScores);
     setGameState('selectShape');
@@ -559,6 +705,169 @@ const DroidGame = () => {
     setLetterHintsUsed((prev) => prev + 1);
   };
 
+  // ── Ghost mode: move a board letter to its correct position and lock it ──
+  const handleGhostRevealHint = () => {
+    if (!player1Board || !ghostMode) return;
+
+    // Prefer letters currently in the WRONG position that have an empty correct destination.
+    // Fallback: letters already in the correct position (just lock them).
+    const wrongPosCandidates = [];
+    const correctPosCandidates = [];
+
+    board.forEach((row, y) =>
+      row.forEach((letter, x) => {
+        if (!letter) return;
+        if (preservedTiles.some((t) => t.x === x && t.y === y)) return;
+
+        if (player1Board[y][x] === letter) {
+          // Already correct — can lock in place
+          correctPosCandidates.push({ fromX: x, fromY: y, toX: x, toY: y, letter });
+        } else {
+          // Find correct positions for this letter on P1's board
+          player1Board.forEach((p1Row, py) =>
+            p1Row.forEach((p1Letter, px) => {
+              if (p1Letter !== letter) return;
+              if (preservedTiles.some((t) => t.x === px && t.y === py)) return;
+              wrongPosCandidates.push({ fromX: x, fromY: y, toX: px, toY: py, letter });
+            })
+          );
+        }
+      })
+    );
+
+    const pool = wrongPosCandidates.length > 0 ? wrongPosCandidates : correctPosCandidates;
+    if (pool.length === 0) return;
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    const newBoard = board.map((r) => [...r]);
+
+    if (chosen.fromX !== chosen.toX || chosen.fromY !== chosen.toY) {
+      // Move letter to correct position; displace any occupant to the vacated spot
+      const displaced = newBoard[chosen.toY][chosen.toX];
+      newBoard[chosen.toY][chosen.toX] = chosen.letter;
+      newBoard[chosen.fromY][chosen.fromX] = displaced;
+    }
+
+    setBoard(newBoard);
+    setPreservedTiles([...preservedTiles, { x: chosen.toX, y: chosen.toY, letter: chosen.letter, isHint: true }]);
+    setLetterHintsUsed((prev) => prev + 1);
+  };
+
+  // ── Ghost mode: place current letter on a tile ─────────────────────────
+  const handleGhostTileClick = (x, y) => {
+    if (removedSquares.has(y * 5 + x + 1)) return;
+    if (preservedTiles.some((t) => t.x === x && t.y === y)) return;
+
+    // Handle SWAP action
+    if (ghostAction === 'swap-select-first') {
+      if (!board[y][x]) return; // must pick a filled tile
+      setGhostActionTile({ x, y });
+      setGhostAction('swap-select-second');
+      return;
+    }
+    if (ghostAction === 'swap-select-second') {
+      if (!board[y][x]) return; // must pick a filled tile
+      const { x: ax, y: ay } = ghostActionTile;
+      if (ax === x && ay === y) { setGhostAction(null); setGhostActionTile(null); return; } // cancel
+      const newBoard = board.map((r) => [...r]);
+      const temp = newBoard[ay][ax];
+      newBoard[ay][ax] = newBoard[y][x];
+      newBoard[y][x] = temp;
+      setBoard(newBoard);
+      setGhostSwapUsed(true);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      return;
+    }
+
+    // Handle MOVE action
+    if (ghostAction === 'move-select') {
+      if (!board[y][x]) return; // must pick a filled tile
+      setGhostActionTile({ x, y, letter: board[y][x] });
+      setGhostAction('move-place');
+      return;
+    }
+    if (ghostAction === 'move-place') {
+      if (board[y][x]) return; // must pick an empty tile
+      const { x: ax, y: ay, letter } = ghostActionTile;
+      const newBoard = board.map((r) => [...r]);
+      newBoard[ay][ax] = null;
+      newBoard[y][x] = letter;
+      setBoard(newBoard);
+      setGhostMoveUsed(true);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      return;
+    }
+
+    // Allow un-placing the current letter by clicking it again (so player can reposition)
+    if (ghostLetterPlaced && board[y][x] === ghostCurrentLetter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+      const newBoard = board.map((r) => [...r]);
+      newBoard[y][x] = null;
+      setBoard(newBoard);
+      return;
+    }
+
+    // Normal ghost placement: place the current letter on an empty tile
+    if (!ghostCurrentLetter || ghostLetterPlaced) return;
+    if (board[y][x]) return; // tile already filled
+
+    const newBoard = board.map((r) => [...r]);
+    newBoard[y][x] = ghostCurrentLetter;
+    setBoard(newBoard);
+  };
+
+  // Ghost: advance to next letter
+  const handleGhostNextLetter = () => {
+    if (!ghostLetterPlaced) return;
+    setGhostCurrentIndex((prev) => prev + 1);
+  };
+
+  // Ghost: finish game — trigger scoring
+  const handleGhostFinish = async () => {
+    const activeRuns = getActiveRuns(boardShape);
+    const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+
+    let isFullValid = false;
+    let validWordSet = new Set();
+    if (allFilled) {
+      setIsValidating(true);
+      try {
+        const uniqueWords = [
+          ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+        ];
+        const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+        isFullValid = results.every(Boolean);
+        if (!isFullValid) validWordSet = new Set(uniqueWords.filter((_, i) => results[i]));
+      } finally {
+        setIsValidating(false);
+      }
+    }
+
+    setPlayer2FullValid(isFullValid);
+
+    const seen = new Set();
+    const correct = [];
+    const addTile = (x, y) => {
+      const key = `${x},${y}`;
+      if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+    };
+
+    if (isFullValid) {
+      activeRuns.flat().forEach(({ x, y }) => addTile(x, y));
+    } else {
+      // Award tiles in valid English words, plus tiles matching player1's placement
+      activeRuns.forEach((run) => {
+        if (validWordSet.has(run.map(({ x, y }) => board[y][x]).join('')))
+          run.forEach(({ x, y }) => addTile(x, y));
+      });
+      checkCorrectTiles(board, player1Board).forEach(({ x, y }) => addTile(x, y));
+    }
+
+    setCorrectTiles(correct);
+    setGameState('end');
+  };
+
   // ── Derived end-screen data ───────────────────────────────────────────────
 
   const { score, rawScore, incorrectTiles, timePenalty } = useMemo(() => {
@@ -573,27 +882,30 @@ const DroidGame = () => {
 
     const tp = calcTimePenalty(timerSeconds, boardShape);
     const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-    const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - tp) * 10) / 10));
+    const wordHintDeduction = wordHintUsed ? 2 : 0;
+    const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction - tp) * 10) / 10));
 
     const incorrect = player2FullValid ? [] : (() => {
+      const correctSet = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
       const arr = [];
       board.forEach((row, y) =>
         row.forEach((letter, x) => {
-          if (letter && letter !== player1Board[y][x]) arr.push({ x, y });
+          if (letter && !correctSet.has(`${x},${y}`)) arr.push({ x, y });
         })
       );
       return arr;
     })();
 
     return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: tp };
-  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty]);
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty, wordHintUsed]);
 
   const scorePercent = maxScore > 0 ? Math.round(score / maxScore * 100) : 0;
 
   // ── Live score (player 2 turn) ────────────────────────────────────────────
   const liveTimePenalty = calcTimePenalty(timerSeconds, boardShape);
   const hintDeductionLive = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-  const liveScore = Math.max(0, Math.round((maxScore - hintDeductionLive - liveTimePenalty) * 10) / 10);
+  const wordHintDeductionLive = wordHintUsed ? 2 : 0;
+  const liveScore = Math.max(0, Math.round((maxScore - hintDeductionLive - wordHintDeductionLive - liveTimePenalty) * 10) / 10);
   const liveScoreClass = getScoreColorClass(liveScore, maxScore);
   const livePercent = maxScore > 0 ? Math.round(liveScore / maxScore * 100) : 0;
 
@@ -605,6 +917,18 @@ const DroidGame = () => {
 
   return (
     <div className="game-container">
+      {/* Leaderboard overlay — sits above everything */}
+      {showLeaderboard && (
+        <Leaderboard
+          date={todayString()}
+          shape={boardShape || dailyShape()}
+          score={gameState === 'end' && dailyMode ? score : 0}
+          maxScore={gameState === 'end' && dailyMode ? maxScore : 0}
+          canSubmit={gameState === 'end' && dailyMode}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
+
       {gameState !== 'start' && gameState !== 'selectShape' && (
         <header className="site-header">
           <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
@@ -616,6 +940,8 @@ const DroidGame = () => {
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('computer')}
           onStartDaily={() => handleModeSelect('daily')}
+          onStartGhost={() => handleModeSelect('ghost')}
+          onShowLeaderboard={() => setShowLeaderboard(true)}
           dailyPlayed={dailyPlayed}
         />
       )}
@@ -660,7 +986,7 @@ const DroidGame = () => {
                   );
                 })()}
               </div>
-              {hintWord && (
+              {wordHintUsed && hintWord && (
                 <div className="hint-word-display">
                   Hint: {hintWord}
                 </div>
@@ -707,10 +1033,149 @@ const DroidGame = () => {
                   Reveal letter −{hintPenalty}pt
                 </button>
               )}
+              {currentPlayer === 2 && !wordHintUsed && hintWord && (
+                <button className="hint-btn letter-hint-btn" onClick={() => setWordHintUsed(true)}>
+                  Word hint −2pt
+                </button>
+              )}
             </div>
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
             </Button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'ghost' && (
+        <div className="game-play ghost-play">
+          {isValidating && (
+            <div className="validation-loading">
+              <div className="spinner" />
+              Checking words…
+            </div>
+          )}
+
+          {/* HUD: live score + timer */}
+          <div className="live-hud">
+            <div className={`live-score-badge ${liveScoreClass}`}>
+              <span className="live-score-grade">{livePercent}%</span>
+              <span className="live-score-pts">max achievable</span>
+            </div>
+            {(() => {
+              const m = Math.floor(timerSeconds / 60);
+              const s = timerSeconds % 60;
+              return (
+                <span className={`hint-timer ${getTimerClass(timerSeconds)}`}>
+                  {m}:{String(s).padStart(2, '0')}
+                </span>
+              );
+            })()}
+          </div>
+
+          {wordHintUsed && hintWord && (
+            <div className="hint-word-display">
+              Hint: {hintWord}
+            </div>
+          )}
+          {combinationCount !== null && (
+            <div className="combo-count">
+              {combinationCount} valid board combination{combinationCount !== 1 ? 's' : ''}
+            </div>
+          )}
+
+          {/* Ghost letter indicator */}
+          {!ghostAllPlaced && ghostCurrentLetter && (
+            <div className="ghost-letter-indicator">
+              <div className="ghost-progress">
+                Letter {ghostCurrentIndex + 1} of {ghostLetterQueue.length}
+                {ghostCurrentIndex < ghostLetterQueue.filter((l) => VOWELS.has(l)).length
+                  ? ' (vowels)'
+                  : ' (consonants)'}
+              </div>
+              <div className={`ghost-current-letter${ghostLetterPlaced ? ' placed' : ''}`}>
+                {ghostCurrentLetter}
+              </div>
+              {ghostAction && (
+                <div className="ghost-action-prompt">
+                  {ghostAction === 'swap-select-first' && 'Tap the first tile to swap'}
+                  {ghostAction === 'swap-select-second' && 'Tap the second tile to swap'}
+                  {ghostAction === 'move-select' && 'Tap a tile to move'}
+                  {ghostAction === 'move-place' && 'Tap an empty tile to place it'}
+                </div>
+              )}
+            </div>
+          )}
+          {ghostAllPlaced && (
+            <div className="ghost-letter-indicator">
+              <div className="ghost-progress">All letters placed!</div>
+            </div>
+          )}
+
+          <GameBoard
+            board={board}
+            onTileClick={handleGhostTileClick}
+            preservedTiles={preservedTiles}
+            correctTiles={[]}
+            incorrectTiles={[]}
+            invalidWordTiles={[]}
+            selectedLetter={(!ghostAllPlaced && !ghostLetterPlaced && !ghostAction) ? ghostCurrentLetter : null}
+            selectedTile={ghostActionTile}
+            currentPlayer={2}
+            onDragStart={() => {}}
+            onDrop={() => {}}
+            interactive={true}
+            removedSquares={removedSquares}
+          />
+
+          <div className="actions">
+            <div className="hint-actions">
+              {/* SWAP button */}
+              {!ghostSwapUsed && (
+                <button
+                  className={`hint-btn ghost-action-btn${ghostAction?.startsWith('swap') ? ' active' : ''}`}
+                  onClick={() => {
+                    if (ghostAction?.startsWith('swap')) { setGhostAction(null); setGhostActionTile(null); }
+                    else { setGhostAction('swap-select-first'); setGhostActionTile(null); }
+                  }}
+                >
+                  Swap
+                </button>
+              )}
+              {/* MOVE button */}
+              {!ghostMoveUsed && !ghostAllPlaced && (
+                <button
+                  className={`hint-btn ghost-action-btn${ghostAction?.startsWith('move') ? ' active' : ''}`}
+                  onClick={() => {
+                    if (ghostAction?.startsWith('move')) { setGhostAction(null); setGhostActionTile(null); }
+                    else { setGhostAction('move-select'); setGhostActionTile(null); }
+                  }}
+                >
+                  Move
+                </button>
+              )}
+              {/* Reveal & lock hint */}
+              {!ghostAllPlaced && (
+                <button className="hint-btn letter-hint-btn" onClick={handleGhostRevealHint}>
+                  Lock letter −{hintPenalty}pt
+                </button>
+              )}
+              {/* Word hint */}
+              {!wordHintUsed && hintWord && (
+                <button className="hint-btn letter-hint-btn" onClick={() => setWordHintUsed(true)}>
+                  Word hint −2pt
+                </button>
+              )}
+            </div>
+            {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && !ghostIsLastLetter && (
+              <Button onClick={handleGhostNextLetter} primary>
+                Next Letter
+              </Button>
+            )}
+            {(ghostAllPlaced || (ghostIsLastLetter && ghostLetterPlaced && !ghostAction)) && (
+              <Button onClick={handleGhostFinish} primary disabled={isValidating}>
+                {isValidating ? 'Checking…' : 'Finish'}
+              </Button>
+            )}
           </div>
         </div>
       )}
@@ -738,7 +1203,8 @@ const DroidGame = () => {
       {gameState === 'end' && (() => {
         const thisScoreClass = getScoreColorClass(score, maxScore);
         const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-        const hasPenalties = letterHintsUsed > 0 || timePenalty > 0;
+        const wordHintDeduction = wordHintUsed ? 2 : 0;
+        const hasPenalties = letterHintsUsed > 0 || wordHintUsed || timePenalty > 0;
         const allPlayed = [...sessionPlayedShapes, boardShape];
         const allScores = { ...sessionScores, [boardShape]: scorePercent };
         const combinedTotal = Object.values(allScores).reduce((a, b) => a + b, 0);
@@ -766,6 +1232,7 @@ const DroidGame = () => {
                 <div className="score-penalty">
                   {rawScore}/{maxScore}
                   {letterHintsUsed > 0 && ` − ${hintDeduction} hint${letterHintsUsed !== 1 ? 's' : ''}`}
+                  {wordHintUsed && ` − ${wordHintDeduction} word hint`}
                   {timePenalty > 0 && ` − ${timePenalty} time`}
                   {' '}= {score}/{maxScore}
                 </div>
@@ -825,12 +1292,17 @@ const DroidGame = () => {
             </div>
 
             <div className="end-actions">
-              {gamesPlayed < 4 && (
+              {dailyMode && (
+                <Button primary onClick={() => setShowLeaderboard(true)}>
+                  🏆 Leaderboard
+                </Button>
+              )}
+              {!dailyMode && gamesPlayed < 4 && (
                 <Button primary onClick={() => resetForNextDroid(scorePercent)}>
                   Play Next Droid
                 </Button>
               )}
-              <Button onClick={resetGame} primary={gamesPlayed >= 4}>
+              <Button onClick={resetGame} primary={!dailyMode && gamesPlayed >= 4}>
                 Play New Game
               </Button>
             </div>
