@@ -1240,6 +1240,22 @@ const DroidGame = () => {
               )}
             </div>
 
+            {/* ── Share result ── */}
+            {(() => {
+              const greenCount = Math.round(scorePercent / 10);
+              const bar = '🟩'.repeat(greenCount) + '⬛'.repeat(10 - greenCount);
+              const shapeName = BOARD_SHAPES[boardShape]?.name || boardShape;
+              const baseUrl = window.location.origin + window.location.pathname;
+              const shareText =
+                `🤖 DroidGame — ${shapeName} — ${scorePercent}%\n${bar}\n${baseUrl}`;
+              return (
+                <div className="share-result">
+                  <pre className="share-result-text">{shareText}</pre>
+                  <CopyButton url={shareText} label="📋 Copy to Share" />
+                </div>
+              );
+            })()}
+
             <div className="legend">
               <div className="legend-item">
                 <div className="legend-dot correct" />

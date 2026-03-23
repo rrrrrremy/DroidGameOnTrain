@@ -979,6 +979,39 @@ body {
   margin-top: 0.15rem;
 }
 
+/* ===== SHARE RESULT (end screen) ===== */
+
+.share-result {
+  width: 100%;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.share-result-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.6rem;
+  line-height: 1.8;
+  text-align: center;
+  color: var(--text-primary);
+  white-space: pre;
+  margin: 0;
+  user-select: all;
+}
+
+.share-result .copy-btn {
+  width: 100%;
+  background: var(--teal);
+}
+.share-result .copy-btn:hover  { background: var(--teal-dark); }
+.share-result .copy-btn.copied { background: var(--green-bg); }
+
 /* ===== END SCREEN ACTIONS & SESSION ===== */
 
 .end-actions {
