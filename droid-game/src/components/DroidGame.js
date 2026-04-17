@@ -416,7 +416,7 @@ const DroidGame = () => {
     if (mode === 'daily') setDailyMode(true);
 
     const p1Board = computerBoardRaw.map((r) => [...r]);
-    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2, shape);
 
     setPlayer1Board(p1Board);
     setPreservedTiles(preservedLetters);
@@ -540,7 +540,7 @@ const DroidGame = () => {
       const p1Board = board.map((r) => [...r]);
       const fiveLetterWord = extractFiveLetterWord(p1Board, boardShape);
       const combCount = countBoardCombinations(boardShape, fiveLetterWord, countLetters(p1Board));
-      const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
+      const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2, boardShape);
       const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
       setPlayer1Board(p1Board);
       setPreservedTiles(preservedLetters);
