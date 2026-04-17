@@ -541,15 +541,16 @@ const DroidGame = () => {
       const fiveLetterWord = extractFiveLetterWord(p1Board, boardShape);
       const combCount = countBoardCombinations(boardShape, fiveLetterWord, countLetters(p1Board));
       const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2, boardShape);
+      const url = `${window.location.origin}${window.location.pathname}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
       setPlayer1Board(p1Board);
       setPreservedTiles(preservedLetters);
       setBoard(newBoard);
       setLetterCounts(countLetters(p1Board));
+      setShareLink(url);
       setCombinationCount(combCount);
       setHintWord(null);
       fetchHintWord(fiveLetterWord).then(setHintWord);
-      setCurrentPlayer(2);
-      setGameState('player2');
+      setGameState('share');
       setSelectedLetter(null);
     } else {
       // Check if every active tile is filled and every word is valid English.
@@ -1224,7 +1225,27 @@ const DroidGame = () => {
         </div>
       )}
 
-{gameState === 'end' && (() => {
+      {gameState === 'share' && (
+        <div className="share-panel">
+          <div className="share-header">
+            <h2>Turn Complete!</h2>
+            <p className="share-subtext">
+              Send this link to Player 2. They can open it on any device — no login needed.
+            </p>
+          </div>
+          <div className="share-url-row">
+            <span className="share-url-text">{shareLink}</span>
+          </div>
+          <CopyButton url={shareLink} />
+          <div className="share-actions">
+            <Button primary onClick={() => { setCurrentPlayer(2); setGameState('player2'); }}>
+              Play on this device instead
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'end' && (() => {
         const thisScoreClass = getScoreColorClass(score, maxScore);
         const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
         const wordHintDeduction = wordHintUsed ? 2 : 0;
