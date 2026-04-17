@@ -65,22 +65,31 @@ export const countLetters = (board) => {
   return counts;
 };
 
-export const preserveRandomLettersForPlayer2 = (board, count = 2) => {
-  const centerLetter = board[2][2];
-  const center = centerLetter ? { x: 2, y: 2, letter: centerLetter } : null;
+// Start of the 5-letter word for each shape
+const FIVE_LETTER_START = {
+  droid:   { x: 0, y: 1 },
+  cross:   { x: 0, y: 2 },
+  invader: { x: 0, y: 1 },
+  bolt:    { x: 3, y: 0 },
+};
 
-  const otherTiles = [];
-  board.forEach((row, y) =>
-    row.forEach((letter, x) => {
-      if (letter && !(x === 2 && y === 2)) otherTiles.push({ x, y, letter });
-    })
-  );
+// Middle tiles of the 3-letter words for each shape
+const THREE_LETTER_MIDDLES = {
+  droid:   [{ x: 2, y: 2 }, { x: 2, y: 3 }],
+  cross:   [{ x: 2, y: 1 }, { x: 2, y: 3 }],
+  invader: [{ x: 2, y: 2 }, { x: 3, y: 2 }],
+  bolt:    [{ x: 1, y: 2 }, { x: 2, y: 2 }],
+};
 
-  const shuffled = [...otherTiles].sort(() => Math.random() - 0.5);
+export const preserveRandomLettersForPlayer2 = (board, count = 2, shape = 'droid') => {
+  const start = FIVE_LETTER_START[shape] || FIVE_LETTER_START.droid;
+  const middles = THREE_LETTER_MIDDLES[shape] || THREE_LETTER_MIDDLES.droid;
+  const middle = middles[Math.floor(Math.random() * middles.length)];
+
   const preserved = [
-    ...(center ? [center] : []),
-    ...shuffled.slice(0, Math.max(0, count - (center ? 1 : 0))),
-  ].slice(0, count);
+    { x: start.x, y: start.y, letter: board[start.y][start.x] },
+    { x: middle.x, y: middle.y, letter: board[middle.y][middle.x] },
+  ].filter((t) => t.letter);
 
   const newBoard = Array(5)
     .fill(null)
