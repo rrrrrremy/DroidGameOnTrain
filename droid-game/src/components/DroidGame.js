@@ -209,6 +209,7 @@ const DroidGame = () => {
   const [boardShape, setBoardShape] = useState('droid');
   const [player2FullValid, setPlayer2FullValid] = useState(false);
   const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
+  const [isPaused, setIsPaused] = useState(false);
 
   // Session tracking (persists across the 4-droid game)
   const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
@@ -297,9 +298,10 @@ const DroidGame = () => {
   // Timer: runs during player2 and ghost phases
   useEffect(() => {
     if (gameState !== 'player2' && gameState !== 'ghost') return;
+    if (isPaused) return;
     const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [gameState]);
+  }, [gameState, isPaused]);
 
   // ── Interactions ──────────────────────────────────────────────────────────
 
@@ -959,6 +961,14 @@ const DroidGame = () => {
 
       {(gameState === 'player1' || gameState === 'player2') && (
         <div className="game-play">
+          {isPaused && (
+            <div className="pause-overlay">
+              <div className="pause-modal">
+                <div className="pause-title">Game Paused</div>
+                <button className="button primary" onClick={() => setIsPaused(false)}>Resume</button>
+              </div>
+            </div>
+          )}
           {isValidating && (
             <div className="validation-loading">
               <div className="spinner" />
@@ -1039,6 +1049,11 @@ const DroidGame = () => {
                   Word hint −2pt
                 </button>
               )}
+              {currentPlayer === 2 && (
+                <button className="hint-btn pause-btn" onClick={() => setIsPaused(true)}>
+                  Pause
+                </button>
+              )}
             </div>
             <Button onClick={handleEndTurn} primary disabled={isValidating}>
               {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
@@ -1049,6 +1064,14 @@ const DroidGame = () => {
 
       {gameState === 'ghost' && (
         <div className="game-play ghost-play">
+          {isPaused && (
+            <div className="pause-overlay">
+              <div className="pause-modal">
+                <div className="pause-title">Game Paused</div>
+                <button className="button primary" onClick={() => setIsPaused(false)}>Resume</button>
+              </div>
+            </div>
+          )}
           {isValidating && (
             <div className="validation-loading">
               <div className="spinner" />
@@ -1166,6 +1189,9 @@ const DroidGame = () => {
                   Word hint −2pt
                 </button>
               )}
+              <button className="hint-btn pause-btn" onClick={() => setIsPaused(true)}>
+                Pause
+              </button>
             </div>
             {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && !ghostIsLastLetter && (
               <Button onClick={handleGhostNextLetter} primary>
