@@ -100,6 +100,7 @@ body {
 /* ===== GAME PLAY ===== */
 
 .game-play {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1511,4 +1512,33 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+}
+
+.pause-overlay {
+  position: absolute;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  border-radius: 8px;
+}
+
+.pause-modal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.pause-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text);
+}
+
+.pause-btn {
+  color: var(--text-muted) !important;
 }
