@@ -963,6 +963,15 @@ const DroidGame = () => {
         <div className="game-play">
           {isPaused && (
             <div className="pause-overlay">
+              <div className="pause-bg">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={`pause-silhouette pause-silhouette-${i}`}>
+                    {BOARD_SHAPES[boardShape].grid.flat().map((cell, j) => (
+                      <div key={j} className={cell ? 'ps-cell ps-cell-on' : 'ps-cell'} />
+                    ))}
+                  </div>
+                ))}
+              </div>
               <div className="pause-modal">
                 <div className="pause-title">Game Paused</div>
                 <button className="button primary" onClick={() => setIsPaused(false)}>Resume</button>
@@ -1066,6 +1075,15 @@ const DroidGame = () => {
         <div className="game-play ghost-play">
           {isPaused && (
             <div className="pause-overlay">
+              <div className="pause-bg">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={`pause-silhouette pause-silhouette-${i}`}>
+                    {BOARD_SHAPES[boardShape].grid.flat().map((cell, j) => (
+                      <div key={j} className={cell ? 'ps-cell ps-cell-on' : 'ps-cell'} />
+                    ))}
+                  </div>
+                ))}
+              </div>
               <div className="pause-modal">
                 <div className="pause-title">Game Paused</div>
                 <button className="button primary" onClick={() => setIsPaused(false)}>Resume</button>

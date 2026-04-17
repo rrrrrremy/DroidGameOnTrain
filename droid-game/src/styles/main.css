@@ -1523,9 +1523,37 @@ body {
   justify-content: center;
   z-index: 200;
   border-radius: 8px;
+  overflow: hidden;
 }
 
+.pause-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pause-silhouette {
+  position: absolute;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+}
+
+.ps-cell { aspect-ratio: 1; }
+
+.ps-cell-on {
+  background: var(--text);
+  border-radius: 2px;
+}
+
+.pause-silhouette-0 { width: 200px; top: -15px; left: -25px; transform: rotate(-15deg); opacity: 0.07; }
+.pause-silhouette-1 { width: 150px; bottom: 30px; right: -15px; transform: rotate(20deg); opacity: 0.05; }
+.pause-silhouette-2 { width: 175px; top: 35%; left: 45%; transform: translate(-50%, -50%) rotate(8deg); opacity: 0.04; }
+.pause-silhouette-3 { width: 110px; top: 15px; right: 15px; transform: rotate(-8deg); opacity: 0.06; }
+
 .pause-modal {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
