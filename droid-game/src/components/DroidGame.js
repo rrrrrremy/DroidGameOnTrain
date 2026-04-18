@@ -390,6 +390,7 @@ const DroidGame = () => {
 
   const handleShapeSelect = (shape, modeOverride) => {
     const mode = modeOverride ?? pendingMode;
+    setIsPaused(false);
     setBoardShape(shape);
 
     if (mode === 'player1') {
@@ -665,6 +666,7 @@ const DroidGame = () => {
     setHintWord(null);
     setWordHintUsed(false);
     resetGhostState();
+    setIsPaused(false);
     setSessionPlayedShapes(newPlayed);
     setSessionScores(newScores);
     setGameState('selectShape');
