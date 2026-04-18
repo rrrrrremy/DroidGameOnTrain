@@ -634,6 +634,7 @@ const DroidGame = () => {
     setSessionPlayedShapes([]);
     setSessionScores({});
     resetGhostState();
+    setIsPaused(false);
     setShowLeaderboard(false);
     setGameState('start');
   };
