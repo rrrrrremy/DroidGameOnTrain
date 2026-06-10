@@ -23,7 +23,7 @@ const GameBoard = ({
   const removed = removedSquares || DEFAULT_REMOVED;
 
   return (
-    <div className="board">
+    <div className={`board${interactive ? '' : ' board-static'}`}>
       {board.map((row, y) =>
         row.map((letter, x) => {
           const squareNum = y * 5 + x + 1;

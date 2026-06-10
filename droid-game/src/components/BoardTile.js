@@ -54,9 +54,11 @@ const BoardTile = ({
       {letter}
       {onRemove && letter && (
         <button
+          type="button"
           className="tile-remove-btn"
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           title="Remove letter"
+          aria-label={`Remove letter ${letter}`}
         >×</button>
       )}
     </div>
