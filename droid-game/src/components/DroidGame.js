@@ -23,6 +23,7 @@ import {
   countBoardCombinations,
 } from '../utils/computerPlayer';
 import Leaderboard from './Leaderboard';
+import PaymentModal from './PaymentModal';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
@@ -225,6 +226,9 @@ const DroidGame = () => {
 
   // ── Leaderboard state ──────────────────────────────────────────────────────
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // ── Lightning payment state ───────────────────────────────────────────────
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     const setViewportHeight = () => {
@@ -809,6 +813,7 @@ const DroidGame = () => {
     resetGhostState();
     setIsPaused(false);
     setShowLeaderboard(false);
+    setShowPaymentModal(false);
     setGameState('start');
   };
 
@@ -1120,6 +1125,14 @@ const DroidGame = () => {
 
   return (
     <div className="game-container">
+      {/* Lightning payment modal */}
+      {showPaymentModal && (
+        <PaymentModal
+          onPaid={() => { setShowPaymentModal(false); handleModeSelect('computer'); }}
+          onCancel={() => setShowPaymentModal(false)}
+        />
+      )}
+
       {/* Leaderboard overlay — sits above everything */}
       {showLeaderboard && (
         <Leaderboard
@@ -1144,6 +1157,7 @@ const DroidGame = () => {
         <StartScreen
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('daily')}
+          onStartCustomVsComputer={() => setShowPaymentModal(true)}
           onStartGhost={() => handleModeSelect('ghost')}
           onShowLeaderboard={() => setShowLeaderboard(true)}
           dailyPlayed={dailyPlayed}

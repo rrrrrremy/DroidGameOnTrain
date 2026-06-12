@@ -5,6 +5,7 @@ const LETTERS = 'DROID'.split('');
 const StartScreen = ({
   onStart,
   onStartVsComputer,
+  onStartCustomVsComputer,
   onStartGhost,
   onShowLeaderboard,
   dailyPlayed,
@@ -52,10 +53,13 @@ const StartScreen = ({
             </button>
           )}
 
-          <div className="home-subscribe">
-            <span>Subscribe</span>
-            <small>and play as often as you like</small>
-          </div>
+          <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
+            <span className="home-lightning-icon">⚡</span>
+            <span className="home-lightning-label">
+              <strong>PLAY ANY SHAPE</strong>
+              <small>1,000 sats · pay with Lightning</small>
+            </span>
+          </button>
 
           <div className="home-how-to">How to Play</div>
 
