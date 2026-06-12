@@ -5,10 +5,49 @@ import {
   query,
   where,
   getDocs,
+  limit,
+  orderBy,
   serverTimestamp,
 } from 'firebase/firestore';
 
 const COLLECTION = 'daily_scores';
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const inFlightRequests = new Map();
+
+const cacheKey = (date) => `droid_leaderboard_${date}`;
+const submittedKey = (date) => `droid_leaderboard_submitted_${date}`;
+
+const sortEntries = (entries) =>
+  [...entries].sort((a, b) => b.percent - a.percent || b.score - a.score).slice(0, 50);
+
+export const getCachedLeaderboard = (date) => {
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey(date)) || 'null');
+    if (!cached || !Array.isArray(cached.entries)) return null;
+    if (Date.now() - cached.savedAt > CACHE_TTL_MS) return null;
+    return cached.entries;
+  } catch {
+    return null;
+  }
+};
+
+const setCachedLeaderboard = (date, entries) => {
+  try {
+    localStorage.setItem(cacheKey(date), JSON.stringify({
+      savedAt: Date.now(),
+      entries,
+    }));
+  } catch {
+    // Cache is a speed boost only.
+  }
+};
+
+export const hasSubmittedLeaderboardScore = (date) =>
+  localStorage.getItem(submittedKey(date)) === 'true';
+
+export const markLeaderboardScoreSubmitted = (date) => {
+  localStorage.setItem(submittedKey(date), 'true');
+};
 
 /** Submit a score to the daily leaderboard. */
 export const submitScore = async ({ name, score, maxScore, date, shape }) => {
@@ -23,15 +62,48 @@ export const submitScore = async ({ name, score, maxScore, date, shape }) => {
   });
 };
 
-/** Fetch today's leaderboard — filter by date only (no composite index needed),
- *  sort and cap client-side. */
-export const fetchLeaderboard = async (date) => {
-  const q = query(
-    collection(db, COLLECTION),
-    where('date', '==', date),
-  );
-  const snap = await getDocs(q);
-  const entries = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  entries.sort((a, b) => b.percent - a.percent || b.score - a.score);
-  return entries.slice(0, 50);
+/** Fetch today's leaderboard from Firestore. Prefer an indexed top-50 query;
+ * fall back to the original date-only query if the composite index is missing. */
+const fetchLeaderboardRemote = async (date) => {
+  const collectionRef = collection(db, COLLECTION);
+
+  try {
+    const fastQuery = query(
+      collectionRef,
+      where('date', '==', date),
+      orderBy('percent', 'desc'),
+      orderBy('score', 'desc'),
+      limit(50)
+    );
+    const snap = await getDocs(fastQuery);
+    const entries = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const sorted = sortEntries(entries);
+    setCachedLeaderboard(date, sorted);
+    return sorted;
+  } catch (error) {
+    console.warn('Fast leaderboard query failed; falling back to date-only query.', error);
+  }
+
+  const fallbackQuery = query(collectionRef, where('date', '==', date));
+  const snap = await getDocs(fallbackQuery);
+  const entries = sortEntries(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+  setCachedLeaderboard(date, entries);
+  return entries;
+};
+
+export const fetchLeaderboard = (date) => {
+  if (inFlightRequests.has(date)) return inFlightRequests.get(date);
+
+  const request = fetchLeaderboardRemote(date).finally(() => {
+    inFlightRequests.delete(date);
+  });
+  inFlightRequests.set(date, request);
+  return request;
+};
+
+export const preloadLeaderboard = (date) => {
+  if (getCachedLeaderboard(date)) return Promise.resolve();
+  return fetchLeaderboard(date).catch(() => {
+    // Preloading should never surface errors to the game UI.
+  });
 };

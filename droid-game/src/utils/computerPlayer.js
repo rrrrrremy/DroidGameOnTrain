@@ -497,7 +497,7 @@ export const extractFiveLetterWord = (board, shapeId) => {
 };
 
 /** Count all valid board combinations given the fixed 5-letter word and the player's letter pool. */
-export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
+export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixedTiles = []) => {
   if (!fiveLetterWord) return 0;
   const w = fiveLetterWord;
   const wordsSet3 = new Set(WORDS_3);
@@ -528,6 +528,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
           const words = [w, col1, col2, col3, row2, row3];
           if (new Set(words).size !== words.length) continue;
           if (words.filter(isPlural).length > 1) continue;
+          if (!matchesFixedTiles(shapeId, { row1: w, row2, row3, col1, col2, col3 }, fixedTiles)) continue;
           count++;
         }
       }
@@ -548,6 +549,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
           const words = [row1, w, row3, col1, col2, col3];
           if (new Set(words).size !== words.length) continue;
           if (words.filter(isPlural).length > 1) continue;
+          if (!matchesFixedTiles(shapeId, { row1, row2: w, row3, col1, col2, col3 }, fixedTiles)) continue;
           count++;
         }
       }
@@ -569,6 +571,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
             const words = [w, row2, row3, col1, col2, col3];
             if (new Set(words).size !== words.length) continue;
             if (words.filter(isPlural).length > 1) continue;
+            if (!matchesFixedTiles(shapeId, { row1: w, row2, row3, col1, col2, col3 }, fixedTiles)) continue;
             count++;
           }
         }
@@ -591,6 +594,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
               const words = [row1, row2, row3, col1, col2, w];
               if (new Set(words).size !== words.length) continue;
               if (words.filter(isPlural).length > 1) continue;
+              if (!matchesFixedTiles(shapeId, { row1, row2, row3, col1, col2, col3: w }, fixedTiles)) continue;
               count++;
             }
           }
@@ -599,6 +603,107 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
     }
   }
   return count;
+};
+
+const letterPoolForBoard = (board) => {
+  const letterPool = {};
+  board.flat().forEach((ch) => {
+    if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1;
+  });
+  return letterPool;
+};
+
+const wordFitsPool = (word, letterPool) => {
+  const counts = {};
+  for (const ch of word) {
+    counts[ch] = (counts[ch] || 0) + 1;
+    if (counts[ch] > (letterPool[ch] || 0)) return false;
+  }
+  return true;
+};
+
+const STARTER_LOCKS = {
+  droid:   [{ x: 0, y: 1 }, { x: 2, y: 2 }],
+  cross:   [{ x: 0, y: 2 }, { x: 2, y: 1 }],
+  invader: [{ x: 0, y: 1 }, { x: 2, y: 2 }],
+  bolt:    [{ x: 3, y: 0 }, { x: 1, y: 2 }],
+};
+
+const selectStarterLockedTiles = (board, shapeId) =>
+  (STARTER_LOCKS[shapeId] || STARTER_LOCKS.droid)
+    .map(({ x, y }) => ({ x, y, letter: board[y]?.[x] }))
+    .filter((tile) => tile.letter);
+
+const buildSolutionBoard = (shapeId, parts) => {
+  const board = Array(5).fill(null).map(() => Array(5).fill(null));
+
+  if (shapeId === 'droid') {
+    const { row1, col1, col2, col3 } = parts;
+    for (let x = 0; x < 5; x++) board[1][x] = row1[x];
+    for (let i = 0; i < 4; i++) board[1 + i][1] = col1[i];
+    for (let i = 0; i < 4; i++) board[i][2] = col2[i];
+    for (let i = 0; i < 4; i++) board[1 + i][3] = col3[i];
+  } else if (shapeId === 'cross') {
+    const { row2, col1, col2, col3 } = parts;
+    board[0][2] = col2[0];
+    board[1][1] = col1[0]; board[1][2] = col2[1]; board[1][3] = col3[0];
+    for (let x = 0; x < 5; x++) board[2][x] = row2[x];
+    board[3][1] = col1[2]; board[3][2] = col2[3]; board[3][3] = col3[2];
+    board[4][1] = col1[3]; board[4][3] = col3[3];
+  } else if (shapeId === 'invader') {
+    const { row1, row3, col1, col2, col3 } = parts;
+    board[0][2] = col2[0];
+    for (let x = 0; x < 5; x++) board[1][x] = row1[x];
+    board[2][1] = col1[1]; board[2][2] = col2[2]; board[2][3] = col3[1];
+    for (let x = 1; x < 5; x++) board[3][x] = row3[x - 1];
+    board[4][1] = col1[3];
+  } else if (shapeId === 'bolt') {
+    const { row1, row2, row3, col3 } = parts;
+    board[0][3] = col3[0];
+    for (let i = 0; i < 4; i++) board[1][i] = row1[i];
+    for (let i = 0; i < 4; i++) board[2][1 + i] = row2[i];
+    for (let i = 0; i < 4; i++) board[3][i] = row3[i];
+    board[4][3] = col3[4];
+  }
+
+  return board;
+};
+
+const matchesFixedTiles = (shapeId, parts, fixedTiles = []) => {
+  if (!fixedTiles || fixedTiles.length === 0) return true;
+  const solutionBoard = buildSolutionBoard(shapeId, parts);
+  return fixedTiles.every(({ x, y, letter }) => solutionBoard[y]?.[x] === letter);
+};
+
+/** Count every valid solution for a shape and exact letter pool, regardless of anchor word. */
+export const countBoardSolutions = (shapeId, letterPool, stopAfter = Number.MAX_SAFE_INTEGER, fixedTiles = []) => {
+  let count = 0;
+
+  for (const fiveLetterWord of WORDS_5_NON_PLURAL) {
+    if (!wordFitsPool(fiveLetterWord, letterPool)) continue;
+    count += countBoardCombinations(shapeId, fiveLetterWord, letterPool, fixedTiles);
+    if (count >= stopAfter) return count;
+  }
+
+  return count;
+};
+
+const addUniquenessMetadata = (shape, result) => {
+  if (!result) return null;
+
+  const { board, fiveLetterWord } = result;
+  const letterPool = letterPoolForBoard(board);
+  const preservedLetters = selectStarterLockedTiles(board, shape);
+  const solutionCount = countBoardSolutions(shape, letterPool, 2, preservedLetters);
+
+  if (solutionCount !== 1) return null;
+
+  return {
+    board,
+    fiveLetterWord,
+    preservedLetters,
+    combinationCount: solutionCount,
+  };
 };
 
 const RECENT_WORDS_KEY = 'droid_recent_words';
@@ -622,18 +727,14 @@ const recordRecentWord = (word) => {
 export const generateComputerBoard = (shape = 'droid') => {
   const gen = GENERATORS[shape] || GENERATORS.droid;
   const recentSet = new Set(getRecentWords());
-  // Try with avoidance first (40 attempts), then relax (20 more)
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const avoid = attempt < 40 ? recentSet : null;
+  // Try with avoidance first, then relax. Reject boards unless they have one solution.
+  for (let attempt = 0; attempt < 250; attempt++) {
+    const avoid = attempt < 160 ? recentSet : null;
     const result = gen(undefined, avoid);
-    if (result) {
-      const { board, fiveLetterWord } = result;
-      const letterPool = {};
-      board.flat().forEach((ch) => { if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1; });
-      const combinationCount = countBoardCombinations(shape, fiveLetterWord, letterPool);
-      recordRecentWord(fiveLetterWord);
-      return { board, fiveLetterWord, combinationCount };
-    }
+    const uniqueResult = addUniquenessMetadata(shape, result);
+    if (!uniqueResult) continue;
+    recordRecentWord(uniqueResult.fiveLetterWord);
+    return uniqueResult;
   }
   return null;
 };
@@ -641,15 +742,10 @@ export const generateComputerBoard = (shape = 'droid') => {
 export const generateDailyBoard = (shape = 'droid') => {
   const rng = mulberry32(todaySeed());
   const gen = GENERATORS[shape] || GENERATORS.droid;
-  for (let attempt = 0; attempt < 60; attempt++) {
+  for (let attempt = 0; attempt < 250; attempt++) {
     const result = gen(rng);
-    if (result) {
-      const { board, fiveLetterWord } = result;
-      const letterPool = {};
-      board.flat().forEach((ch) => { if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1; });
-      const combinationCount = countBoardCombinations(shape, fiveLetterWord, letterPool);
-      return { board, fiveLetterWord, combinationCount };
-    }
+    const uniqueResult = addUniquenessMetadata(shape, result);
+    if (uniqueResult) return uniqueResult;
   }
   return null;
 };

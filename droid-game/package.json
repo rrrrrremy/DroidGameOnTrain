@@ -5,14 +5,22 @@
   "dependencies": {
     "firebase": "^12.11.0",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "react-dom": "^18.2.0"
   },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
+    "test:ci": "CI=true react-scripts test --watchAll=false",
+    "check:prod": "npm run test:ci && npm audit --omit=dev && npm run build",
+    "deploy": "npm run check:prod && firebase deploy --only hosting:droidgame,firestore:indexes",
+    "deploy:hosting": "npm run check:prod && firebase deploy --only hosting:droidgame",
+    "deploy:indexes": "firebase deploy --only firestore:indexes",
     "eject": "react-scripts eject"
+  },
+  "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "^7.21.11",
+    "react-scripts": "5.0.1"
   },
   "eslintConfig": {
     "extends": [
@@ -33,7 +41,7 @@
     ]
   },
   "engines": {
-    "node": "14.x"
+    "node": ">=20"
   },
   "homepage": "."
 }

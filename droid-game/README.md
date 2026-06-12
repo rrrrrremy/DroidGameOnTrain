@@ -1,70 +1,48 @@
-# Getting Started with Create React App
+# Droid
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A React word-strategy game hosted on Firebase Hosting.
 
-## Available Scripts
+## Requirements
 
-In the project directory, you can run:
+- Node.js 20 or newer
+- npm
+- Firebase CLI authenticated against the `onebitcoin-38ea0` project
 
-### `npm start`
+## Local Development
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```bash
+npm install
+npm start
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+The app runs at [http://localhost:3000](http://localhost:3000).
 
-### `npm test`
+## Production Checks
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Run these before deploying:
 
-### `npm run build`
+```bash
+npm run check:prod
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Expected result:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- Tests pass
+- Production build compiles successfully
+- Production dependency audit reports `found 0 vulnerabilities`
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Deploy
 
-### `npm run eject`
+```bash
+npm run deploy
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+This runs the production checks, builds the app, and deploys the `build` folder to Firebase Hosting site `droidgame`.
+It also deploys the Firestore leaderboard index used by the fast first-load query.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Equivalent manual command:
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+```bash
+npm run build
+firebase deploy --only hosting:droidgame,firestore:indexes
+```

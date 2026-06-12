@@ -84,7 +84,7 @@ const THREE_LETTER_MIDDLES = {
 export const preserveRandomLettersForPlayer2 = (board, count = 2, shape = 'droid') => {
   const start = FIVE_LETTER_START[shape] || FIVE_LETTER_START.droid;
   const middles = THREE_LETTER_MIDDLES[shape] || THREE_LETTER_MIDDLES.droid;
-  const middle = middles[Math.floor(Math.random() * middles.length)];
+  const middle = middles.find(({ x, y }) => board[y]?.[x]) || middles[0];
 
   const preserved = [
     { x: start.x, y: start.y, letter: board[start.y][start.x] },
@@ -135,9 +135,27 @@ const decodePreserved = (str) => {
   return tiles;
 };
 
-// Combine shape + board + preserved into a single opaque base64url token
-export const encodeShareParam = (board, preserved, shape = 'droid') => {
-  const raw = `${shape}|${encodeBoard(board)}|${encodePreserved(preserved)}`;
+const encodeShareMeta = (meta) => {
+  if (!meta) return '';
+  try {
+    return encodeURIComponent(JSON.stringify(meta));
+  } catch {
+    return '';
+  }
+};
+
+const decodeShareMeta = (str) => {
+  if (!str) return null;
+  try {
+    return JSON.parse(decodeURIComponent(str));
+  } catch {
+    return null;
+  }
+};
+
+// Combine shape + board + preserved + optional challenge metadata into a single opaque base64url token
+export const encodeShareParam = (board, preserved, shape = 'droid', meta = null) => {
+  const raw = `${shape}|${encodeBoard(board)}|${encodePreserved(preserved)}|${encodeShareMeta(meta)}`;
   return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 };
 
@@ -146,13 +164,14 @@ export const decodeShareParam = (token) => {
   try {
     const raw = atob(token.replace(/-/g, '+').replace(/_/g, '/'));
     const parts = raw.split('|');
-    if (parts.length === 3) {
-      // New format: shape|board|preserved
-      const [shape, boardStr, preservedStr] = parts;
+    if (parts.length >= 3) {
+      // Current format: shape|board|preserved|meta
+      const [shape, boardStr, preservedStr, metaStr] = parts;
       const board = decodeBoard(boardStr);
       if (!board) return null;
       const preserved = decodePreserved(preservedStr ?? '');
-      return { board, preserved, shape };
+      const meta = decodeShareMeta(metaStr);
+      return { board, preserved, shape, meta };
     } else if (parts.length === 2) {
       // Old format: board|preserved (backwards compat)
       const [boardStr, preservedStr] = parts;
