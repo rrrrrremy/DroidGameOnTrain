@@ -20,5 +20,14 @@ export async function createGameInvoice() {
   const data = await invoiceRes.json();
   if (data.status === 'ERROR') throw new Error(data.reason || 'Invoice error');
 
-  return data.pr;
+  // `verify` is Alby's LUD-21 endpoint — polling it tells us when the
+  // invoice has actually settled, so payment can't be faked client-side.
+  return { pr: data.pr, verifyUrl: data.verify || null };
+}
+
+export async function checkInvoicePaid(verifyUrl) {
+  const res = await fetch(verifyUrl);
+  if (!res.ok) return false;
+  const data = await res.json();
+  return data.settled === true;
 }

@@ -3176,6 +3176,55 @@ body {
   flex: 1;
 }
 
+.payment-waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: rgba(251,191,36,0.8);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.payment-waiting-spinner {
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+}
+
+.payment-success-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1.6rem 0;
+  text-align: center;
+}
+
+.payment-success-icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #28d466, #16a34a);
+  color: #07110b;
+  font-size: 1.6rem;
+  font-weight: 800;
+  box-shadow: 0 0 28px rgba(34,197,94,0.35);
+}
+
+.payment-success-wrap strong {
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.payment-success-wrap small {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
 .payment-cancel-link {
   background: none;
   border: none;
