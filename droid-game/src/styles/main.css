@@ -177,7 +177,6 @@ body {
 .home-tagline,
 .home-mode-button,
 .home-daily-button,
-.home-ad-slot,
 .home-subscribe,
 .home-how-to,
 .home-footer {
@@ -295,18 +294,6 @@ body {
 .home-daily-button.is-complete {
   border-color: rgba(134,239,172,0.32);
   background: rgba(10,12,12,0.36);
-}
-
-.home-ad-slot {
-  min-height: 8.8rem;
-  display: grid;
-  place-items: center;
-  padding: 1rem;
-  color: var(--text-muted);
-  font-size: 1rem;
-  font-weight: 700;
-  line-height: 1.3;
-  text-align: center;
 }
 
 .home-subscribe {
@@ -2806,12 +2793,6 @@ body {
   }
   .home-daily-button span { font-size: clamp(0.62rem, calc(var(--app-height) * 0.012), 0.74rem); }
   .home-daily-button small { font-size: clamp(0.54rem, calc(var(--app-height) * 0.011), 0.64rem); }
-  .home-ad-slot  {
-    flex: 1 1 auto;
-    min-height: clamp(2.3rem, calc(var(--app-height) * 0.07), 4.2rem);
-    padding: 0.45rem;
-    font-size: clamp(0.68rem, calc(var(--app-height) * 0.014), 0.84rem);
-  }
   .home-subscribe {
     flex: 0 0 auto;
     min-height: clamp(2.7rem, calc(var(--app-height) * 0.078), 3.45rem);
@@ -3043,16 +3024,8 @@ body {
     font-size: 0.72rem;
   }
 
-  .leaderboard-ad-slot {
-    min-height: clamp(3.6rem, calc(var(--app-height) * 0.105), 5.2rem);
-    padding: 0.55rem;
-    font-size: 0.78rem;
-  }
-
-  .leaderboard-modal.has-entry-form .leaderboard-ad-slot {
-    display: none;
-  }
 }
+
 
 /* ═══════════════════════════════════════════════════════════════════════════
    Ghost Droid Mode
@@ -3350,8 +3323,7 @@ body {
 .lb-score { text-align: right; color: var(--text-muted); }
 .lb-pct { text-align: right; font-weight: 700; }
 
-.leaderboard-average-card,
-.leaderboard-ad-slot {
+.leaderboard-average-card {
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
@@ -3361,19 +3333,9 @@ body {
   font-weight: 800;
   line-height: 1.35;
   text-align: center;
-}
-
-.leaderboard-average-card {
   min-height: 3.5rem;
   padding: 0.75rem;
   font-size: 0.9rem;
-}
-
-.leaderboard-ad-slot {
-  min-height: 8.5rem;
-  padding: 1rem;
-  color: var(--text-muted);
-  font-size: 0.95rem;
 }
 
 .leaderboard-actions,
@@ -3495,7 +3457,6 @@ body {
   .home-mode-stack { gap: 0.32rem; }
   .home-mode-button { min-height: 3rem; padding: 0.45rem 0.7rem; font-size: clamp(1.05rem, 3vw, 1.35rem); }
   .home-daily-button { min-height: 2.55rem; padding: 0.45rem 0.65rem; }
-  .home-ad-slot { flex: 1 1 auto; min-height: 2.4rem; padding: 0.45rem; font-size: 0.78rem; }
   .home-subscribe { min-height: 2.85rem; padding: 0.34rem 0.6rem; }
   .home-subscribe span { font-size: 1.28rem; }
   .home-subscribe small { font-size: 0.68rem; }

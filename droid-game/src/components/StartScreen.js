@@ -52,10 +52,6 @@ const StartScreen = ({
             </button>
           )}
 
-          <div className="home-ad-slot">
-            Advertising space available.
-          </div>
-
           <div className="home-subscribe">
             <span>Subscribe</span>
             <small>and play as often as you like</small>
