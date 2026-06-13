@@ -39,7 +39,7 @@ const TIME_INTERVAL = { droid: 10, cross: 12, invader: 15, bolt: 20 };
 
 const TIMED_COMPUTER_MAX_SCORE = 6;
 // Seconds at which a letter is auto-revealed
-const AUTO_REVEAL_SECONDS = [61, 120, 180, 240];
+const AUTO_REVEAL_SECONDS = [60, 120, 180, 240];
 const WRONG_PLACE_PENALTY = 0.3;
 const READING_TIME_SECONDS = 6;
 const GHOST_SCORE_MAX = 6;
@@ -72,13 +72,14 @@ const calcTimePenalty = (seconds, shapeId) => {
 };
 
 const calcTimedComputerBaseScore = (seconds) => {
-  if (seconds <= 60) return TIMED_COMPUTER_MAX_SCORE;
-  // Minute 2 (61–120 s): –0.1 every 15 s
-  const d2 = Math.floor((Math.min(seconds, 120) - 61) / 15);
-  // Minute 3 (120–180 s): –0.1 every 10 s
-  const d3 = seconds > 120 ? Math.floor((Math.min(seconds, 180) - 120) / 10) : 0;
-  // Minute 4 (180–240 s): –0.1 every 6 s
-  const d4 = seconds > 180 ? Math.floor((Math.min(seconds, 240) - 180) / 6) : 0;
+  if (seconds < 60) return TIMED_COMPUTER_MAX_SCORE;
+  // 60–120 s: –0.1 every 12 s, first deduction at exactly 60 s
+  // (offset 48 = 60 − 12 puts the first floor-tick at t=60)
+  const d2 = Math.floor((Math.min(seconds, 120) - 48) / 12);
+  // 120–180 s: –0.1 every 6 s
+  const d3 = seconds > 120 ? Math.floor((Math.min(seconds, 180) - 120) / 6) : 0;
+  // 180–240 s: –0.1 every 4 s
+  const d4 = seconds > 180 ? Math.floor((Math.min(seconds, 240) - 180) / 4) : 0;
   // After 240 s: –0.1 every 3 s
   const d5 = seconds > 240 ? Math.floor((seconds - 240) / 3) : 0;
   return Math.max(0, Math.round((TIMED_COMPUTER_MAX_SCORE - (d2 + d3 + d4 + d5) * 0.1) * 10) / 10);
