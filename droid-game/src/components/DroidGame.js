@@ -38,10 +38,8 @@ const HINT_PENALTY = { droid: 1.0, cross: 0.9, invader: 0.8, bolt: 0.7 };
 const TIME_INTERVAL = { droid: 10, cross: 12, invader: 15, bolt: 20 };
 
 const TIMED_COMPUTER_MAX_SCORE = 6;
-const TIMED_COMPUTER_MIN_SCORE = 3;
-const TIMED_COMPUTER_DURATION = 360;
-const TIMED_COMPUTER_INTERVAL = 12;
-const TIMED_COMPUTER_REVEAL_THRESHOLDS = [5.2, 4.5, 3.8, 3.3];
+// Seconds at which a letter is auto-revealed
+const AUTO_REVEAL_SECONDS = [61, 120, 180, 240];
 const WRONG_PLACE_PENALTY = 0.3;
 const READING_TIME_SECONDS = 6;
 const GHOST_SCORE_MAX = 6;
@@ -74,15 +72,20 @@ const calcTimePenalty = (seconds, shapeId) => {
 };
 
 const calcTimedComputerBaseScore = (seconds) => {
-  const deductions = Math.floor(Math.min(seconds, TIMED_COMPUTER_DURATION) / TIMED_COMPUTER_INTERVAL) / 10;
-  return Math.max(
-    TIMED_COMPUTER_MIN_SCORE,
-    Math.round((TIMED_COMPUTER_MAX_SCORE - deductions) * 10) / 10
-  );
+  if (seconds <= 60) return TIMED_COMPUTER_MAX_SCORE;
+  // Minute 2 (61–120 s): –0.1 every 15 s
+  const d2 = Math.floor((Math.min(seconds, 120) - 61) / 15);
+  // Minute 3 (120–180 s): –0.1 every 10 s
+  const d3 = seconds > 120 ? Math.floor((Math.min(seconds, 180) - 120) / 10) : 0;
+  // Minute 4 (180–240 s): –0.1 every 6 s
+  const d4 = seconds > 180 ? Math.floor((Math.min(seconds, 240) - 180) / 6) : 0;
+  // After 240 s: –0.1 every 3 s
+  const d5 = seconds > 240 ? Math.floor((seconds - 240) / 3) : 0;
+  return Math.max(0, Math.round((TIMED_COMPUTER_MAX_SCORE - (d2 + d3 + d4 + d5) * 0.1) * 10) / 10);
 };
 
-const timedRevealCountForScore = (score) =>
-  TIMED_COMPUTER_REVEAL_THRESHOLDS.filter((threshold) => score <= threshold).length;
+const timedRevealCountForTime = (seconds) =>
+  AUTO_REVEAL_SECONDS.filter((t) => seconds >= t).length;
 
 const formatElapsedTime = (seconds = 0) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -411,7 +414,7 @@ const DroidGame = () => {
 
   useEffect(() => {
     if (!isTimedComputerActive) return;
-    const revealTarget = timedRevealCountForScore(calcTimedComputerBaseScore(timerSeconds));
+    const revealTarget = timedRevealCountForTime(timerSeconds);
     if (revealTarget <= timedAutoReveals) return;
 
     revealCorrectLetter({ countAsHint: false });
