@@ -347,6 +347,7 @@ body {
 }
 
 .home-how-to {
+  width: 100%;
   min-height: 3rem;
   display: grid;
   place-items: center;
@@ -356,6 +357,19 @@ body {
   font-weight: 800;
   line-height: 1.2;
   text-align: center;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.home-how-to:hover {
+  border-color: var(--border-med);
+  background: var(--surface2);
+}
+
+.home-how-to:active {
+  transform: scale(0.985);
+  filter: brightness(0.94);
 }
 
 .home-footer {
@@ -3053,6 +3067,305 @@ body {
     font-size: 0.72rem;
   }
 
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   How to Play
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.htp-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.86);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2200;
+  padding: 1rem;
+}
+
+.htp-modal {
+  background:
+    linear-gradient(180deg, rgba(26,26,27,0.96), rgba(17,18,19,0.98));
+  border: 1px solid var(--border-med);
+  border-radius: var(--radius-md);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(var(--app-height, 100vh) - 1.5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.htp-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.1rem 0.8rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.htp-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.htp-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 0.3rem;
+  font-family: inherit;
+  transition: color 0.15s ease;
+}
+
+.htp-close:hover { color: var(--text); }
+
+.htp-scroll {
+  overflow-y: auto;
+  padding: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Mini board diagram ── */
+.htp-mini-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3px;
+  width: 100%;
+  max-width: 150px;
+  aspect-ratio: 1;
+  flex-shrink: 0;
+}
+
+.htp-cell {
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  font-size: clamp(0.5rem, 2.6vw, 0.78rem);
+  font-weight: 800;
+  aspect-ratio: 1;
+  text-transform: uppercase;
+}
+
+.htp-cell-gap { background: transparent; }
+
+.htp-cell-empty {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+}
+
+.htp-cell-filled {
+  background: linear-gradient(180deg, #303033, #242426);
+  border: 1px solid var(--border-med);
+  color: var(--text);
+}
+
+.htp-cell-hint {
+  background: linear-gradient(135deg, #c9b458, #8f7f2f);
+  border: 1px solid #e4cf72;
+  color: #111213;
+}
+
+.htp-cell-correct {
+  background: linear-gradient(135deg, #28d466, #15803d);
+  border: 1px solid #86efac;
+  color: #07110b;
+}
+
+.htp-cell-wrong {
+  background: #343436;
+  border: 1px solid var(--border);
+  color: #fff;
+}
+
+/* ── Hero (the goal) ── */
+.htp-hero {
+  display: flex;
+  align-items: center;
+  gap: 1.1rem;
+  background: rgba(34,197,94,0.05);
+  border: 1px solid rgba(34,197,94,0.18);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+}
+
+.htp-hero .htp-mini-board { max-width: 120px; }
+
+.htp-hero-copy p {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.htp-kicker {
+  display: inline-block;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #4ade80;
+}
+
+/* ── Steps ── */
+.htp-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.htp-step {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.85rem;
+  position: relative;
+}
+
+.htp-step .htp-mini-board { max-width: 84px; }
+
+.htp-step-num {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #28d466, #16a34a);
+  color: #07110b;
+  font-size: 0.85rem;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.htp-step-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.htp-step-text strong {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.htp-step-text span {
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+/* ── Sections ── */
+.htp-section { display: flex; flex-direction: column; gap: 0.7rem; }
+
+.htp-h3 {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ── Tile key ── */
+.htp-key {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.htp-key-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.htp-swatch {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* ── Rules ── */
+.htp-rules {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.htp-rules li {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* ── Modes ── */
+.htp-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.htp-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.65rem 0.8rem;
+}
+
+.htp-mode strong {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.htp-mode span {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--text-muted);
+}
+
+.htp-mode-lightning {
+  border-color: rgba(251,191,36,0.3);
+  background: rgba(251,191,36,0.05);
+}
+
+.htp-mode-lightning strong { color: #fbbf24; }
+
+.htp-got-it {
+  margin: 0 1.1rem 1.1rem;
+  flex-shrink: 0;
 }
 
 

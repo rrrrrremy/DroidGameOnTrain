@@ -8,6 +8,7 @@ const StartScreen = ({
   onStartCustomVsComputer,
   onStartGhost,
   onShowLeaderboard,
+  onShowHowToPlay,
   dailyPlayed,
 }) => {
   return (
@@ -61,7 +62,7 @@ const StartScreen = ({
             </span>
           </button>
 
-          <div className="home-how-to">How to Play</div>
+          <button className="home-how-to" onClick={onShowHowToPlay}>How to Play</button>
 
           <footer className="home-footer">
             <span>Second Nature Games Pty Limited</span>

@@ -24,6 +24,7 @@ import {
 } from '../utils/computerPlayer';
 import Leaderboard from './Leaderboard';
 import PaymentModal from './PaymentModal';
+import HowToPlay from './HowToPlay';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
@@ -229,6 +230,9 @@ const DroidGame = () => {
 
   // ── Lightning payment state ───────────────────────────────────────────────
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // ── How-to-play overlay ────────────────────────────────────────────────────
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   useEffect(() => {
     const setViewportHeight = () => {
@@ -1160,9 +1164,12 @@ const DroidGame = () => {
           onStartCustomVsComputer={() => setShowPaymentModal(true)}
           onStartGhost={() => handleModeSelect('ghost')}
           onShowLeaderboard={() => setShowLeaderboard(true)}
+          onShowHowToPlay={() => setShowHowToPlay(true)}
           dailyPlayed={dailyPlayed}
         />
       )}
+
+      {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
 
       {gameState === 'preparingDaily' && (
         <div className="start-screen preparing-droid-screen">
