@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import GameBoard from './GameBoard';
 import Button from './Button';
 import StartScreen from './StartScreen';
@@ -208,6 +208,8 @@ const DroidGame = () => {
   const [player2FullValid, setPlayer2FullValid] = useState(false);
   const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
   const [isPaused, setIsPaused] = useState(false);
+  // Guards against finalizing a timed round more than once (submit + auto-end race)
+  const finalizingRef = useRef(false);
 
   // Session tracking (persists across the 4-droid game)
   const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
@@ -421,6 +423,22 @@ const DroidGame = () => {
     setTimedAutoReveals((prev) => prev + 1);
   }, [isTimedComputerActive, timerSeconds, timedAutoReveals]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-end the timed Droid v Human round the moment the live score hits 0.
+  useEffect(() => {
+    if (!isTimedComputerActive) return;
+    const liveTimed =
+      calcTimedComputerBaseScore(timerSeconds)
+      - Math.round(letterHintsUsed * hintPenalty * 10) / 10
+      - (wordHintUsed ? 2 : 0);
+    if (liveTimed > 0) return;
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
+    (async () => {
+      const { isFullValid } = await validateSolverBoard();
+      applyRoundResult(isFullValid);
+    })();
+  }, [isTimedComputerActive, timerSeconds, letterHintsUsed, hintPenalty, wordHintUsed]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Interactions ──────────────────────────────────────────────────────────
 
   const handleBoardTileClick = (x, y) => {
@@ -583,6 +601,7 @@ const DroidGame = () => {
     setSelectedLetter(null);
     setTimedAutoReveals(0);
     setTimerSeconds(0);
+    finalizingRef.current = false;
     setChallenge(null);
     setReadingSecondsLeft(timerEnabled && (mode === 'computer' || mode === 'daily') ? READING_TIME_SECONDS : 0);
 
@@ -645,6 +664,53 @@ const DroidGame = () => {
   };
 
   // ── Turn management ───────────────────────────────────────────────────────
+
+  // Validate the solver's board: are all active tiles filled, and is every
+  // row/column a valid English word?
+  const validateSolverBoard = async () => {
+    const activeRuns = getActiveRuns(boardShape);
+    const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+    if (!allFilled) return { allFilled: false, isFullValid: false };
+    setIsValidating(true);
+    try {
+      const uniqueWords = [
+        ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+      ];
+      const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+      return { allFilled: true, isFullValid: results.every(Boolean) };
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Compute correct tiles and transition to the end screen.
+  const applyRoundResult = (isFullValid) => {
+    finalizingRef.current = true;
+    setPlayer2FullValid(isFullValid);
+
+    let correct;
+    if (isFullValid) {
+      // Award all active tiles as correct
+      const seen = new Set();
+      correct = [];
+      getActiveRuns(boardShape).flat().forEach(({ x, y }) => {
+        const key = `${x},${y}`;
+        if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+      });
+    } else {
+      // Only tiles that match player 1's exact placement score
+      correct = checkCorrectTiles(board, player1Board);
+    }
+
+    setCorrectTiles(correct);
+    setValidationError(null);
+    setGameState('end');
+    setSelectedLetter(null);
+    if (dailyMode) {
+      localStorage.setItem(DAILY_STORAGE_KEY, todayString());
+      setDailyPlayed(true);
+    }
+  };
 
   const handleEndTurn = async () => {
     if (currentPlayer === 1) {
@@ -734,47 +800,21 @@ const DroidGame = () => {
       setGameState('share');
       setSelectedLetter(null);
     } else {
-      // Check if every active tile is filled and every word is valid English.
-      const activeRuns = getActiveRuns(boardShape);
-      const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+      const { allFilled, isFullValid } = await validateSolverBoard();
 
-      let isFullValid = false;
-      if (allFilled) {
-        setIsValidating(true);
-        try {
-          const uniqueWords = [
-            ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
-          ];
-          const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
-          isFullValid = results.every(Boolean);
-        } finally {
-          setIsValidating(false);
-        }
+      // In timed Droid v Human, a wrong submission doesn't end the game —
+      // the player is told it's incorrect and play resumes until they solve
+      // it or the score reaches 0.
+      if (isTimedComputerActive && !isFullValid) {
+        setValidationError(
+          allFilled
+            ? "Not quite — one or more words aren't valid. Keep trying!"
+            : 'Fill every tile with valid words before submitting.'
+        );
+        return;
       }
 
-      setPlayer2FullValid(isFullValid);
-
-      let correct;
-      if (isFullValid) {
-        // Award all active tiles as correct
-        const seen = new Set();
-        correct = [];
-        activeRuns.flat().forEach(({ x, y }) => {
-          const key = `${x},${y}`;
-          if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
-        });
-      } else {
-        // Only tiles that match player 1's exact placement score
-        correct = checkCorrectTiles(board, player1Board);
-      }
-
-      setCorrectTiles(correct);
-      setGameState('end');
-      setSelectedLetter(null);
-      if (dailyMode) {
-        localStorage.setItem(DAILY_STORAGE_KEY, todayString());
-        setDailyPlayed(true);
-      }
+      applyRoundResult(isFullValid);
     }
   };
 
@@ -808,6 +848,7 @@ const DroidGame = () => {
     setTimedAutoReveals(0);
     setTimerSeconds(0);
     setReadingSecondsLeft(0);
+    finalizingRef.current = false;
     setBoardShape('droid');
     setPendingMode(null);
     setPlayer2FullValid(false);
