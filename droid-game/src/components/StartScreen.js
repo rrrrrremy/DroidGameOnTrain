@@ -61,12 +61,7 @@ const StartScreen = ({
             </span>
           </button>
 
-          <button className="home-leaderboard-btn" onClick={onShowLeaderboard}>
-            <span className="home-lightning-label">
-              <strong>VIEW LEADERBOARD</strong>
-              <small>Daily results</small>
-            </span>
-          </button>
+          <button className="home-leaderboard-btn" onClick={onShowLeaderboard}>Daily Leaderboard</button>
 
           <button className="home-how-to" onClick={onShowHowToPlay}>How to Play</button>
 
