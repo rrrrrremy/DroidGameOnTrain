@@ -401,6 +401,16 @@ export const BOARD_SHAPES = {
     removed: new Set([1, 2, 3, 5, 10, 11, 20, 21, 22, 23, 25]),
     grid: [[0,0,0,1,0],[1,1,1,1,0],[0,1,1,1,1],[1,1,1,1,0],[0,0,0,1,0]],
   },
+  skating: {
+    name: 'Skating',
+    removed: new Set([1, 3, 4, 5, 10, 14, 15, 22, 23, 24, 25]),
+    grid: [[0,1,0,0,0],[1,1,1,1,0],[1,1,1,0,0],[1,1,1,1,1],[1,0,0,0,0]],
+  },
+  sleeping: {
+    name: 'Sleeping',
+    removed: new Set([1, 3, 4, 5, 6, 15, 16, 21, 23, 24, 25]),
+    grid: [[0,1,0,0,0],[0,1,1,1,1],[1,1,1,1,0],[0,1,1,1,1],[0,1,0,0,0]],
+  },
 };
 
 export const SHAPE_IDS = Object.keys(BOARD_SHAPES);
@@ -478,26 +488,29 @@ function tryGenerateBolt(rng = Math.random, avoid = null) {
   return null;
 }
 
-const GENERATORS = { droid: tryGenerateDroid, cross: tryGenerateCross, invader: tryGenerateInvader, bolt: tryGenerateBolt };
+const GENERATORS = { droid: tryGenerateDroid, cross: tryGenerateCross, invader: tryGenerateInvader, bolt: tryGenerateBolt, skating: tryGenerateSkating, sleeping: tryGenerateSleeping };
 
 /** Extract the 5-letter word from a generated board based on shape. */
 export const extractFiveLetterWord = (board, shapeId) => {
   if (!board) return null;
   if (shapeId === 'droid' || shapeId === 'invader') {
-    // Row y=1
     return board[1].join('');
   } else if (shapeId === 'cross') {
-    // Row y=2
     return board[2].join('');
   } else if (shapeId === 'bolt') {
-    // Col x=3
     return board.map(row => row[3]).join('');
+  } else if (shapeId === 'skating') {
+    // Row y=3
+    return board[3].join('');
+  } else if (shapeId === 'sleeping') {
+    // Col x=1
+    return board.map(row => row[1]).join('');
   }
   return null;
 };
 
 /** Count all valid board combinations given the fixed 5-letter word and the player's letter pool. */
-export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
+export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixedTiles = []) => {
   if (!fiveLetterWord) return 0;
   const w = fiveLetterWord;
   const wordsSet3 = new Set(WORDS_3);
@@ -528,6 +541,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
           const words = [w, col1, col2, col3, row2, row3];
           if (new Set(words).size !== words.length) continue;
           if (words.filter(isPlural).length > 1) continue;
+          if (!matchesFixedTiles(shapeId, { row1: w, row2, row3, col1, col2, col3 }, fixedTiles)) continue;
           count++;
         }
       }
@@ -548,6 +562,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
           const words = [row1, w, row3, col1, col2, col3];
           if (new Set(words).size !== words.length) continue;
           if (words.filter(isPlural).length > 1) continue;
+          if (!matchesFixedTiles(shapeId, { row1, row2: w, row3, col1, col2, col3 }, fixedTiles)) continue;
           count++;
         }
       }
@@ -569,6 +584,7 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
             const words = [w, row2, row3, col1, col2, col3];
             if (new Set(words).size !== words.length) continue;
             if (words.filter(isPlural).length > 1) continue;
+            if (!matchesFixedTiles(shapeId, { row1: w, row2, row3, col1, col2, col3 }, fixedTiles)) continue;
             count++;
           }
         }
@@ -591,14 +607,177 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool) => {
               const words = [row1, row2, row3, col1, col2, w];
               if (new Set(words).size !== words.length) continue;
               if (words.filter(isPlural).length > 1) continue;
+              if (!matchesFixedTiles(shapeId, { row1, row2, row3, col1, col2, col3: w }, fixedTiles)) continue;
               count++;
             }
           }
         }
       }
     }
+  } else if (shapeId === 'skating') {
+    // row3 = w; iterate col0, col1, col2, then find row1
+    const col0Options = filterWords(WORDS_4, IDX4, { 2: w[0] });
+    for (const col0 of col0Options) {
+      const col1Options = filterWords(WORDS_4, IDX4, { 3: w[1] });
+      for (const col1 of col1Options) {
+        const col2Options = filterWords(WORDS_3, IDX3, { 2: w[2] });
+        for (const col2 of col2Options) {
+          const row2 = col0[1] + col1[2] + col2[1];
+          if (!wordsSet3.has(row2)) continue;
+          const row1Options = filterWords(WORDS_4, IDX4, { 0: col0[0], 1: col1[1], 2: col2[0] });
+          for (const row1 of row1Options) {
+            const allLetters = w + col0[0] + col0[1] + col0[3] + col1[0] + col1[1] + col1[2] + col2[0] + col2[1] + row1[3];
+            if (!fitsPool(allLetters)) continue;
+            const words = [row1, row2, w, col0, col1, col2];
+            if (new Set(words).size !== words.length) continue;
+            if (words.filter(isPlural).length > 1) continue;
+            if (!matchesFixedTiles(shapeId, { row1, row3: w, col0, col1, col2 }, fixedTiles)) continue;
+            count++;
+          }
+        }
+      }
+    }
+  } else if (shapeId === 'sleeping') {
+    // col1 = w; iterate row1, row2, row3; col2/col3 derived
+    const row1Options = filterWords(WORDS_4, IDX4, { 0: w[1] });
+    for (const row1 of row1Options) {
+      const row2Options = filterWords(WORDS_4, IDX4, { 1: w[2] });
+      for (const row2 of row2Options) {
+        const row3Options = filterWords(WORDS_4, IDX4, { 0: w[3] });
+        for (const row3 of row3Options) {
+          const col2 = row1[1] + row2[2] + row3[1];
+          const col3 = row1[2] + row2[3] + row3[2];
+          if (!wordsSet3.has(col2) || !wordsSet3.has(col3)) continue;
+          const allLetters = w + row1.slice(1) + row2[0] + row2.slice(2) + row3.slice(1);
+          if (!fitsPool(allLetters)) continue;
+          const words = [row1, row2, row3, w, col2, col3];
+          if (new Set(words).size !== words.length) continue;
+          if (words.filter(isPlural).length > 1) continue;
+          if (!matchesFixedTiles(shapeId, { row1, row2, row3, col1: w }, fixedTiles)) continue;
+          count++;
+        }
+      }
+    }
   }
   return count;
+};
+
+const letterPoolForBoard = (board) => {
+  const letterPool = {};
+  board.flat().forEach((ch) => {
+    if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1;
+  });
+  return letterPool;
+};
+
+const wordFitsPool = (word, letterPool) => {
+  const counts = {};
+  for (const ch of word) {
+    counts[ch] = (counts[ch] || 0) + 1;
+    if (counts[ch] > (letterPool[ch] || 0)) return false;
+  }
+  return true;
+};
+
+const STARTER_LOCKS = {
+  droid:   [{ x: 0, y: 1 }, { x: 2, y: 2 }],
+  cross:   [{ x: 0, y: 2 }, { x: 2, y: 1 }],
+  invader: [{ x: 0, y: 1 }, { x: 2, y: 2 }],
+  bolt:    [{ x: 3, y: 0 }, { x: 1, y: 2 }],
+  skating: [{ x: 0, y: 3 }, { x: 2, y: 2 }],
+  sleeping:[{ x: 1, y: 0 }, { x: 2, y: 2 }],
+};
+
+const selectStarterLockedTiles = (board, shapeId) =>
+  (STARTER_LOCKS[shapeId] || STARTER_LOCKS.droid)
+    .map(({ x, y }) => ({ x, y, letter: board[y]?.[x] }))
+    .filter((tile) => tile.letter);
+
+const buildSolutionBoard = (shapeId, parts) => {
+  const board = Array(5).fill(null).map(() => Array(5).fill(null));
+
+  if (shapeId === 'droid') {
+    const { row1, col1, col2, col3 } = parts;
+    for (let x = 0; x < 5; x++) board[1][x] = row1[x];
+    for (let i = 0; i < 4; i++) board[1 + i][1] = col1[i];
+    for (let i = 0; i < 4; i++) board[i][2] = col2[i];
+    for (let i = 0; i < 4; i++) board[1 + i][3] = col3[i];
+  } else if (shapeId === 'cross') {
+    const { row2, col1, col2, col3 } = parts;
+    board[0][2] = col2[0];
+    board[1][1] = col1[0]; board[1][2] = col2[1]; board[1][3] = col3[0];
+    for (let x = 0; x < 5; x++) board[2][x] = row2[x];
+    board[3][1] = col1[2]; board[3][2] = col2[3]; board[3][3] = col3[2];
+    board[4][1] = col1[3]; board[4][3] = col3[3];
+  } else if (shapeId === 'invader') {
+    const { row1, row3, col1, col2, col3 } = parts;
+    board[0][2] = col2[0];
+    for (let x = 0; x < 5; x++) board[1][x] = row1[x];
+    board[2][1] = col1[1]; board[2][2] = col2[2]; board[2][3] = col3[1];
+    for (let x = 1; x < 5; x++) board[3][x] = row3[x - 1];
+    board[4][1] = col1[3];
+  } else if (shapeId === 'bolt') {
+    const { row1, row2, row3, col3 } = parts;
+    board[0][3] = col3[0];
+    for (let i = 0; i < 4; i++) board[1][i] = row1[i];
+    for (let i = 0; i < 4; i++) board[2][1 + i] = row2[i];
+    for (let i = 0; i < 4; i++) board[3][i] = row3[i];
+    board[4][3] = col3[4];
+  } else if (shapeId === 'skating') {
+    const { row1, row3, col0, col1, col2 } = parts;
+    board[0][1] = col1[0];
+    for (let i = 0; i < 4; i++) board[1][i] = row1[i];
+    const row2 = col0[1] + col1[2] + col2[1];
+    for (let i = 0; i < 3; i++) board[2][i] = row2[i];
+    for (let x = 0; x < 5; x++) board[3][x] = row3[x];
+    board[4][0] = col0[3];
+  } else if (shapeId === 'sleeping') {
+    const { row1, row2, row3, col1 } = parts;
+    board[0][1] = col1[0];
+    for (let i = 0; i < 4; i++) board[1][1 + i] = row1[i];
+    for (let i = 0; i < 4; i++) board[2][i] = row2[i];
+    for (let i = 0; i < 4; i++) board[3][1 + i] = row3[i];
+    board[4][1] = col1[4];
+  }
+
+  return board;
+};
+
+const matchesFixedTiles = (shapeId, parts, fixedTiles = []) => {
+  if (!fixedTiles || fixedTiles.length === 0) return true;
+  const solutionBoard = buildSolutionBoard(shapeId, parts);
+  return fixedTiles.every(({ x, y, letter }) => solutionBoard[y]?.[x] === letter);
+};
+
+/** Count every valid solution for a shape and exact letter pool, regardless of anchor word. */
+export const countBoardSolutions = (shapeId, letterPool, stopAfter = Number.MAX_SAFE_INTEGER, fixedTiles = []) => {
+  let count = 0;
+
+  for (const fiveLetterWord of WORDS_5_NON_PLURAL) {
+    if (!wordFitsPool(fiveLetterWord, letterPool)) continue;
+    count += countBoardCombinations(shapeId, fiveLetterWord, letterPool, fixedTiles);
+    if (count >= stopAfter) return count;
+  }
+
+  return count;
+};
+
+const addUniquenessMetadata = (shape, result) => {
+  if (!result) return null;
+
+  const { board, fiveLetterWord } = result;
+  const letterPool = letterPoolForBoard(board);
+  const preservedLetters = selectStarterLockedTiles(board, shape);
+  const solutionCount = countBoardSolutions(shape, letterPool, 2, preservedLetters);
+
+  if (solutionCount !== 1) return null;
+
+  return {
+    board,
+    fiveLetterWord,
+    preservedLetters,
+    combinationCount: solutionCount,
+  };
 };
 
 const RECENT_WORDS_KEY = 'droid_recent_words';
@@ -622,18 +801,14 @@ const recordRecentWord = (word) => {
 export const generateComputerBoard = (shape = 'droid') => {
   const gen = GENERATORS[shape] || GENERATORS.droid;
   const recentSet = new Set(getRecentWords());
-  // Try with avoidance first (40 attempts), then relax (20 more)
-  for (let attempt = 0; attempt < 60; attempt++) {
-    const avoid = attempt < 40 ? recentSet : null;
+  // Try with avoidance first, then relax. Reject boards unless they have one solution.
+  for (let attempt = 0; attempt < 250; attempt++) {
+    const avoid = attempt < 160 ? recentSet : null;
     const result = gen(undefined, avoid);
-    if (result) {
-      const { board, fiveLetterWord } = result;
-      const letterPool = {};
-      board.flat().forEach((ch) => { if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1; });
-      const combinationCount = countBoardCombinations(shape, fiveLetterWord, letterPool);
-      recordRecentWord(fiveLetterWord);
-      return { board, fiveLetterWord, combinationCount };
-    }
+    const uniqueResult = addUniquenessMetadata(shape, result);
+    if (!uniqueResult) continue;
+    recordRecentWord(uniqueResult.fiveLetterWord);
+    return uniqueResult;
   }
   return null;
 };
@@ -641,15 +816,10 @@ export const generateComputerBoard = (shape = 'droid') => {
 export const generateDailyBoard = (shape = 'droid') => {
   const rng = mulberry32(todaySeed());
   const gen = GENERATORS[shape] || GENERATORS.droid;
-  for (let attempt = 0; attempt < 60; attempt++) {
+  for (let attempt = 0; attempt < 250; attempt++) {
     const result = gen(rng);
-    if (result) {
-      const { board, fiveLetterWord } = result;
-      const letterPool = {};
-      board.flat().forEach((ch) => { if (ch) letterPool[ch] = (letterPool[ch] || 0) + 1; });
-      const combinationCount = countBoardCombinations(shape, fiveLetterWord, letterPool);
-      return { board, fiveLetterWord, combinationCount };
-    }
+    const uniqueResult = addUniquenessMetadata(shape, result);
+    if (uniqueResult) return uniqueResult;
   }
   return null;
 };
@@ -800,6 +970,142 @@ function tryGenerateInvader(rng = Math.random, avoid = null) {
           board[4][1] = col1[3];
 
           return { board, fiveLetterWord: row1 };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// ── Skating shape generator ─────────────────────────────────────────────────
+// Layout:  . X . . .    col1[0] at (1,0)
+//          X X X X .    row1: 4-letter (x=0..3)
+//          X X X . .    row2: 3-letter derived (x=0..2)
+//          X X X X X    row3: 5-letter (main)
+//          X . . . .    col0[3] at (0,4)
+// Cols: col0 x=0 y=1..4 (4-letter), col1 x=1 y=0..3 (4-letter), col2 x=2 y=1..3 (3-letter)
+
+function tryGenerateSkating(rng = Math.random, avoid = null) {
+  let pool = avoid ? WORDS_5_NON_PLURAL.filter((w) => !avoid.has(w)) : WORDS_5_NON_PLURAL;
+  if (pool.length === 0) pool = WORDS_5_NON_PLURAL;
+  const row3Candidates = shuffle(pool, rng);
+
+  for (const row3 of row3Candidates.slice(0, 50)) {
+    // col0 (x=0, y=1..4): 4-letter, col0[2] = row3[0]
+    const col0Candidates = shuffle(filterWords(WORDS_4, IDX4, { 2: row3[0] }), rng);
+    if (col0Candidates.length === 0) continue;
+
+    for (const col0 of col0Candidates.slice(0, 10)) {
+      // col1 (x=1, y=0..3): 4-letter, col1[3] = row3[1]
+      const col1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 3: row3[1] }), rng);
+      if (col1Candidates.length === 0) continue;
+
+      for (const col1 of col1Candidates.slice(0, 10)) {
+        // col2 (x=2, y=1..3): 3-letter, col2[2] = row3[2]
+        const col2Candidates = shuffle(filterWords(WORDS_3, IDX3, { 2: row3[2] }), rng);
+        if (col2Candidates.length === 0) continue;
+
+        for (const col2 of col2Candidates.slice(0, 10)) {
+          // row2 (y=2): 3-letter derived = col0[1], col1[2], col2[1]
+          const row2 = col0[1] + col1[2] + col2[1];
+          if (!WORDS_3.includes(row2)) continue;
+
+          // row1 (y=1): 4-letter where [0]=col0[0], [1]=col1[1], [2]=col2[0]
+          const row1Matches = filterWords(WORDS_4, IDX4, { 0: col0[0], 1: col1[1], 2: col2[0] });
+          if (row1Matches.length === 0) continue;
+
+          for (const row1 of shuffle(row1Matches, rng).slice(0, 5)) {
+            const allLetters = row3 + col0[0] + col0[1] + col0[3] + col1[0] + col1[1] + col1[2] + col2[0] + col2[1] + row1[3];
+            const counts = {};
+            let tooMany = false;
+            for (const ch of allLetters) {
+              counts[ch] = (counts[ch] || 0) + 1;
+              if (counts[ch] > 2) { tooMany = true; break; }
+            }
+            if (tooMany) continue;
+
+            const skatingWords = [row1, row2, row3, col0, col1, col2];
+            if (new Set(skatingWords).size !== skatingWords.length) continue;
+
+            const pluralCount = skatingWords.filter(isPlural).length;
+            if (pluralCount > 1) continue;
+
+            const board = Array(5).fill(null).map(() => Array(5).fill(null));
+            board[0][1] = col1[0];
+            for (let i = 0; i < 4; i++) board[1][i] = row1[i];
+            for (let i = 0; i < 3; i++) board[2][i] = row2[i];
+            for (let x = 0; x < 5; x++) board[3][x] = row3[x];
+            board[4][0] = col0[3];
+
+            return { board, fiveLetterWord: row3 };
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+// ── Sleeping shape generator ────────────────────────────────────────────────
+// Layout:  . X . . .    col1[0] at (1,0)
+//          . X X X X    row1: 4-letter (x=1..4)
+//          X X X X .    row2: 4-letter (x=0..3)
+//          . X X X X    row3: 4-letter (x=1..4)
+//          . X . . .    col1[4] at (1,4)
+// Cols: col1 x=1 y=0..4 (5-letter, main), col2 x=2 y=1..3 (3-letter, derived), col3 x=3 y=1..3 (3-letter, derived)
+
+function tryGenerateSleeping(rng = Math.random, avoid = null) {
+  let pool = avoid ? WORDS_5_NON_PLURAL.filter((w) => !avoid.has(w)) : WORDS_5_NON_PLURAL;
+  if (pool.length === 0) pool = WORDS_5_NON_PLURAL;
+  const col1Candidates = shuffle(pool, rng);
+
+  for (const col1 of col1Candidates.slice(0, 50)) {
+    // row1 (y=1, x=1..4): 4-letter, row1[0] = col1[1]
+    const row1Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: col1[1] }), rng);
+    if (row1Candidates.length === 0) continue;
+
+    for (const row1 of row1Candidates.slice(0, 10)) {
+      // row2 (y=2, x=0..3): 4-letter, row2[1] = col1[2]
+      const row2Candidates = shuffle(filterWords(WORDS_4, IDX4, { 1: col1[2] }), rng);
+      if (row2Candidates.length === 0) continue;
+
+      for (const row2 of row2Candidates.slice(0, 10)) {
+        // row3 (y=3, x=1..4): 4-letter, row3[0] = col1[3]
+        const row3Candidates = shuffle(filterWords(WORDS_4, IDX4, { 0: col1[3] }), rng);
+        if (row3Candidates.length === 0) continue;
+
+        for (const row3 of row3Candidates.slice(0, 10)) {
+          // col2 (x=2, y=1..3): 3-letter derived = row1[1], row2[2], row3[1]
+          const col2 = row1[1] + row2[2] + row3[1];
+          if (!WORDS_3.includes(col2)) continue;
+
+          // col3 (x=3, y=1..3): 3-letter derived = row1[2], row2[3], row3[2]
+          const col3 = row1[2] + row2[3] + row3[2];
+          if (!WORDS_3.includes(col3)) continue;
+
+          const allLetters = col1 + row1.slice(1) + row2[0] + row2.slice(2) + row3.slice(1);
+          const counts = {};
+          let tooMany = false;
+          for (const ch of allLetters) {
+            counts[ch] = (counts[ch] || 0) + 1;
+            if (counts[ch] > 2) { tooMany = true; break; }
+          }
+          if (tooMany) continue;
+
+          const sleepingWords = [row1, row2, row3, col1, col2, col3];
+          if (new Set(sleepingWords).size !== sleepingWords.length) continue;
+
+          const pluralCount = sleepingWords.filter(isPlural).length;
+          if (pluralCount > 1) continue;
+
+          const board = Array(5).fill(null).map(() => Array(5).fill(null));
+          board[0][1] = col1[0];
+          for (let i = 0; i < 4; i++) board[1][1 + i] = row1[i];
+          for (let i = 0; i < 4; i++) board[2][i] = row2[i];
+          for (let i = 0; i < 4; i++) board[3][1 + i] = row3[i];
+          board[4][1] = col1[4];
+
+          return { board, fiveLetterWord: col1 };
         }
       }
     }

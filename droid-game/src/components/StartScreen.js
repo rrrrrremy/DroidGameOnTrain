@@ -2,49 +2,76 @@ import React from 'react';
 
 const LETTERS = 'DROID'.split('');
 
-const StartScreen = ({ onStart, onStartVsComputer, onStartDaily, onStartGhost, onShowLeaderboard, dailyPlayed }) => {
+const StartScreen = ({
+  onStart,
+  onStartVsComputer,
+  onStartCustomVsComputer,
+  onStartGhost,
+  onShowLeaderboard,
+  onShowHowToPlay,
+  dailyPlayed,
+}) => {
   return (
     <div className="start-screen">
       <div className="start-content">
-
-        <h1 className="game-title">
-          {LETTERS.map((letter, i) => (
-            <span key={i} className="game-letter">{letter}</span>
-          ))}
-        </h1>
-
-        <div className="start-buttons">
-          <button className="start-button daily-button" onClick={onStartDaily} disabled={dailyPlayed}>
-            {dailyPlayed ? '✅ Daily Puzzle Complete' : '📅 Daily Puzzle'}
-          </button>
-          {dailyPlayed && (
-            <div className="daily-played-row">
-              <p className="daily-played-note">Come back tomorrow for a new puzzle!</p>
-              <button className="start-button leaderboard-button" onClick={onShowLeaderboard}>
-                🏆 Leaderboard
-              </button>
+        <section className="home-panel" aria-label="Droid home screen">
+          <div className="home-logo-card">
+            <div className="brand-lockup" aria-label="Droid">
+              <div className="brand-mark">D</div>
+              <div className="brand-copy">
+                <span className="start-badge">Word Strategy</span>
+                <h1 className="game-title">
+                  {LETTERS.map((letter, i) => (
+                    <span key={i} className="game-letter">{letter}</span>
+                  ))}
+                </h1>
+              </div>
             </div>
-          )}
+          </div>
 
-          <div className="start-or"><span>or</span></div>
+          <p className="home-tagline">
+            Six Words. Six Minutes. Sick Droids.
+          </p>
 
-          <button className="start-button" onClick={onStart}>
-            👥 2 Player Game
+          <div className="home-mode-stack" aria-label="Game modes">
+            <button
+              className={`home-mode-button home-mode-primary${dailyPlayed ? ' is-played' : ''}`}
+              onClick={onStartVsComputer}
+              disabled={dailyPlayed}
+            >
+              <span>PLAY DROID</span>
+              {dailyPlayed && <small className="home-mode-note">Played today</small>}
+            </button>
+
+            <button className="home-mode-button" onClick={onStart}>
+              <span>PLAY HUMAN</span>
+            </button>
+
+            {/* Ghost Droid temporarily disabled — logic kept intact, hidden from players.
+            <button className="home-mode-button" onClick={onStartGhost}>
+              <span>GHOST DROID</span>
+            </button>
+            */}
+          </div>
+
+          <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
+            <span className="home-lightning-label">
+              <strong><span className="home-lightning-icon">⚡</span> PLAY MORE TODAY</strong>
+              <small>100 sats · pay with Lightning</small>
+            </span>
           </button>
 
-          <div className="start-or"><span>or</span></div>
+          <button className="home-leaderboard-btn" onClick={onShowLeaderboard}>Daily Leaderboard</button>
 
-          <button className="start-button vs-computer" onClick={onStartVsComputer}>
-            🤖 Play vs Computer
-          </button>
+          <button className="home-how-to" onClick={onShowHowToPlay}>How to Play</button>
 
-          <div className="start-or"><span>or</span></div>
-
-          <button className="start-button ghost-button" onClick={onStartGhost}>
-            👻 Ghost Droid
-          </button>
-        </div>
-
+          <footer className="home-footer">
+            <span>Second Nature Games Pty Limited</span>
+            <span>ACN: 161 671 549</span>
+            <span>Creators Remy Browne &amp; Matthew Browne</span>
+            <span>All Rights Reserved</span>
+          </footer>
+        </section>
       </div>
     </div>
   );

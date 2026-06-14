@@ -65,22 +65,35 @@ export const countLetters = (board) => {
   return counts;
 };
 
-export const preserveRandomLettersForPlayer2 = (board, count = 2) => {
-  const centerLetter = board[2][2];
-  const center = centerLetter ? { x: 2, y: 2, letter: centerLetter } : null;
+// Start of the 5-letter word for each shape
+const FIVE_LETTER_START = {
+  droid:    { x: 0, y: 1 },
+  cross:    { x: 0, y: 2 },
+  invader:  { x: 0, y: 1 },
+  bolt:     { x: 3, y: 0 },
+  skating:  { x: 0, y: 3 },
+  sleeping: { x: 1, y: 0 },
+};
 
-  const otherTiles = [];
-  board.forEach((row, y) =>
-    row.forEach((letter, x) => {
-      if (letter && !(x === 2 && y === 2)) otherTiles.push({ x, y, letter });
-    })
-  );
+// Middle tiles of the 3-letter words for each shape
+const THREE_LETTER_MIDDLES = {
+  droid:    [{ x: 2, y: 2 }, { x: 2, y: 3 }],
+  cross:    [{ x: 2, y: 1 }, { x: 2, y: 3 }],
+  invader:  [{ x: 2, y: 2 }, { x: 3, y: 2 }],
+  bolt:     [{ x: 1, y: 2 }, { x: 2, y: 2 }],
+  skating:  [{ x: 2, y: 2 }, { x: 1, y: 2 }],
+  sleeping: [{ x: 2, y: 2 }, { x: 3, y: 2 }],
+};
 
-  const shuffled = [...otherTiles].sort(() => Math.random() - 0.5);
+export const preserveRandomLettersForPlayer2 = (board, count = 2, shape = 'droid') => {
+  const start = FIVE_LETTER_START[shape] || FIVE_LETTER_START.droid;
+  const middles = THREE_LETTER_MIDDLES[shape] || THREE_LETTER_MIDDLES.droid;
+  const middle = middles.find(({ x, y }) => board[y]?.[x]) || middles[0];
+
   const preserved = [
-    ...(center ? [center] : []),
-    ...shuffled.slice(0, Math.max(0, count - (center ? 1 : 0))),
-  ].slice(0, count);
+    { x: start.x, y: start.y, letter: board[start.y][start.x] },
+    { x: middle.x, y: middle.y, letter: board[middle.y][middle.x] },
+  ].filter((t) => t.letter);
 
   const newBoard = Array(5)
     .fill(null)
@@ -126,9 +139,27 @@ const decodePreserved = (str) => {
   return tiles;
 };
 
-// Combine shape + board + preserved into a single opaque base64url token
-export const encodeShareParam = (board, preserved, shape = 'droid') => {
-  const raw = `${shape}|${encodeBoard(board)}|${encodePreserved(preserved)}`;
+const encodeShareMeta = (meta) => {
+  if (!meta) return '';
+  try {
+    return encodeURIComponent(JSON.stringify(meta));
+  } catch {
+    return '';
+  }
+};
+
+const decodeShareMeta = (str) => {
+  if (!str) return null;
+  try {
+    return JSON.parse(decodeURIComponent(str));
+  } catch {
+    return null;
+  }
+};
+
+// Combine shape + board + preserved + optional challenge metadata into a single opaque base64url token
+export const encodeShareParam = (board, preserved, shape = 'droid', meta = null) => {
+  const raw = `${shape}|${encodeBoard(board)}|${encodePreserved(preserved)}|${encodeShareMeta(meta)}`;
   return btoa(raw).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 };
 
@@ -137,13 +168,14 @@ export const decodeShareParam = (token) => {
   try {
     const raw = atob(token.replace(/-/g, '+').replace(/_/g, '/'));
     const parts = raw.split('|');
-    if (parts.length === 3) {
-      // New format: shape|board|preserved
-      const [shape, boardStr, preservedStr] = parts;
+    if (parts.length >= 3) {
+      // Current format: shape|board|preserved|meta
+      const [shape, boardStr, preservedStr, metaStr] = parts;
       const board = decodeBoard(boardStr);
       if (!board) return null;
       const preserved = decodePreserved(preservedStr ?? '');
-      return { board, preserved, shape };
+      const meta = decodeShareMeta(metaStr);
+      return { board, preserved, shape, meta };
     } else if (parts.length === 2) {
       // Old format: board|preserved (backwards compat)
       const [boardStr, preservedStr] = parts;
