@@ -1,5 +1,5 @@
 const LIGHTNING_ADDRESS = 'friendlysky737215@getalby.com';
-export const GAME_PRICE_SATS = 1000;
+export const GAME_PRICE_SATS = 100;
 
 export async function createGameInvoice() {
   const [user, domain] = LIGHTNING_ADDRESS.split('@');

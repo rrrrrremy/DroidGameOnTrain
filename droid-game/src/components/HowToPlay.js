@@ -135,7 +135,7 @@ const HowToPlay = ({ onClose }) => (
             */}
             <div className="htp-mode htp-mode-lightning">
               <strong>⚡ Play Any Shape</strong>
-              <span>Pay 1,000 sats to play any shape against the Droid.</span>
+              <span>Pay 100 sats to play any shape against the Droid.</span>
             </div>
           </div>
         </section>

@@ -57,7 +57,7 @@ const StartScreen = ({
           <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
             <span className="home-lightning-label">
               <strong><span className="home-lightning-icon">⚡</span> PLAY MORE TODAY</strong>
-              <small>1,000 sats · pay with Lightning</small>
+              <small>100 sats · pay with Lightning</small>
             </span>
           </button>
 
