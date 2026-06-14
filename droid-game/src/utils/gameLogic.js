@@ -67,18 +67,22 @@ export const countLetters = (board) => {
 
 // Start of the 5-letter word for each shape
 const FIVE_LETTER_START = {
-  droid:   { x: 0, y: 1 },
-  cross:   { x: 0, y: 2 },
-  invader: { x: 0, y: 1 },
-  bolt:    { x: 3, y: 0 },
+  droid:    { x: 0, y: 1 },
+  cross:    { x: 0, y: 2 },
+  invader:  { x: 0, y: 1 },
+  bolt:     { x: 3, y: 0 },
+  skating:  { x: 0, y: 3 },
+  sleeping: { x: 1, y: 0 },
 };
 
 // Middle tiles of the 3-letter words for each shape
 const THREE_LETTER_MIDDLES = {
-  droid:   [{ x: 2, y: 2 }, { x: 2, y: 3 }],
-  cross:   [{ x: 2, y: 1 }, { x: 2, y: 3 }],
-  invader: [{ x: 2, y: 2 }, { x: 3, y: 2 }],
-  bolt:    [{ x: 1, y: 2 }, { x: 2, y: 2 }],
+  droid:    [{ x: 2, y: 2 }, { x: 2, y: 3 }],
+  cross:    [{ x: 2, y: 1 }, { x: 2, y: 3 }],
+  invader:  [{ x: 2, y: 2 }, { x: 3, y: 2 }],
+  bolt:     [{ x: 1, y: 2 }, { x: 2, y: 2 }],
+  skating:  [{ x: 2, y: 2 }, { x: 1, y: 2 }],
+  sleeping: [{ x: 2, y: 2 }, { x: 3, y: 2 }],
 };
 
 export const preserveRandomLettersForPlayer2 = (board, count = 2, shape = 'droid') => {
