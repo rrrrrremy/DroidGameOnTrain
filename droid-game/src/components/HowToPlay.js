@@ -127,10 +127,12 @@ const HowToPlay = ({ onClose }) => (
               <strong>Human v Human</strong>
               <span>One friend builds a board, the other rebuilds it.</span>
             </div>
+            {/* Ghost Droid temporarily disabled — hidden from players.
             <div className="htp-mode">
               <strong>Ghost Droid</strong>
               <span>Letters appear one at a time — place each as it arrives.</span>
             </div>
+            */}
             <div className="htp-mode htp-mode-lightning">
               <strong>⚡ Play Any Shape</strong>
               <span>Pay 1,000 sats to play any shape against the Droid.</span>

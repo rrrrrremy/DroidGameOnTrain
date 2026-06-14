@@ -42,9 +42,11 @@ const StartScreen = ({
               <span>HUMAN v HUMAN</span>
             </button>
 
+            {/* Ghost Droid temporarily disabled — logic kept intact, hidden from players.
             <button className="home-mode-button" onClick={onStartGhost}>
               <span>GHOST DROID</span>
             </button>
+            */}
           </div>
 
           {dailyPlayed && (
