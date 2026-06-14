@@ -178,6 +178,7 @@ body {
 .home-mode-button,
 .home-daily-button,
 .home-subscribe,
+.home-leaderboard-btn,
 .home-how-to,
 .home-footer {
   border: 1px solid var(--border);
@@ -375,6 +376,32 @@ body {
   font-size: 0.82rem;
   font-weight: 700;
   line-height: 1.2;
+}
+
+.home-leaderboard-btn {
+  width: 100%;
+  min-height: 4.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-leaderboard-btn:hover {
+  border-color: var(--border-med);
+  background: var(--surface2);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.home-leaderboard-btn:active {
+  transform: scale(0.985);
+  filter: brightness(0.94);
+}
+
+.home-leaderboard-btn .home-lightning-label small {
+  color: var(--text-muted);
 }
 
 .home-how-to {
@@ -2865,11 +2892,11 @@ body {
   }
   .home-daily-button span { font-size: clamp(0.62rem, calc(var(--app-height) * 0.012), 0.74rem); }
   .home-daily-button small { font-size: clamp(0.54rem, calc(var(--app-height) * 0.011), 0.64rem); }
-  .home-subscribe {
+  .home-subscribe,
+  .home-leaderboard-btn {
     flex: 0 0 auto;
     min-height: clamp(2.7rem, calc(var(--app-height) * 0.078), 3.45rem);
     padding: 0.38rem 0.6rem;
-    gap: 0.5rem;
   }
   .home-lightning-icon { font-size: 0.9em; }
   .home-lightning-label strong { font-size: clamp(1rem, calc(var(--app-height) * 0.027), 1.42rem); }
@@ -4017,7 +4044,8 @@ body {
   .home-mode-stack { gap: 0.32rem; }
   .home-mode-button { min-height: 3rem; padding: 0.45rem 0.7rem; font-size: clamp(1.05rem, 3vw, 1.35rem); }
   .home-daily-button { min-height: 2.55rem; padding: 0.45rem 0.65rem; }
-  .home-subscribe { min-height: 2.85rem; padding: 0.34rem 0.6rem; }
+  .home-subscribe,
+  .home-leaderboard-btn { min-height: 2.85rem; padding: 0.34rem 0.6rem; }
   .home-lightning-icon { font-size: 0.9em; }
   .home-lightning-label strong { font-size: clamp(1.05rem, 3vw, 1.35rem); }
   .home-lightning-label small { font-size: 0.62rem; }

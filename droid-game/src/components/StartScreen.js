@@ -61,12 +61,12 @@ const StartScreen = ({
             </span>
           </button>
 
-          {dailyPlayed && (
-            <button className="home-daily-button is-complete" onClick={onShowLeaderboard}>
-              <span>View Leaderboard</span>
+          <button className="home-leaderboard-btn" onClick={onShowLeaderboard}>
+            <span className="home-lightning-label">
+              <strong>VIEW LEADERBOARD</strong>
               <small>Daily results</small>
-            </button>
-          )}
+            </span>
+          </button>
 
           <button className="home-how-to" onClick={onShowHowToPlay}>How to Play</button>
 
