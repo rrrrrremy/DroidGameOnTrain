@@ -34,8 +34,13 @@ const StartScreen = ({
           </p>
 
           <div className="home-mode-stack" aria-label="Game modes">
-            <button className="home-mode-button home-mode-primary" onClick={onStartVsComputer}>
+            <button
+              className={`home-mode-button home-mode-primary${dailyPlayed ? ' is-played' : ''}`}
+              onClick={onStartVsComputer}
+              disabled={dailyPlayed}
+            >
               <span>DROID v HUMAN</span>
+              {dailyPlayed && <small className="home-mode-note">Played today</small>}
             </button>
 
             <button className="home-mode-button" onClick={onStart}>
@@ -59,7 +64,7 @@ const StartScreen = ({
           <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
             <span className="home-lightning-icon">⚡</span>
             <span className="home-lightning-label">
-              <strong>PLAY ANY SHAPE</strong>
+              <strong>KEEP PLAYING</strong>
               <small>1,000 sats · pay with Lightning</small>
             </span>
           </button>

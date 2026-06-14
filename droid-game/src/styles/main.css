@@ -262,6 +262,39 @@ body {
   filter: brightness(0.94);
 }
 
+/* Daily challenge already played today — greyed out, non-interactive */
+.home-mode-button.is-played,
+.home-mode-button:disabled {
+  background: rgba(10,12,12,0.36);
+  border-color: var(--border);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.home-mode-button.is-played:hover,
+.home-mode-button:disabled:hover {
+  background: rgba(10,12,12,0.36);
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.home-mode-button.is-played:active,
+.home-mode-button:disabled:active {
+  transform: none;
+  filter: none;
+}
+
+.home-mode-note {
+  margin-top: 0.2rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .home-daily-button {
   min-height: 3.75rem;
   display: flex;
