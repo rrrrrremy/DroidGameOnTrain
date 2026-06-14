@@ -39,12 +39,12 @@ const StartScreen = ({
               onClick={onStartVsComputer}
               disabled={dailyPlayed}
             >
-              <span>DROID v HUMAN</span>
+              <span>PLAY DROID</span>
               {dailyPlayed && <small className="home-mode-note">Played today</small>}
             </button>
 
             <button className="home-mode-button" onClick={onStart}>
-              <span>HUMAN v HUMAN</span>
+              <span>PLAY HUMAN</span>
             </button>
 
             {/* Ghost Droid temporarily disabled — logic kept intact, hidden from players.
