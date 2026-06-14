@@ -54,20 +54,19 @@ const StartScreen = ({
             */}
           </div>
 
+          <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
+            <span className="home-lightning-label">
+              <strong><span className="home-lightning-icon">⚡</span> PLAY MORE TODAY</strong>
+              <small>1,000 sats · pay with Lightning</small>
+            </span>
+          </button>
+
           {dailyPlayed && (
             <button className="home-daily-button is-complete" onClick={onShowLeaderboard}>
               <span>View Leaderboard</span>
               <small>Daily results</small>
             </button>
           )}
-
-          <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
-            <span className="home-lightning-icon">⚡</span>
-            <span className="home-lightning-label">
-              <strong>KEEP PLAYING</strong>
-              <small>1,000 sats · pay with Lightning</small>
-            </span>
-          </button>
 
           <button className="home-how-to" onClick={onShowHowToPlay}>How to Play</button>
 
