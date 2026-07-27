@@ -1,0 +1,105 @@
+/* ==========================================================================
+   iOS / WKWebView overrides.
+
+   Loaded after main.css. Everything here exists because a web page behaves
+   differently once it is running as a native app: no rubber-band scrolling,
+   no text selection on tiles, no magnifying glass on long-press, and the
+   layout has to dodge the notch and the home indicator.
+   ========================================================================== */
+
+html,
+body,
+#root {
+  height: 100%;
+  /* Stop the whole webview from rubber-banding when a drag runs off-screen. */
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: auto;
+}
+
+body {
+  /* The board area extends behind the status bar; the container pads it back. */
+  background: var(--bg);
+  /* No text cursor / selection highlight anywhere in a game UI. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  /* Kills the grey flash iOS paints over every tapped element. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Inputs are the one place selection and the keyboard are wanted. */
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+  /* < 16px triggers an automatic zoom on focus in WKWebView. */
+  font-size: 16px;
+}
+
+/* ===== SAFE AREAS ===== */
+
+.game-container {
+  /* 100dvh is unreliable in WKWebView; -webkit-fill-available tracks the
+     real visible height including when the keyboard is up. */
+  height: 100vh;
+  height: -webkit-fill-available;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  /* Momentum scrolling inside the container only. */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+/* The leaderboard is position:fixed, so it sits outside .game-container's
+   padding box and needs its own insets. */
+.leaderboard-overlay {
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
+}
+
+/* ===== TOUCH TARGETS ===== */
+
+/* Tiles are dragged on desktop and tapped on iOS. Suppress the browser's own
+   touch gestures on them so a drag never scrolls the page underneath. */
+.tile,
+.letter-tile,
+.return-box {
+  touch-action: manipulation;
+  -webkit-user-drag: none;
+}
+
+/* main.css only reveals the per-tile remove button on :hover, which never
+   fires on a touch screen. Show it whenever the tile holds a letter. */
+.tile-filled .tile-remove-btn,
+.tile-invalid .tile-remove-btn {
+  display: block;
+}
+
+/* It was sized for a mouse pointer (16px). Grow the hit area with a
+   transparent overlay rather than changing how the badge looks. */
+.tile-remove-btn::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  bottom: -9px;
+  left: -9px;
+}
+
+button,
+.copy-btn,
+.hint-btn {
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* The pool letter currently "in hand" after a tap. Mirrors the desktop
+   drag affordance so it is obvious a letter is being carried. */
+.tile-carrying,
+.letter-tile.selected {
+  outline: 2px solid var(--indigo);
+  outline-offset: 2px;
+}

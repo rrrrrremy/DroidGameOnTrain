@@ -1,0 +1,18 @@
+{
+  "appId": "com.droidgame.app",
+  "appName": "Droid",
+  "webDir": "build",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "backgroundColor": "#000000",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#000000",
+      "overlaysWebView": false
+    }
+  }
+}

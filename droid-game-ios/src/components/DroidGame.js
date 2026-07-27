@@ -1,0 +1,1341 @@
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import GameBoard from './GameBoard';
+import Button from './Button';
+import StartScreen from './StartScreen';
+import ShapeSelection from './ShapeSelection';
+import LetterSelection from './LetterSelection';
+import {
+  countLetters,
+  preserveRandomLettersForPlayer2,
+  checkCorrectTiles,
+  getActiveRuns,
+  validateWord,
+  encodeShareParam,
+  decodeShareParam,
+} from '../utils/gameLogic';
+import {
+  generateComputerBoard,
+  generateDailyBoard,
+  todayString,
+  dailyShape,
+  BOARD_SHAPES,
+  extractFiveLetterWord,
+  countBoardCombinations,
+} from '../utils/computerPlayer';
+import Leaderboard from './Leaderboard';
+import { SHARE_BASE_URL } from '../config';
+import {
+  copyText,
+  isNative,
+  onShareLinkOpened,
+  tapFeedback,
+  resultFeedback,
+} from '../native/ios';
+
+const DAILY_STORAGE_KEY = 'droid_daily_played';
+
+// Per-shape hint penalty (points subtracted per reveal)
+const HINT_PENALTY = { droid: 1.0, cross: 0.9, invader: 0.8, bolt: 0.7 };
+
+// Per-shape time penalty interval (seconds per 0.1pt deduction after 120s)
+const TIME_INTERVAL = { droid: 10, cross: 12, invader: 15, bolt: 20 };
+
+const emptyBoard = () =>
+  Array(5)
+    .fill(null)
+    .map(() => Array(5).fill(null));
+
+/** Returns a CSS class name based on score/maxScore ratio (9-tier rainbow). */
+const getScoreColorClass = (score, maxScore) => {
+  if (maxScore === 0) return 'score-red';
+  const r = score / maxScore;
+  if (r >= 1)        return 'score-gold';
+  if (r >= 11 / 12)  return 'score-purple';
+  if (r >= 10 / 12)  return 'score-navy';
+  if (r >= 9 / 12)   return 'score-skyblue';
+  if (r >= 8 / 12)   return 'score-darkgreen';
+  if (r >= 7 / 12)   return 'score-lightgreen';
+  if (r >= 6 / 12)   return 'score-yellow';
+  if (r >= 5 / 12)   return 'score-orange';
+  return 'score-red';
+};
+
+/** Return timer CSS class based on elapsed seconds. */
+const getTimerClass = (secs) => {
+  if (secs <= 120) return 'timer-green';
+  if (secs <= 360) return 'timer-amber';
+  return 'timer-red';
+};
+
+/** Compute time penalty given elapsed seconds and shape. */
+const calcTimePenalty = (seconds, shapeId) => {
+  const interval = TIME_INTERVAL[shapeId] || 10;
+  return Math.floor(Math.max(0, seconds - 120) / interval) / 10;
+};
+
+/** Return candidate base forms to try when the original word yields no results. */
+// Returns base-form candidates to try when the inflected form has no synonyms.
+const stemVariants = (word) => {
+  const variants = [];
+  if (word.endsWith('ed')) {
+    variants.push(word.slice(0, -1)); // loved → love, raced → race
+    variants.push(word.slice(0, -2)); // acted → act, ended → end
+  } else if (word.endsWith('er') && word.length >= 5) {
+    variants.push(word.slice(0, -1)); // maker → make, rider → ride
+    variants.push(word.slice(0, -2)); // owner → own, dryer → dry
+  } else if (word.endsWith('es') && word.length >= 5) {
+    variants.push(word.slice(0, -1)); // lives → live
+    variants.push(word.slice(0, -2)); // boxes → box, buses → bus
+  } else if (word.endsWith('s') && word.length > 4) {
+    variants.push(word.slice(0, -1)); // bears → bear, coins → coin
+  }
+  return variants;
+};
+
+/** Fetch a synonym for a word via Free Dictionary API. */
+const fetchHintWord = async (word) => {
+  if (!word) return null;
+  try {
+    const clean = (w) => /^[a-z]+$/.test(w) && w.length >= 3;
+    const lower = word.toLowerCase();
+    const candidates = [lower, ...stemVariants(lower)];
+
+    const collectSyns = (meanings) => {
+      const syns = [];
+      for (const meaning of meanings) {
+        for (const s of meaning.synonyms || []) syns.push(s.toLowerCase());
+        for (const def of meaning.definitions || []) {
+          for (const s of def.synonyms || []) syns.push(s.toLowerCase());
+        }
+      }
+      return syns;
+    };
+
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${candidate}`);
+      if (!res.ok) continue;
+      const entries = await res.json();
+
+      // Primary meaning first (index 0 of first entry) to avoid obscure senses
+      const primaryMeaning = entries[0]?.meanings?.slice(0, 1) || [];
+      const primarySyns = collectSyns(primaryMeaning)
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length);
+      if (primarySyns[0]) return primarySyns[0];
+
+      // Expand to all meanings if primary had nothing
+      const allMeanings = entries.flatMap((e) => e.meanings || []);
+      const allSyns = collectSyns(allMeanings)
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length);
+      if (allSyns[0]) return allSyns[0];
+    }
+
+    // Fallback: Datamuse rel_syn, then "means like"
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?rel_syn=${candidate}&max=10`);
+      if (!res.ok) continue;
+      const syns = await res.json();
+      const best = syns
+        .map((i) => i.word.toLowerCase())
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
+    }
+    for (const candidate of candidates) {
+      const res = await fetch(`https://api.datamuse.com/words?ml=${candidate}&max=10`);
+      if (!res.ok) continue;
+      const items = await res.json();
+      const best = items
+        .map((i) => i.word.toLowerCase())
+        .filter((s) => clean(s) && s !== lower)
+        .sort((a, b) => a.length - b.length)[0];
+      if (best) return best;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+};
+
+const CopyButton = ({ url, label = 'Copy Link' }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await copyText(url);
+    tapFeedback();
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button className={`copy-btn${copied ? ' copied' : ''}`} onClick={handleCopy}>
+      {copied ? 'Copied!' : label}
+    </button>
+  );
+};
+
+/** Order letters for ghost mode: vowels first (alphabetical), then consonants (alphabetical). */
+const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
+const ghostLetterOrder = (letters) => {
+  const vowels = letters.filter((l) => VOWELS.has(l)).sort();
+  const consonants = letters.filter((l) => !VOWELS.has(l)).sort();
+  return [...vowels, ...consonants];
+};
+
+const DroidGame = () => {
+  const [gameState, setGameState] = useState('start');
+  const [board, setBoard] = useState(emptyBoard());
+  const [player1Board, setPlayer1Board] = useState(null);
+  const [currentPlayer, setCurrentPlayer] = useState(1);
+  const [preservedTiles, setPreservedTiles] = useState([]);
+  const [letterCounts, setLetterCounts] = useState({});
+  const [correctTiles, setCorrectTiles] = useState([]);
+  const [selectedLetter, setSelectedLetter] = useState(null);
+  const [isValidating, setIsValidating] = useState(false);
+  const [validationError, setValidationError] = useState(null);
+  const [invalidWordTiles, setInvalidWordTiles] = useState([]);
+  const [shareLink, setShareLink] = useState(null);
+  const [vsComputer, setVsComputer] = useState(false);
+  const [dailyMode, setDailyMode] = useState(false);
+  const [dailyPlayed, setDailyPlayed] = useState(
+    () => localStorage.getItem(DAILY_STORAGE_KEY) === todayString()
+  );
+  const [letterHintsUsed, setLetterHintsUsed] = useState(0);
+  const [timerSeconds, setTimerSeconds] = useState(0);
+  const [boardShape, setBoardShape] = useState('droid');
+  const [player2FullValid, setPlayer2FullValid] = useState(false);
+  const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
+
+  // Session tracking (persists across the 4-droid game)
+  const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
+  const [sessionScores, setSessionScores] = useState({}); // shapeId → percent
+
+  // Per-game metadata
+  const [combinationCount, setCombinationCount] = useState(null);
+  const [hintWord, setHintWord] = useState(null);
+  const [wordHintUsed, setWordHintUsed] = useState(false);
+
+  // ── Ghost mode state ──────────────────────────────────────────────────────
+  const [ghostMode, setGhostMode] = useState(false);
+  const [ghostLetterQueue, setGhostLetterQueue] = useState([]); // ordered letters to reveal
+  const [ghostCurrentIndex, setGhostCurrentIndex] = useState(0); // which letter is being placed
+  const [ghostSwapUsed, setGhostSwapUsed] = useState(false);
+  const [ghostMoveUsed, setGhostMoveUsed] = useState(false);
+  const [ghostAction, setGhostAction] = useState(null); // null | 'swap-select-first' | 'swap-select-second' | 'move-select' | 'move-place'
+  const [ghostActionTile, setGhostActionTile] = useState(null); // first tile selected for swap/move
+
+  // ── Leaderboard state ──────────────────────────────────────────────────────
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  const removedSquares = BOARD_SHAPES[boardShape]?.removed ?? BOARD_SHAPES.droid.removed;
+  const activeTileCount = 25 - removedSquares.size;
+  const maxScore = activeTileCount - 2; // minus 2 preserved tiles
+
+  const hintPenalty = HINT_PENALTY[boardShape] ?? 1.0;
+
+  const isPreserved = (x, y) =>
+    preservedTiles.some((t) => t.x === x && t.y === y);
+
+  const handleClearBoard = () => {
+    setBoard((prev) =>
+      prev.map((row, y) => row.map((cell, x) => (isPreserved(x, y) ? cell : null)))
+    );
+  };
+
+  // Available letters: all 26 for P1; for P2, what P1 used minus what's on board
+  const availableLetters = useMemo(() => {
+    if (currentPlayer === 1) return 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const boardCounts = countLetters(board);
+    const letters = [];
+    Object.entries(letterCounts).forEach(([letter, count]) => {
+      const avail = Math.max(0, count - (boardCounts[letter] || 0));
+      for (let i = 0; i < avail; i++) letters.push(letter);
+    });
+    return letters.sort();
+  }, [currentPlayer, letterCounts, board]);
+
+  // Clear validation errors whenever the board changes
+  useEffect(() => {
+    setValidationError(null);
+    setInvalidWordTiles([]);
+  }, [board]);
+
+  /** Load a shared board token and drop straight into the Player 2 turn. */
+  const loadSharedBoard = useCallback((token) => {
+    const result = decodeShareParam(token);
+    if (!result) return;
+
+    const { board: decoded, preserved, shape } = result;
+    const p2StartBoard = Array(5).fill(null).map(() => Array(5).fill(null));
+    preserved.forEach(({ x, y }) => { p2StartBoard[y][x] = decoded[y][x]; });
+
+    const shapeId = shape || 'droid';
+    const fiveLetterWord = extractFiveLetterWord(decoded, shapeId);
+    const combCount = countBoardCombinations(shapeId, fiveLetterWord, countLetters(decoded));
+
+    setBoardShape(shapeId);
+    setPlayer1Board(decoded);
+    setPreservedTiles(preserved);
+    setBoard(p2StartBoard);
+    setLetterCounts(countLetters(decoded));
+    setCurrentPlayer(2);
+    setCombinationCount(combCount);
+    setHintWord(null);
+    setTimerSeconds(0);
+    setSelectedLetter(null);
+    fetchHintWord(fiveLetterWord).then(setHintWord);
+    setGameState('player2');
+  }, []);
+
+  // On mount: detect a ?g= share URL and load Player 2 state directly.
+  useEffect(() => {
+    const token = new URLSearchParams(window.location.search).get('g');
+    if (!token) return;
+    loadSharedBoard(token);
+    window.history.replaceState(null, '', window.location.pathname);
+  }, [loadSharedBoard]);
+
+  // On iOS the app never launches with a query string. Shared boards arrive
+  // instead as a droid://play?g=… (or universal) link, which can also fire
+  // while the app is already open and warm.
+  useEffect(() => onShareLinkOpened(loadSharedBoard), [loadSharedBoard]);
+
+  // Timer: runs during player2 and ghost phases
+  useEffect(() => {
+    if (gameState !== 'player2' && gameState !== 'ghost') return;
+    const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [gameState]);
+
+  // ── Interactions ──────────────────────────────────────────────────────────
+
+  // HTML5 drag-and-drop does not fire in WKWebView, so tapping is the only
+  // way to move a tile on iOS. Tapping a filled tile picks the letter up into
+  // the hand instead of just clearing it, which keeps a board-to-board move
+  // down to two taps. The tile's × button still clears a letter outright.
+  const handleBoardTileClick = (x, y) => {
+    if (isPreserved(x, y)) return;
+
+    const letter = board[y][x];
+
+    if (selectedLetter) {
+      const newBoard = board.map((r) => [...r]);
+      newBoard[y][x] = selectedLetter;
+      setBoard(newBoard);
+      setSelectedLetter(null);
+      tapFeedback();
+    } else if (letter) {
+      const newBoard = board.map((r) => [...r]);
+      newBoard[y][x] = null;
+      setBoard(newBoard);
+      setSelectedLetter(letter);
+      tapFeedback();
+    }
+  };
+
+  const handleLetterClick = (letter) => {
+    setSelectedLetter((prev) => (prev === letter ? null : letter));
+    tapFeedback();
+  };
+
+  const handleRemoveTile = (x, y) => {
+    const newBoard = board.map((r) => [...r]);
+    newBoard[y][x] = null;
+    setBoard(newBoard);
+  };
+
+  const handleDragStart = (e, letter, srcX, srcY) => {
+    e.dataTransfer.setData('letter', letter);
+    if (srcX !== undefined) {
+      e.dataTransfer.setData('srcX', String(srcX));
+      e.dataTransfer.setData('srcY', String(srcY));
+    }
+  };
+
+  const handleDrop = (targetX, targetY, e) => {
+    if (isPreserved(targetX, targetY)) return;
+
+    const letter = e.dataTransfer.getData('letter');
+    if (!letter) return;
+
+    const srcXStr = e.dataTransfer.getData('srcX');
+    const srcYStr = e.dataTransfer.getData('srcY');
+    const hasSrc = srcXStr !== '';
+    const srcX = hasSrc ? parseInt(srcXStr) : undefined;
+    const srcY = hasSrc ? parseInt(srcYStr) : undefined;
+
+    const newBoard = board.map((r) => [...r]);
+
+    if (hasSrc && !isNaN(srcX) && !isPreserved(srcX, srcY)) {
+      newBoard[srcY][srcX] = null;
+    }
+
+    newBoard[targetY][targetX] = letter;
+    setBoard(newBoard);
+    setSelectedLetter(null);
+  };
+
+  // ── Mode → Shape selection ─────────────────────────────────────────────────
+
+  // Ghost-mode derived state
+  const ghostCurrentLetter = ghostMode && ghostCurrentIndex < ghostLetterQueue.length
+    ? ghostLetterQueue[ghostCurrentIndex]
+    : null;
+  const ghostLetterPlaced = ghostMode && ghostCurrentLetter && (() => {
+    // Check if the current letter has been placed on a non-preserved tile
+    let placedCount = 0;
+    board.forEach((row, y) => row.forEach((letter, x) => {
+      if (letter === ghostCurrentLetter && !preservedTiles.some((t) => t.x === x && t.y === y)) placedCount++;
+    }));
+    // Count how many of this letter should have been placed from previous reveals
+    let expectedPrev = 0;
+    for (let i = 0; i < ghostCurrentIndex; i++) {
+      if (ghostLetterQueue[i] === ghostCurrentLetter) expectedPrev++;
+    }
+    // Only count hint-locked preserved tiles (not the initial 2 preserved tiles from game start)
+    let preservedCount = 0;
+    preservedTiles.forEach((t) => { if (t.isHint && board[t.y]?.[t.x] === ghostCurrentLetter) preservedCount++; });
+    return placedCount + preservedCount > expectedPrev;
+  })();
+  const ghostAllPlaced = ghostMode && ghostCurrentIndex >= ghostLetterQueue.length;
+  const ghostIsLastLetter = ghostMode && ghostCurrentIndex === ghostLetterQueue.length - 1;
+
+  const handleShapeSelect = (shape) => {
+    setBoardShape(shape);
+
+    if (pendingMode === 'player1') {
+      setCombinationCount(null);
+      setHintWord(null);
+      setGameState('player1');
+      return;
+    }
+
+    // Computer, daily, or ghost mode — generate the board
+    const result = pendingMode === 'daily'
+      ? generateDailyBoard(shape)
+      : generateComputerBoard(shape);
+
+    if (!result) {
+      setValidationError('Failed to generate board — please try again.');
+      setGameState('start');
+      return;
+    }
+
+    const { board: computerBoardRaw, fiveLetterWord, combinationCount: combCount } = result;
+
+    setVsComputer(true);
+    if (pendingMode === 'daily') setDailyMode(true);
+
+    const p1Board = computerBoardRaw.map((r) => [...r]);
+    const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board, 2);
+
+    setPlayer1Board(p1Board);
+    setPreservedTiles(preservedLetters);
+    setBoard(newBoard);
+    setLetterCounts(countLetters(p1Board));
+    setCurrentPlayer(2);
+    setCombinationCount(combCount);
+    setHintWord(null);
+    fetchHintWord(fiveLetterWord).then(setHintWord);
+    setSelectedLetter(null);
+
+    if (pendingMode === 'ghost') {
+      // Build the ghost letter queue: all non-preserved letters, ordered vowels-first
+      const removed = BOARD_SHAPES[shape]?.removed ?? BOARD_SHAPES.droid.removed;
+      const preservedSet = new Set(preservedLetters.map((t) => `${t.x},${t.y}`));
+      const letters = [];
+      p1Board.forEach((row, y) =>
+        row.forEach((letter, x) => {
+          const sq = y * 5 + x + 1;
+          if (letter && !removed.has(sq) && !preservedSet.has(`${x},${y}`)) {
+            letters.push(letter);
+          }
+        })
+      );
+      setGhostMode(true);
+      setGhostLetterQueue(ghostLetterOrder(letters));
+      setGhostCurrentIndex(0);
+      setGhostSwapUsed(false);
+      setGhostMoveUsed(false);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      setGameState('ghost');
+    } else {
+      setGameState('player2');
+    }
+  };
+
+  const handleModeSelect = (mode) => {
+    setPendingMode(mode);
+    if (mode === 'daily') {
+      handleShapeSelect(dailyShape());
+      return;
+    }
+    setGameState('selectShape');
+  };
+
+  // ── Turn management ───────────────────────────────────────────────────────
+
+  const handleEndTurn = async () => {
+    if (currentPlayer === 1) {
+      const activeRuns = getActiveRuns(boardShape);
+
+      const fullRuns = [];
+      const partialRuns = [];
+
+      for (const run of activeRuns) {
+        const filled = run.filter(({ x, y }) => board[y][x]);
+        if (filled.length === 0) continue;
+        if (filled.length < run.length) {
+          partialRuns.push(run);
+        } else {
+          fullRuns.push(run);
+        }
+      }
+
+      if (partialRuns.length > 0) {
+        const seen = new Set();
+        const badTiles = [];
+        partialRuns.flat().forEach(({ x, y }) => {
+          const key = `${x},${y}`;
+          if (!seen.has(key)) { seen.add(key); badTiles.push({ x, y }); }
+        });
+        setInvalidWordTiles(badTiles);
+        setValidationError(
+          `Words must fill the entire row or column — complete or remove the highlighted tile${badTiles.length > 1 ? 's' : ''}.`
+        );
+        return;
+      }
+
+      if (fullRuns.length === 0) {
+        setValidationError('Place at least one complete word on the board.');
+        return;
+      }
+
+      setIsValidating(true);
+      setValidationError(null);
+      setInvalidWordTiles([]);
+
+      try {
+        const uniqueWords = [
+          ...new Set(
+            fullRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))
+          ),
+        ];
+
+        const results = await Promise.all(
+          uniqueWords.map(async (word) => ({
+            word,
+            valid: await validateWord(word),
+          }))
+        );
+
+        const badWords = new Set(results.filter((r) => !r.valid).map((r) => r.word));
+
+        if (badWords.size > 0) {
+          const badTiles = [];
+          fullRuns.forEach((run) => {
+            const word = run.map(({ x, y }) => board[y][x]).join('');
+            if (badWords.has(word)) run.forEach(({ x, y }) => badTiles.push({ x, y }));
+          });
+          setInvalidWordTiles(badTiles);
+          setValidationError(
+            `Not a valid English word${badWords.size > 1 ? 's' : ''}: ${[...badWords].join(', ')}`
+          );
+          resultFeedback(false);
+          return;
+        }
+      } finally {
+        setIsValidating(false);
+      }
+
+      const p1Board = board.map((r) => [...r]);
+      const fiveLetterWord = extractFiveLetterWord(p1Board, boardShape);
+      const combCount = countBoardCombinations(boardShape, fiveLetterWord, countLetters(p1Board));
+      const { preservedLetters, newBoard } = preserveRandomLettersForPlayer2(p1Board);
+      // Share links always point at the public web build. Inside the native
+      // app window.location is capacitor://localhost, which is meaningless to
+      // whoever receives the link; the web URL works for everyone, and the
+      // droid:// scheme handler below hands it to the app when installed.
+      const shareOrigin = isNative()
+        ? SHARE_BASE_URL
+        : `${window.location.origin}${window.location.pathname}`;
+      const url = `${shareOrigin}?g=${encodeShareParam(p1Board, preservedLetters, boardShape)}`;
+      setPlayer1Board(p1Board);
+      setPreservedTiles(preservedLetters);
+      setBoard(newBoard);
+      setLetterCounts(countLetters(p1Board));
+      setShareLink(url);
+      setCombinationCount(combCount);
+      setHintWord(null);
+      fetchHintWord(fiveLetterWord).then(setHintWord);
+      setGameState('share');
+      setSelectedLetter(null);
+    } else {
+      // Check if every active tile is filled and every word is valid English.
+      const activeRuns = getActiveRuns(boardShape);
+      const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+
+      let isFullValid = false;
+      if (allFilled) {
+        setIsValidating(true);
+        try {
+          const uniqueWords = [
+            ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+          ];
+          const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+          isFullValid = results.every(Boolean);
+        } finally {
+          setIsValidating(false);
+        }
+      }
+
+      setPlayer2FullValid(isFullValid);
+      resultFeedback(isFullValid);
+
+      let correct;
+      if (isFullValid) {
+        // Award all active tiles as correct
+        const seen = new Set();
+        correct = [];
+        activeRuns.flat().forEach(({ x, y }) => {
+          const key = `${x},${y}`;
+          if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+        });
+      } else {
+        // Only tiles that match player 1's exact placement score
+        correct = checkCorrectTiles(board, player1Board);
+      }
+
+      setCorrectTiles(correct);
+      setGameState('end');
+      setSelectedLetter(null);
+      if (dailyMode) {
+        localStorage.setItem(DAILY_STORAGE_KEY, todayString());
+        setDailyPlayed(true);
+        setShowLeaderboard(true);
+      }
+    }
+  };
+
+  const resetGhostState = () => {
+    setGhostMode(false);
+    setGhostLetterQueue([]);
+    setGhostCurrentIndex(0);
+    setGhostSwapUsed(false);
+    setGhostMoveUsed(false);
+    setGhostAction(null);
+    setGhostActionTile(null);
+  };
+
+  // Full reset including session
+  const resetGame = () => {
+    setBoard(emptyBoard());
+    setPlayer1Board(null);
+    setCurrentPlayer(1);
+    setPreservedTiles([]);
+    setLetterCounts({});
+    setCorrectTiles([]);
+    setSelectedLetter(null);
+    setIsValidating(false);
+    setValidationError(null);
+    setInvalidWordTiles([]);
+    setShareLink(null);
+    setVsComputer(false);
+    setDailyMode(false);
+    setLetterHintsUsed(0);
+    setTimerSeconds(0);
+    setBoardShape('droid');
+    setPendingMode(null);
+    setPlayer2FullValid(false);
+    setCombinationCount(null);
+    setHintWord(null);
+    setWordHintUsed(false);
+    setSessionPlayedShapes([]);
+    setSessionScores({});
+    resetGhostState();
+    setShowLeaderboard(false);
+    setGameState('start');
+  };
+
+  // Reset for next droid — keeps session state
+  const resetForNextDroid = (scorePercent) => {
+    const newPlayed = [...sessionPlayedShapes, boardShape];
+    const newScores = { ...sessionScores, [boardShape]: scorePercent };
+    setBoard(emptyBoard());
+    setPlayer1Board(null);
+    setCurrentPlayer(1);
+    setPreservedTiles([]);
+    setLetterCounts({});
+    setCorrectTiles([]);
+    setSelectedLetter(null);
+    setIsValidating(false);
+    setValidationError(null);
+    setInvalidWordTiles([]);
+    setShareLink(null);
+    setVsComputer(false);
+    setDailyMode(false);
+    setLetterHintsUsed(0);
+    setTimerSeconds(0);
+    setBoardShape('droid');
+    setPendingMode(ghostMode ? 'ghost' : null);
+    setPlayer2FullValid(false);
+    setCombinationCount(null);
+    setHintWord(null);
+    setWordHintUsed(false);
+    resetGhostState();
+    setSessionPlayedShapes(newPlayed);
+    setSessionScores(newScores);
+    setGameState('selectShape');
+  };
+
+  const handleLetterHint = () => {
+    if (!player1Board) return;
+
+    const candidates = [];
+    player1Board.forEach((row, y) =>
+      row.forEach((letter, x) => {
+        if (letter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+          candidates.push({ x, y, letter });
+        }
+      })
+    );
+
+    if (candidates.length === 0) return;
+
+    const chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    const newBoard = board.map((row) => [...row]);
+    newBoard[chosen.y][chosen.x] = chosen.letter;
+
+    const maxAllowed = letterCounts[chosen.letter] || 0;
+    let countOnBoard = 0;
+    newBoard.forEach((row) => row.forEach((l) => { if (l === chosen.letter) countOnBoard++; }));
+
+    if (countOnBoard > maxAllowed) {
+      outer: for (let y = 0; y < 5; y++) {
+        for (let x = 0; x < 5; x++) {
+          if (x === chosen.x && y === chosen.y) continue;
+          if (newBoard[y][x] === chosen.letter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+            newBoard[y][x] = null;
+            break outer;
+          }
+        }
+      }
+    }
+
+    setBoard(newBoard);
+    setPreservedTiles([...preservedTiles, { x: chosen.x, y: chosen.y, letter: chosen.letter }]);
+    setLetterHintsUsed((prev) => prev + 1);
+  };
+
+  // ── Ghost mode: move a board letter to its correct position and lock it ──
+  const handleGhostRevealHint = () => {
+    if (!player1Board || !ghostMode) return;
+
+    // Prefer letters currently in the WRONG position that have an empty correct destination.
+    // Fallback: letters already in the correct position (just lock them).
+    const wrongPosCandidates = [];
+    const correctPosCandidates = [];
+
+    board.forEach((row, y) =>
+      row.forEach((letter, x) => {
+        if (!letter) return;
+        if (preservedTiles.some((t) => t.x === x && t.y === y)) return;
+
+        if (player1Board[y][x] === letter) {
+          // Already correct — can lock in place
+          correctPosCandidates.push({ fromX: x, fromY: y, toX: x, toY: y, letter });
+        } else {
+          // Find correct positions for this letter on P1's board
+          player1Board.forEach((p1Row, py) =>
+            p1Row.forEach((p1Letter, px) => {
+              if (p1Letter !== letter) return;
+              if (preservedTiles.some((t) => t.x === px && t.y === py)) return;
+              wrongPosCandidates.push({ fromX: x, fromY: y, toX: px, toY: py, letter });
+            })
+          );
+        }
+      })
+    );
+
+    const pool = wrongPosCandidates.length > 0 ? wrongPosCandidates : correctPosCandidates;
+    if (pool.length === 0) return;
+
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
+    const newBoard = board.map((r) => [...r]);
+
+    if (chosen.fromX !== chosen.toX || chosen.fromY !== chosen.toY) {
+      // Move letter to correct position; displace any occupant to the vacated spot
+      const displaced = newBoard[chosen.toY][chosen.toX];
+      newBoard[chosen.toY][chosen.toX] = chosen.letter;
+      newBoard[chosen.fromY][chosen.fromX] = displaced;
+    }
+
+    setBoard(newBoard);
+    setPreservedTiles([...preservedTiles, { x: chosen.toX, y: chosen.toY, letter: chosen.letter, isHint: true }]);
+    setLetterHintsUsed((prev) => prev + 1);
+  };
+
+  // ── Ghost mode: place current letter on a tile ─────────────────────────
+  const handleGhostTileClick = (x, y) => {
+    if (removedSquares.has(y * 5 + x + 1)) return;
+    if (preservedTiles.some((t) => t.x === x && t.y === y)) return;
+
+    // Handle SWAP action
+    if (ghostAction === 'swap-select-first') {
+      if (!board[y][x]) return; // must pick a filled tile
+      setGhostActionTile({ x, y });
+      setGhostAction('swap-select-second');
+      return;
+    }
+    if (ghostAction === 'swap-select-second') {
+      if (!board[y][x]) return; // must pick a filled tile
+      const { x: ax, y: ay } = ghostActionTile;
+      if (ax === x && ay === y) { setGhostAction(null); setGhostActionTile(null); return; } // cancel
+      const newBoard = board.map((r) => [...r]);
+      const temp = newBoard[ay][ax];
+      newBoard[ay][ax] = newBoard[y][x];
+      newBoard[y][x] = temp;
+      setBoard(newBoard);
+      setGhostSwapUsed(true);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      return;
+    }
+
+    // Handle MOVE action
+    if (ghostAction === 'move-select') {
+      if (!board[y][x]) return; // must pick a filled tile
+      setGhostActionTile({ x, y, letter: board[y][x] });
+      setGhostAction('move-place');
+      return;
+    }
+    if (ghostAction === 'move-place') {
+      if (board[y][x]) return; // must pick an empty tile
+      const { x: ax, y: ay, letter } = ghostActionTile;
+      const newBoard = board.map((r) => [...r]);
+      newBoard[ay][ax] = null;
+      newBoard[y][x] = letter;
+      setBoard(newBoard);
+      setGhostMoveUsed(true);
+      setGhostAction(null);
+      setGhostActionTile(null);
+      return;
+    }
+
+    // Allow un-placing the current letter by clicking it again (so player can reposition)
+    if (ghostLetterPlaced && board[y][x] === ghostCurrentLetter && !preservedTiles.some((t) => t.x === x && t.y === y)) {
+      const newBoard = board.map((r) => [...r]);
+      newBoard[y][x] = null;
+      setBoard(newBoard);
+      return;
+    }
+
+    // Normal ghost placement: place the current letter on an empty tile
+    if (!ghostCurrentLetter || ghostLetterPlaced) return;
+    if (board[y][x]) return; // tile already filled
+
+    const newBoard = board.map((r) => [...r]);
+    newBoard[y][x] = ghostCurrentLetter;
+    setBoard(newBoard);
+  };
+
+  // Ghost: advance to next letter
+  const handleGhostNextLetter = () => {
+    if (!ghostLetterPlaced) return;
+    setGhostCurrentIndex((prev) => prev + 1);
+  };
+
+  // Ghost: finish game — trigger scoring
+  const handleGhostFinish = async () => {
+    const activeRuns = getActiveRuns(boardShape);
+    const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+
+    let isFullValid = false;
+    let validWordSet = new Set();
+    if (allFilled) {
+      setIsValidating(true);
+      try {
+        const uniqueWords = [
+          ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+        ];
+        const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+        isFullValid = results.every(Boolean);
+        if (!isFullValid) validWordSet = new Set(uniqueWords.filter((_, i) => results[i]));
+      } finally {
+        setIsValidating(false);
+      }
+    }
+
+    setPlayer2FullValid(isFullValid);
+
+    const seen = new Set();
+    const correct = [];
+    const addTile = (x, y) => {
+      const key = `${x},${y}`;
+      if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+    };
+
+    if (isFullValid) {
+      activeRuns.flat().forEach(({ x, y }) => addTile(x, y));
+    } else {
+      // Award tiles in valid English words, plus tiles matching player1's placement
+      activeRuns.forEach((run) => {
+        if (validWordSet.has(run.map(({ x, y }) => board[y][x]).join('')))
+          run.forEach(({ x, y }) => addTile(x, y));
+      });
+      checkCorrectTiles(board, player1Board).forEach(({ x, y }) => addTile(x, y));
+    }
+
+    setCorrectTiles(correct);
+    setGameState('end');
+  };
+
+  // ── Derived end-screen data ───────────────────────────────────────────────
+
+  const { score, rawScore, incorrectTiles, timePenalty } = useMemo(() => {
+    if (!player1Board || gameState !== 'end') {
+      return { score: 0, rawScore: 0, incorrectTiles: [], timePenalty: 0 };
+    }
+    const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
+
+    const raw = player2FullValid
+      ? maxScore
+      : Math.min(correctTiles.filter((t) => !preservedSet.has(`${t.x},${t.y}`)).length, maxScore);
+
+    const tp = calcTimePenalty(timerSeconds, boardShape);
+    const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
+    const wordHintDeduction = wordHintUsed ? 2 : 0;
+    const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction - tp) * 10) / 10));
+
+    const incorrect = player2FullValid ? [] : (() => {
+      const correctSet = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
+      const arr = [];
+      board.forEach((row, y) =>
+        row.forEach((letter, x) => {
+          if (letter && !correctSet.has(`${x},${y}`)) arr.push({ x, y });
+        })
+      );
+      return arr;
+    })();
+
+    return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: tp };
+  }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty, wordHintUsed]);
+
+  const scorePercent = maxScore > 0 ? Math.round(score / maxScore * 100) : 0;
+
+  // ── Live score (player 2 turn) ────────────────────────────────────────────
+  const liveTimePenalty = calcTimePenalty(timerSeconds, boardShape);
+  const hintDeductionLive = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
+  const wordHintDeductionLive = wordHintUsed ? 2 : 0;
+  const liveScore = Math.max(0, Math.round((maxScore - hintDeductionLive - wordHintDeductionLive - liveTimePenalty) * 10) / 10);
+  const liveScoreClass = getScoreColorClass(liveScore, maxScore);
+  const livePercent = maxScore > 0 ? Math.round(liveScore / maxScore * 100) : 0;
+
+  // Session total
+  const sessionTotal = Object.values(sessionScores).reduce((a, b) => a + b, 0);
+  const sessionCount = sessionPlayedShapes.length;
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="game-container">
+      {/* Leaderboard overlay — sits above everything */}
+      {showLeaderboard && (
+        <Leaderboard
+          date={todayString()}
+          shape={boardShape || dailyShape()}
+          score={gameState === 'end' && dailyMode ? score : 0}
+          maxScore={gameState === 'end' && dailyMode ? maxScore : 0}
+          canSubmit={gameState === 'end' && dailyMode}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
+
+      {gameState !== 'start' && gameState !== 'selectShape' && (
+        <header className="site-header">
+          <span className="site-header-title" onClick={resetGame} style={{cursor:'pointer'}}>Droid</span>
+        </header>
+      )}
+
+      {gameState === 'start' && (
+        <StartScreen
+          onStart={() => handleModeSelect('player1')}
+          onStartVsComputer={() => handleModeSelect('computer')}
+          onStartDaily={() => handleModeSelect('daily')}
+          onStartGhost={() => handleModeSelect('ghost')}
+          onShowLeaderboard={() => setShowLeaderboard(true)}
+          dailyPlayed={dailyPlayed}
+        />
+      )}
+
+      {gameState === 'selectShape' && (
+        <ShapeSelection
+          onSelect={handleShapeSelect}
+          sessionPlayedShapes={sessionPlayedShapes}
+          sessionScores={sessionScores}
+          sessionTotal={sessionTotal}
+          sessionCount={sessionCount}
+        />
+      )}
+
+      {(gameState === 'player1' || gameState === 'player2') && (
+        <div className="game-play">
+          {isValidating && (
+            <div className="validation-loading">
+              <div className="spinner" />
+              Checking words…
+            </div>
+          )}
+
+          {validationError && !isValidating && (
+            <div className="validation-error">{validationError}</div>
+          )}
+
+          {currentPlayer === 2 && (
+            <>
+              <div className="live-hud">
+                <div className={`live-score-badge ${liveScoreClass}`}>
+                  <span className="live-score-grade">{livePercent}%</span>
+                  <span className="live-score-pts">max achievable</span>
+                </div>
+                {(() => {
+                  const m = Math.floor(timerSeconds / 60);
+                  const s = timerSeconds % 60;
+                  return (
+                    <span className={`hint-timer ${getTimerClass(timerSeconds)}`}>
+                      {m}:{String(s).padStart(2, '0')}
+                    </span>
+                  );
+                })()}
+              </div>
+              {wordHintUsed && hintWord && (
+                <div className="hint-word-display">
+                  Hint: {hintWord}
+                </div>
+              )}
+              {combinationCount !== null && (
+                <div className="combo-count">
+                  {combinationCount} valid board combination{combinationCount !== 1 ? 's' : ''}
+                </div>
+              )}
+            </>
+          )}
+
+          <GameBoard
+            board={board}
+            onTileClick={handleBoardTileClick}
+            onRemoveTile={currentPlayer === 1 ? handleRemoveTile : undefined}
+            preservedTiles={preservedTiles}
+            correctTiles={[]}
+            incorrectTiles={[]}
+            invalidWordTiles={invalidWordTiles}
+            selectedLetter={selectedLetter}
+            selectedTile={null}
+            currentPlayer={currentPlayer}
+            onDragStart={handleDragStart}
+            onDrop={handleDrop}
+            interactive={true}
+            removedSquares={removedSquares}
+          />
+
+          <LetterSelection
+            availableLetters={availableLetters}
+            selectedLetter={selectedLetter}
+            onLetterClick={handleLetterClick}
+            onDragStart={handleDragStart}
+          />
+
+          <div className="actions">
+            <div className="hint-actions">
+              <button className="hint-btn" onClick={handleClearBoard}>
+                Clear board
+              </button>
+              {currentPlayer === 2 && (
+                <button className="hint-btn letter-hint-btn" onClick={handleLetterHint}>
+                  Reveal letter −{hintPenalty}pt
+                </button>
+              )}
+              {currentPlayer === 2 && !wordHintUsed && hintWord && (
+                <button className="hint-btn letter-hint-btn" onClick={() => setWordHintUsed(true)}>
+                  Word hint −2pt
+                </button>
+              )}
+            </div>
+            <Button onClick={handleEndTurn} primary disabled={isValidating}>
+              {isValidating ? 'Checking…' : currentPlayer === 1 ? 'End Turn' : 'Finish'}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'ghost' && (
+        <div className="game-play ghost-play">
+          {isValidating && (
+            <div className="validation-loading">
+              <div className="spinner" />
+              Checking words…
+            </div>
+          )}
+
+          {/* HUD: live score + timer */}
+          <div className="live-hud">
+            <div className={`live-score-badge ${liveScoreClass}`}>
+              <span className="live-score-grade">{livePercent}%</span>
+              <span className="live-score-pts">max achievable</span>
+            </div>
+            {(() => {
+              const m = Math.floor(timerSeconds / 60);
+              const s = timerSeconds % 60;
+              return (
+                <span className={`hint-timer ${getTimerClass(timerSeconds)}`}>
+                  {m}:{String(s).padStart(2, '0')}
+                </span>
+              );
+            })()}
+          </div>
+
+          {wordHintUsed && hintWord && (
+            <div className="hint-word-display">
+              Hint: {hintWord}
+            </div>
+          )}
+          {combinationCount !== null && (
+            <div className="combo-count">
+              {combinationCount} valid board combination{combinationCount !== 1 ? 's' : ''}
+            </div>
+          )}
+
+          {/* Ghost letter indicator */}
+          {!ghostAllPlaced && ghostCurrentLetter && (
+            <div className="ghost-letter-indicator">
+              <div className="ghost-progress">
+                Letter {ghostCurrentIndex + 1} of {ghostLetterQueue.length}
+                {ghostCurrentIndex < ghostLetterQueue.filter((l) => VOWELS.has(l)).length
+                  ? ' (vowels)'
+                  : ' (consonants)'}
+              </div>
+              <div className={`ghost-current-letter${ghostLetterPlaced ? ' placed' : ''}`}>
+                {ghostCurrentLetter}
+              </div>
+              {ghostAction && (
+                <div className="ghost-action-prompt">
+                  {ghostAction === 'swap-select-first' && 'Tap the first tile to swap'}
+                  {ghostAction === 'swap-select-second' && 'Tap the second tile to swap'}
+                  {ghostAction === 'move-select' && 'Tap a tile to move'}
+                  {ghostAction === 'move-place' && 'Tap an empty tile to place it'}
+                </div>
+              )}
+            </div>
+          )}
+          {ghostAllPlaced && (
+            <div className="ghost-letter-indicator">
+              <div className="ghost-progress">All letters placed!</div>
+            </div>
+          )}
+
+          <GameBoard
+            board={board}
+            onTileClick={handleGhostTileClick}
+            preservedTiles={preservedTiles}
+            correctTiles={[]}
+            incorrectTiles={[]}
+            invalidWordTiles={[]}
+            selectedLetter={(!ghostAllPlaced && !ghostLetterPlaced && !ghostAction) ? ghostCurrentLetter : null}
+            selectedTile={ghostActionTile}
+            currentPlayer={2}
+            onDragStart={() => {}}
+            onDrop={() => {}}
+            interactive={true}
+            removedSquares={removedSquares}
+          />
+
+          <div className="actions">
+            <div className="hint-actions">
+              {/* SWAP button */}
+              {!ghostSwapUsed && (
+                <button
+                  className={`hint-btn ghost-action-btn${ghostAction?.startsWith('swap') ? ' active' : ''}`}
+                  onClick={() => {
+                    if (ghostAction?.startsWith('swap')) { setGhostAction(null); setGhostActionTile(null); }
+                    else { setGhostAction('swap-select-first'); setGhostActionTile(null); }
+                  }}
+                >
+                  Swap
+                </button>
+              )}
+              {/* MOVE button */}
+              {!ghostMoveUsed && !ghostAllPlaced && (
+                <button
+                  className={`hint-btn ghost-action-btn${ghostAction?.startsWith('move') ? ' active' : ''}`}
+                  onClick={() => {
+                    if (ghostAction?.startsWith('move')) { setGhostAction(null); setGhostActionTile(null); }
+                    else { setGhostAction('move-select'); setGhostActionTile(null); }
+                  }}
+                >
+                  Move
+                </button>
+              )}
+              {/* Reveal & lock hint */}
+              {!ghostAllPlaced && (
+                <button className="hint-btn letter-hint-btn" onClick={handleGhostRevealHint}>
+                  Lock letter −{hintPenalty}pt
+                </button>
+              )}
+              {/* Word hint */}
+              {!wordHintUsed && hintWord && (
+                <button className="hint-btn letter-hint-btn" onClick={() => setWordHintUsed(true)}>
+                  Word hint −2pt
+                </button>
+              )}
+            </div>
+            {!ghostAllPlaced && ghostLetterPlaced && !ghostAction && !ghostIsLastLetter && (
+              <Button onClick={handleGhostNextLetter} primary>
+                Next Letter
+              </Button>
+            )}
+            {(ghostAllPlaced || (ghostIsLastLetter && ghostLetterPlaced && !ghostAction)) && (
+              <Button onClick={handleGhostFinish} primary disabled={isValidating}>
+                {isValidating ? 'Checking…' : 'Finish'}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {gameState === 'share' && (
+        <div className="share-panel">
+          <div className="share-header">
+            <h2>Turn Complete!</h2>
+            <p className="share-subtext">
+              Send this link to Player 2. They can open it on any device — no login needed.
+            </p>
+          </div>
+          <div className="share-url-row">
+            <span className="share-url-text">{shareLink}</span>
+          </div>
+          <CopyButton url={shareLink} />
+          <div className="share-actions">
+            <Button primary onClick={() => { setCurrentPlayer(2); setGameState('player2'); }}>
+              Play on this device instead
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {gameState === 'end' && (() => {
+        const thisScoreClass = getScoreColorClass(score, maxScore);
+        const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
+        const wordHintDeduction = wordHintUsed ? 2 : 0;
+        const hasPenalties = letterHintsUsed > 0 || wordHintUsed || timePenalty > 0;
+        const allPlayed = [...sessionPlayedShapes, boardShape];
+        const allScores = { ...sessionScores, [boardShape]: scorePercent };
+        const combinedTotal = Object.values(allScores).reduce((a, b) => a + b, 0);
+        const gamesPlayed = allPlayed.length;
+
+        return (
+          <div className="end-screen">
+            <div className="end-header">
+              <h2>Game Over!</h2>
+
+              {/* Session combined total if more than one game played */}
+              {gamesPlayed > 1 && (
+                <div className="session-combined">
+                  Combined total ({gamesPlayed} droids): {combinedTotal}%
+                </div>
+              )}
+
+              <div className={`score-display ${thisScoreClass}`}>
+                {scorePercent}%
+              </div>
+              <div className="score-label">
+                {score}/{maxScore} pts · {BOARD_SHAPES[boardShape]?.name}
+              </div>
+              {hasPenalties && (
+                <div className="score-penalty">
+                  {rawScore}/{maxScore}
+                  {letterHintsUsed > 0 && ` − ${hintDeduction} hint${letterHintsUsed !== 1 ? 's' : ''}`}
+                  {wordHintUsed && ` − ${wordHintDeduction} word hint`}
+                  {timePenalty > 0 && ` − ${timePenalty} time`}
+                  {' '}= {score}/{maxScore}
+                </div>
+              )}
+            </div>
+
+            <div className="legend">
+              <div className="legend-item">
+                <div className="legend-dot correct" />
+                Correct
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot incorrect" />
+                Wrong
+              </div>
+              <div className="legend-item">
+                <div className="legend-dot preserved" />
+                Hint tile
+              </div>
+            </div>
+
+            <div className="boards-comparison">
+              <div className="board-column">
+                <h3>{vsComputer ? "Computer's Original" : "Player 1's Original"}</h3>
+                <GameBoard
+                  board={player1Board}
+                  onTileClick={() => {}}
+                  preservedTiles={[]}
+                  correctTiles={[]}
+                  incorrectTiles={[]}
+                  selectedLetter={null}
+                  selectedTile={null}
+                  currentPlayer={1}
+                  onDragStart={() => {}}
+                  onDrop={() => {}}
+                  interactive={false}
+                  removedSquares={removedSquares}
+                />
+              </div>
+              <div className="board-column">
+                <h3>{vsComputer ? 'Your Reconstruction' : "Player 2's Reconstruction"}</h3>
+                <GameBoard
+                  board={board}
+                  onTileClick={() => {}}
+                  preservedTiles={preservedTiles}
+                  correctTiles={correctTiles}
+                  incorrectTiles={incorrectTiles}
+                  selectedLetter={null}
+                  selectedTile={null}
+                  currentPlayer={2}
+                  onDragStart={() => {}}
+                  onDrop={() => {}}
+                  interactive={false}
+                  removedSquares={removedSquares}
+                />
+              </div>
+            </div>
+
+            <div className="end-actions">
+              {dailyMode && (
+                <Button primary onClick={() => setShowLeaderboard(true)}>
+                  🏆 Leaderboard
+                </Button>
+              )}
+              {!dailyMode && gamesPlayed < 4 && (
+                <Button primary onClick={() => resetForNextDroid(scorePercent)}>
+                  Play Next Droid
+                </Button>
+              )}
+              <Button onClick={resetGame} primary={!dailyMode && gamesPlayed >= 4}>
+                Play New Game
+              </Button>
+            </div>
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
+
+export default DroidGame;

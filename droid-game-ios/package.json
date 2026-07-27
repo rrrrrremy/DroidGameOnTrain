@@ -1,0 +1,33 @@
+{
+  "name": "droid-game-ios",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/clipboard": "^6.0.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/haptics": "^6.0.2",
+    "@capacitor/ios": "^6.2.0",
+    "@capacitor/status-bar": "^6.0.2",
+    "firebase": "^12.11.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "ios": "npm run build && npx cap sync ios && npx cap open ios",
+    "sync": "npm run build && npx cap sync ios"
+  },
+  "eslintConfig": { "extends": ["react-app"] },
+  "browserslist": {
+    "production": ["ios_saf >= 14", "safari >= 14"],
+    "development": ["last 1 safari version"]
+  },
+  "homepage": "."
+}
