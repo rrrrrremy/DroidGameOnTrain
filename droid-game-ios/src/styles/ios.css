@@ -70,15 +70,10 @@ textarea {
   -webkit-user-drag: none;
 }
 
-/* main.css only reveals the per-tile remove button on :hover, which never
-   fires on a touch screen. Show it whenever the tile holds a letter. */
-.tile-filled .tile-remove-btn,
-.tile-invalid .tile-remove-btn {
-  display: block;
-}
-
-/* It was sized for a mouse pointer (16px). Grow the hit area with a
-   transparent overlay rather than changing how the badge looks. */
+/* main.css now reveals the per-tile remove button under @media (hover: none),
+   so it is already visible here. It is still sized for a mouse pointer
+   (16px) — grow the hit area with a transparent overlay rather than
+   changing how the badge looks. */
 .tile-remove-btn::after {
   content: '';
   position: absolute;

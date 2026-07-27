@@ -26,16 +26,25 @@ In Xcode, select the `App` target → *Signing & Capabilities* → pick your App
 Developer team. Xcode will assign a provisioning profile automatically. Then
 choose a simulator or a connected iPhone and press ▶.
 
-## Making changes
+## Pulling in changes from the web game
 
-The web code under `src/` is the app. After editing it:
+`src/` here is a generated copy of `../droid-game/src`. When the web game moves
+forward, bring the app up to date with:
 
 ```bash
-npm run sync     # rebuild + copy into the iOS project
+python3 tools/sync-from-web.py     # re-copy the game + re-apply the iOS changes
+npm run sync                       # rebuild and push into the Xcode project
 ```
 
-then re-run from Xcode. There is no need to touch the `ios/` folder by hand —
-it is regenerated from `capacitor.config.json` and `package.json`.
+`sync-from-web.py` re-copies the web sources and then re-applies the handful of
+iOS adaptations listed below. Each one is asserted: if the game's source moves
+out from under a patch, the script stops and names it rather than quietly
+producing an app with, say, no working tile placement. When that happens, open
+the script, update that patch to match the new code, and re-run.
+
+Do not hand-edit `src/` here — the next sync overwrites it. Changes belong in
+`../droid-game`, or, if they are genuinely iOS-only, in the files listed under
+`IOS_ONLY` at the top of the sync script.
 
 For fast iteration you can also just run `npm start` and develop in a desktop
 browser; everything except the native plugins behaves identically.
@@ -47,9 +56,7 @@ untouched. These changes exist specifically because it runs as an app:
 
 - **Tap to move tiles.** HTML5 drag-and-drop does not fire in `WKWebView`, so
   tapping a filled tile picks the letter up into your hand and tapping an empty
-  tile drops it — a two-tap move. The `×` badge still clears a tile outright,
-  and it is now always visible (it used to appear only on mouse hover, which
-  never happens on a touch screen).
+  tile drops it — a two-tap move. The `×` badge still clears a tile outright.
 - **Share links point at the web build.** Inside the app `window.location` is
   `capacitor://localhost`, which is meaningless to whoever receives the link.
   Links use `SHARE_BASE_URL` from `src/config.js` instead — change that constant
@@ -67,24 +74,34 @@ untouched. These changes exist specifically because it runs as an app:
 ## Layout
 
 ```
-src/                 React app (same as the web version)
-  config.js          share URL + URL scheme
-  native/ios.js      Capacitor plugin wrappers, no-ops in a browser
-  styles/ios.css     iOS-only overrides, loaded after main.css
-ios/                 generated Xcode project — open App.xcworkspace
-tools/make-icons.py  regenerates the app icon, splash, and favicons
+src/                    copied from ../droid-game/src by the sync script
+  config.js             iOS-only: share URL + URL scheme
+  native/ios.js         iOS-only: Capacitor wrappers, no-ops in a browser
+  styles/ios.css        iOS-only: overrides loaded after main.css
+  index.js              iOS-only: entry point, loads ios.css
+public/index.html       iOS-only: viewport, bundled font, icons
+public/fonts/           iOS-only: bundled Press Start 2P
+ios/                    generated Xcode project — open App.xcworkspace
+tools/sync-from-web.py  re-copy the game and re-apply the iOS changes
+tools/make-icons.py     regenerate the app icon and splash
 capacitor.config.json
 ```
 
 ## Icons
 
-`tools/make-icons.py` draws the app icon and splash from the game's own droid
-board shape, so they stay in sync with the brand colours. It needs Pillow
-(`pip install pillow`):
+`tools/make-icons.py` builds the app icon and launch splash from
+`public/favicon.svg`, the same droid mark the web app uses. It needs cairosvg
+and Pillow:
 
 ```bash
+pip install cairosvg pillow
 python3 tools/make-icons.py && npx cap sync ios
 ```
+
+The icon is a full-bleed version of the mark — the logo's own rounded frame is
+dropped, because iOS applies its own squircle mask and a second frame inside it
+reads as a badge within a badge. That layout lives in `ICON_SVG` in the script;
+if the logo changes, mirror the change there.
 
 ## Before submitting to the App Store
 
@@ -97,3 +114,7 @@ python3 tools/make-icons.py && npx cap sync ios
 - The leaderboard lets players enter a display name. If you keep it, the App
   Store review form will ask about user-generated content, so be ready to
   describe how names are moderated.
+- The start screen has a **Subscribe** entry. If that ever unlocks anything
+  inside the app, Apple requires it to go through In-App Purchase — linking out
+  to a web checkout for digital content is one of the most common rejection
+  reasons. A purely informational link is fine.
