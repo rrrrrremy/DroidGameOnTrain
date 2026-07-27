@@ -1,25 +1,27 @@
 /* ==========================================================================
-   iOS / WKWebView overrides.
+   iOS / WKWebView overrides. Loaded after main.css.
 
-   Loaded after main.css. Everything here exists because a web page behaves
-   differently once it is running as a native app: no rubber-band scrolling,
-   no text selection on tiles, no magnifying glass on long-press, and the
-   layout has to dodge the notch and the home indicator.
+   Deliberately small. main.css already handles the mobile layout — it sizes
+   the board off 100dvh and pads for env(safe-area-inset-bottom) itself — so
+   anything added here that touches sizing fights it rather than helping.
+
+   Be careful adding layout rules: env(safe-area-inset-*) resolves to 0 in a
+   desktop browser and to real values on a notched iPhone, so a rule that
+   looks fine in browser testing can only misbehave on device. Test layout
+   changes on hardware.
    ========================================================================== */
 
 html,
 body,
 #root {
   height: 100%;
-  /* Stop the whole webview from rubber-banding when a drag runs off-screen. */
+  /* Stop the whole webview rubber-banding; the game scrolls internally. */
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: auto;
 }
 
 body {
-  /* The board area extends behind the status bar; the container pads it back. */
   background: var(--bg);
-  /* No text cursor / selection highlight anywhere in a game UI. */
+  /* No text cursor, selection highlight, or long-press magnifier in a game. */
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
@@ -32,58 +34,26 @@ input,
 textarea {
   -webkit-user-select: text;
   user-select: text;
-  /* < 16px triggers an automatic zoom on focus in WKWebView. */
+  /* Anything under 16px makes WKWebView zoom in when the field is focused. */
   font-size: 16px;
 }
 
-/* ===== SAFE AREAS ===== */
-
-.game-container {
-  /* 100dvh is unreliable in WKWebView; -webkit-fill-available tracks the
-     real visible height including when the keyboard is up. */
-  height: 100vh;
-  height: -webkit-fill-available;
-  padding-top: env(safe-area-inset-top);
-  padding-bottom: env(safe-area-inset-bottom);
-  padding-left: env(safe-area-inset-left);
-  padding-right: env(safe-area-inset-right);
-  /* Momentum scrolling inside the container only. */
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
+/* The leaderboard aligns its modal to the top of the screen, so on a notched
+   phone the header would sit under the status bar. The other overlays centre
+   their content and need nothing. */
+.leaderboard-overlay {
+  padding-top: max(1rem, env(safe-area-inset-top));
 }
 
-/* Full-screen overlays are position:fixed, so they sit outside
-   .game-container's padding box and need their own insets, or their headers
-   and buttons end up under the notch and the home indicator. */
-.leaderboard-overlay,
-.htp-overlay,
-.payment-overlay {
-  padding-top: calc(env(safe-area-inset-top) + 1rem);
-  padding-bottom: calc(env(safe-area-inset-bottom) + 1rem);
-}
-
-/* ===== TOUCH TARGETS ===== */
-
-/* Tiles are dragged on desktop and tapped on iOS. Suppress the browser's own
-   touch gestures on them so a drag never scrolls the page underneath. */
+/* Tiles are dragged with a mouse and tapped on iOS. Suppress WebKit's own
+   touch gestures on them so a tap is never read as a drag or a double-tap
+   zoom. Nothing here may change their hit area: the remove button sits in the
+   tile's corner, so growing either one steals taps from the other. */
 .tile,
 .letter-tile,
 .return-box {
   touch-action: manipulation;
   -webkit-user-drag: none;
-}
-
-/* main.css now reveals the per-tile remove button under @media (hover: none),
-   so it is already visible here. It is still sized for a mouse pointer
-   (16px) — grow the hit area with a transparent overlay rather than
-   changing how the badge looks. */
-.tile-remove-btn::after {
-  content: '';
-  position: absolute;
-  top: -9px;
-  right: -9px;
-  bottom: -9px;
-  left: -9px;
 }
 
 button,
@@ -92,12 +62,4 @@ button,
   touch-action: manipulation;
   -webkit-appearance: none;
   appearance: none;
-}
-
-/* The pool letter currently "in hand" after a tap. Mirrors the desktop
-   drag affordance so it is obvious a letter is being carried. */
-.tile-carrying,
-.letter-tile.selected {
-  outline: 2px solid var(--indigo);
-  outline-offset: 2px;
 }
