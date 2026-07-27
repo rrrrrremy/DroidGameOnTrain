@@ -33,14 +33,17 @@ forward, bring the app up to date with:
 
 ```bash
 python3 tools/sync-from-web.py     # re-copy the game + re-apply the iOS changes
+npm install                        # only if the script reports new dependencies
 npm run sync                       # rebuild and push into the Xcode project
 ```
 
-`sync-from-web.py` re-copies the web sources and then re-applies the handful of
-iOS adaptations listed below. Each one is asserted: if the game's source moves
-out from under a patch, the script stops and names it rather than quietly
-producing an app with, say, no working tile placement. When that happens, open
-the script, update that patch to match the new code, and re-run.
+`sync-from-web.py` re-copies the web sources, re-applies the handful of iOS
+adaptations listed below, and adopts any dependency the game has gained (the
+two `package.json` files are separate because this one adds the Capacitor
+plugins). Each adaptation is asserted: if the game's source moves out from
+under a patch, the script stops and names it rather than quietly producing an
+app with, say, no working tile placement. When that happens, open the script,
+update that patch to match the new code, and re-run.
 
 Do not hand-edit `src/` here — the next sync overwrites it. Changes belong in
 `../droid-game`, or, if they are genuinely iOS-only, in the files listed under
@@ -114,7 +117,13 @@ if the logo changes, mirror the change there.
 - The leaderboard lets players enter a display name. If you keep it, the App
   Store review form will ask about user-generated content, so be ready to
   describe how names are moderated.
-- The start screen has a **Subscribe** entry. If that ever unlocks anything
-  inside the app, Apple requires it to go through In-App Purchase — linking out
-  to a web checkout for digital content is one of the most common rejection
-  reasons. A purely informational link is fine.
+- **The Lightning pay-per-game will most likely be rejected as it stands.**
+  App Store guideline 3.1.1 requires that anything unlocking features or
+  content inside the app is sold through In-App Purchase; paying 100 sats via
+  Alby to unlock custom shapes is exactly the case it covers, and "it's
+  Bitcoin" is not an exemption. The flow itself works fine technically — Alby
+  is reached over HTTPS and Capacitor hands the `lightning:` link to a wallet
+  app — so this is purely a policy problem. The realistic options are to add a
+  StoreKit purchase for the iOS build, or to hide the paid shapes on iOS and
+  keep them a web-only feature. Worth resolving before you spend time on
+  submission.

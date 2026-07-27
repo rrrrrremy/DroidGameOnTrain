@@ -5,8 +5,10 @@ const LETTERS = 'DROID'.split('');
 const StartScreen = ({
   onStart,
   onStartVsComputer,
+  onStartCustomVsComputer,
   onStartGhost,
   onShowLeaderboard,
+  onShowHowToPlay,
   dailyPlayed,
 }) => {
   return (
@@ -32,36 +34,36 @@ const StartScreen = ({
           </p>
 
           <div className="home-mode-stack" aria-label="Game modes">
-            <button className="home-mode-button home-mode-primary" onClick={onStartVsComputer}>
-              <span>DROID v HUMAN</span>
+            <button
+              className={`home-mode-button home-mode-primary${dailyPlayed ? ' is-played' : ''}`}
+              onClick={onStartVsComputer}
+              disabled={dailyPlayed}
+            >
+              <span>PLAY DROID</span>
+              {dailyPlayed && <small className="home-mode-note">Played today</small>}
             </button>
 
             <button className="home-mode-button" onClick={onStart}>
-              <span>HUMAN v HUMAN</span>
+              <span>PLAY HUMAN</span>
             </button>
 
+            {/* Ghost Droid temporarily disabled — logic kept intact, hidden from players.
             <button className="home-mode-button" onClick={onStartGhost}>
               <span>GHOST DROID</span>
             </button>
+            */}
           </div>
 
-          {dailyPlayed && (
-            <button className="home-daily-button is-complete" onClick={onShowLeaderboard}>
-              <span>View Leaderboard</span>
-              <small>Daily results</small>
-            </button>
-          )}
+          <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
+            <span className="home-lightning-label">
+              <strong><span className="home-lightning-icon">⚡</span> PLAY MORE TODAY</strong>
+              <small>100 sats · pay with Lightning</small>
+            </span>
+          </button>
 
-          <div className="home-ad-slot">
-            Advertising space available.
-          </div>
+          <button className="home-leaderboard-btn" onClick={onShowLeaderboard}>Daily Leaderboard</button>
 
-          <div className="home-subscribe">
-            <span>Subscribe</span>
-            <small>and play as often as you like</small>
-          </div>
-
-          <div className="home-how-to">How to Play</div>
+          <button className="home-how-to" onClick={onShowHowToPlay}>How to Play</button>
 
           <footer className="home-footer">
             <span>Second Nature Games Pty Limited</span>

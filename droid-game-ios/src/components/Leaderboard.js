@@ -174,9 +174,6 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
           {averagePercent === null ? 'Average of scores played to date' : `Average score to date: ${averagePercent}%`}
         </div>
 
-        <div className="leaderboard-ad-slot">
-          Advertising space available.
-        </div>
       </div>
     </div>
   );

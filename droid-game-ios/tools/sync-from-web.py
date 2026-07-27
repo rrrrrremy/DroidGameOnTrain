@@ -13,7 +13,9 @@ patch, the script stops and names the patch instead of silently producing an
 app with, say, no working tile placement.
 """
 
+import json
 import os
+import re
 import shutil
 import sys
 
@@ -48,6 +50,41 @@ def patch(text, name, old, new, count=1):
         failures.append(f'{name}: expected {count} match(es), found {found}')
         return text
     return text.replace(old, new)
+
+
+def sync_dependencies():
+    """Adopt any dependency the web app has gained.
+
+    The two package.json files are separate because the iOS build adds the
+    Capacitor plugins, so a new library in the game (a QR code renderer, say)
+    would otherwise only surface as a 'Module not found' at build time.
+    Returns the list of packages that changed.
+    """
+    web_pkg = json.load(open(os.path.join(WEB, 'package.json')))
+    ios_path = os.path.join(IOS, 'package.json')
+    ios_pkg = json.load(open(ios_path))
+
+    changed = []
+    for name, version in web_pkg.get('dependencies', {}).items():
+        if ios_pkg['dependencies'].get(name) != version:
+            changed.append(f'{name}@{version}')
+            ios_pkg['dependencies'][name] = version
+
+    if changed:
+        ios_pkg['dependencies'] = dict(sorted(ios_pkg['dependencies'].items()))
+        with open(ios_path, 'w') as f:
+            json.dump(ios_pkg, f, indent=2)
+            f.write('\n')
+    return changed
+
+
+def patch_re(text, name, pattern, repl, count=1):
+    """Regex form of `patch`, for edits that must survive reformatting."""
+    new, found = re.subn(pattern, repl, text)
+    if found != count:
+        failures.append(f'{name}: expected {count} match(es), found {found}')
+        return text
+    return new
 
 
 def mirror(subdir):
@@ -95,10 +132,11 @@ def main():
     path = os.path.join(IOS, 'src/components/DroidGame.js')
     s = open(path).read()
 
-    s = patch(
+    # Tolerates other hooks being added to the import alongside useEffect.
+    s = patch_re(
         s, 'useCallback import',
-        "import React, { useState, useMemo, useEffect } from 'react';",
-        "import React, { useState, useMemo, useEffect, useCallback } from 'react';",
+        r"(import React, \{[^}]*?useEffect)",
+        r"\1, useCallback",
     )
 
     s = patch(
@@ -237,14 +275,13 @@ def main():
     )
 
     # Two scoring paths reach a verdict (the two-player turn and the solo
-    # finish), at different indentation levels.
-    for indent in ('      ', '    '):
-        s = patch(
-            s, f'turn result feedback (indent {len(indent)})',
-            f'\n{indent}setPlayer2FullValid(isFullValid);\n',
-            f'\n{indent}setPlayer2FullValid(isFullValid);\n'
-            f'{indent}resultFeedback(isFullValid);\n',
-        )
+    # finish). Matched by indentation capture so either can be re-nested.
+    s = patch_re(
+        s, 'turn result feedback',
+        r'(?m)^([ \t]+)setPlayer2FullValid\(isFullValid\);$',
+        r'\1setPlayer2FullValid(isFullValid);\n\1resultFeedback(isFullValid);',
+        count=2,
+    )
 
     if failures:
         print('Sync failed - the web app has moved under these patches:\n')
@@ -256,7 +293,12 @@ def main():
 
     open(path, 'w').write(s)
     print('Synced src/ and public/ from ../droid-game and re-applied '
-          f'{9} iOS adaptations.')
+          '9 iOS adaptations.')
+
+    changed = sync_dependencies()
+    if changed:
+        print('\nAdopted new dependencies: ' + ', '.join(changed))
+        print('Run `npm install` before building.')
 
 
 if __name__ == '__main__':

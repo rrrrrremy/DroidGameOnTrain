@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import GameBoard from './GameBoard';
 import Button from './Button';
 import StartScreen from './StartScreen';
@@ -31,6 +31,8 @@ import {
   tapFeedback,
   resultFeedback,
 } from '../native/ios';
+import PaymentModal from './PaymentModal';
+import HowToPlay from './HowToPlay';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
@@ -44,10 +46,8 @@ const HINT_PENALTY = { droid: 1.0, cross: 0.9, invader: 0.8, bolt: 0.7 };
 const TIME_INTERVAL = { droid: 10, cross: 12, invader: 15, bolt: 20 };
 
 const TIMED_COMPUTER_MAX_SCORE = 6;
-const TIMED_COMPUTER_MIN_SCORE = 3;
-const TIMED_COMPUTER_DURATION = 360;
-const TIMED_COMPUTER_INTERVAL = 12;
-const TIMED_COMPUTER_REVEAL_THRESHOLDS = [5.2, 4.5, 3.8, 3.3];
+// Seconds at which a letter is auto-revealed
+const AUTO_REVEAL_SECONDS = [60, 120, 180, 240];
 const WRONG_PLACE_PENALTY = 0.3;
 const READING_TIME_SECONDS = 6;
 const GHOST_SCORE_MAX = 6;
@@ -80,15 +80,21 @@ const calcTimePenalty = (seconds, shapeId) => {
 };
 
 const calcTimedComputerBaseScore = (seconds) => {
-  const deductions = Math.floor(Math.min(seconds, TIMED_COMPUTER_DURATION) / TIMED_COMPUTER_INTERVAL) / 10;
-  return Math.max(
-    TIMED_COMPUTER_MIN_SCORE,
-    Math.round((TIMED_COMPUTER_MAX_SCORE - deductions) * 10) / 10
-  );
+  if (seconds < 60) return TIMED_COMPUTER_MAX_SCORE;
+  // 60–120 s: –0.1 every 12 s, first deduction at exactly 60 s
+  // (offset 48 = 60 − 12 puts the first floor-tick at t=60)
+  const d2 = Math.floor((Math.min(seconds, 120) - 48) / 12);
+  // 120–180 s: –0.1 every 6 s
+  const d3 = seconds > 120 ? Math.floor((Math.min(seconds, 180) - 120) / 6) : 0;
+  // 180–240 s: –0.1 every 4 s
+  const d4 = seconds > 180 ? Math.floor((Math.min(seconds, 240) - 180) / 4) : 0;
+  // After 240 s: –0.1 every 3 s
+  const d5 = seconds > 240 ? Math.floor((seconds - 240) / 3) : 0;
+  return Math.max(0, Math.round((TIMED_COMPUTER_MAX_SCORE - (d2 + d3 + d4 + d5) * 0.1) * 10) / 10);
 };
 
-const timedRevealCountForScore = (score) =>
-  TIMED_COMPUTER_REVEAL_THRESHOLDS.filter((threshold) => score <= threshold).length;
+const timedRevealCountForTime = (seconds) =>
+  AUTO_REVEAL_SECONDS.filter((t) => seconds >= t).length;
 
 const formatElapsedTime = (seconds = 0) => {
   const safeSeconds = Math.max(0, Math.floor(seconds));
@@ -201,6 +207,8 @@ const DroidGame = () => {
   const [player2FullValid, setPlayer2FullValid] = useState(false);
   const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
   const [isPaused, setIsPaused] = useState(false);
+  // Guards against finalizing a timed round more than once (submit + auto-end race)
+  const finalizingRef = useRef(false);
 
   // Session tracking (persists across the 4-droid game)
   const [sessionPlayedShapes, setSessionPlayedShapes] = useState([]); // ordered list
@@ -223,6 +231,12 @@ const DroidGame = () => {
 
   // ── Leaderboard state ──────────────────────────────────────────────────────
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+  // ── Lightning payment state ───────────────────────────────────────────────
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // ── How-to-play overlay ────────────────────────────────────────────────────
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
 
   useEffect(() => {
     const setViewportHeight = () => {
@@ -410,12 +424,28 @@ const DroidGame = () => {
 
   useEffect(() => {
     if (!isTimedComputerActive) return;
-    const revealTarget = timedRevealCountForScore(calcTimedComputerBaseScore(timerSeconds));
+    const revealTarget = timedRevealCountForTime(timerSeconds);
     if (revealTarget <= timedAutoReveals) return;
 
     revealCorrectLetter({ countAsHint: false });
     setTimedAutoReveals((prev) => prev + 1);
   }, [isTimedComputerActive, timerSeconds, timedAutoReveals]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-end the timed Droid v Human round the moment the live score hits 0.
+  useEffect(() => {
+    if (!isTimedComputerActive) return;
+    const liveTimed =
+      calcTimedComputerBaseScore(timerSeconds)
+      - Math.round(letterHintsUsed * hintPenalty * 10) / 10
+      - (wordHintUsed ? 2 : 0);
+    if (liveTimed > 0) return;
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
+    (async () => {
+      const { isFullValid } = await validateSolverBoard();
+      applyRoundResult(isFullValid);
+    })();
+  }, [isTimedComputerActive, timerSeconds, letterHintsUsed, hintPenalty, wordHintUsed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Interactions ──────────────────────────────────────────────────────────
 
@@ -585,6 +615,7 @@ const DroidGame = () => {
     setSelectedLetter(null);
     setTimedAutoReveals(0);
     setTimerSeconds(0);
+    finalizingRef.current = false;
     setChallenge(null);
     setReadingSecondsLeft(timerEnabled && (mode === 'computer' || mode === 'daily') ? READING_TIME_SECONDS : 0);
 
@@ -647,6 +678,54 @@ const DroidGame = () => {
   };
 
   // ── Turn management ───────────────────────────────────────────────────────
+
+  // Validate the solver's board: are all active tiles filled, and is every
+  // row/column a valid English word?
+  const validateSolverBoard = async () => {
+    const activeRuns = getActiveRuns(boardShape);
+    const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+    if (!allFilled) return { allFilled: false, isFullValid: false };
+    setIsValidating(true);
+    try {
+      const uniqueWords = [
+        ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+      ];
+      const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+      return { allFilled: true, isFullValid: results.every(Boolean) };
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
+  // Compute correct tiles and transition to the end screen.
+  const applyRoundResult = (isFullValid) => {
+    finalizingRef.current = true;
+    setPlayer2FullValid(isFullValid);
+    resultFeedback(isFullValid);
+
+    let correct;
+    if (isFullValid) {
+      // Award all active tiles as correct
+      const seen = new Set();
+      correct = [];
+      getActiveRuns(boardShape).flat().forEach(({ x, y }) => {
+        const key = `${x},${y}`;
+        if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
+      });
+    } else {
+      // Only tiles that match player 1's exact placement score
+      correct = checkCorrectTiles(board, player1Board);
+    }
+
+    setCorrectTiles(correct);
+    setValidationError(null);
+    setGameState('end');
+    setSelectedLetter(null);
+    if (dailyMode) {
+      localStorage.setItem(DAILY_STORAGE_KEY, todayString());
+      setDailyPlayed(true);
+    }
+  };
 
   const handleEndTurn = async () => {
     if (currentPlayer === 1) {
@@ -740,48 +819,21 @@ const DroidGame = () => {
       setGameState('share');
       setSelectedLetter(null);
     } else {
-      // Check if every active tile is filled and every word is valid English.
-      const activeRuns = getActiveRuns(boardShape);
-      const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
+      const { allFilled, isFullValid } = await validateSolverBoard();
 
-      let isFullValid = false;
-      if (allFilled) {
-        setIsValidating(true);
-        try {
-          const uniqueWords = [
-            ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
-          ];
-          const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
-          isFullValid = results.every(Boolean);
-        } finally {
-          setIsValidating(false);
-        }
+      // In timed Droid v Human, a wrong submission doesn't end the game —
+      // the player is told it's incorrect and play resumes until they solve
+      // it or the score reaches 0.
+      if (isTimedComputerActive && !isFullValid) {
+        setValidationError(
+          allFilled
+            ? "Not quite — one or more words aren't valid. Keep trying!"
+            : 'Fill every tile with valid words before submitting.'
+        );
+        return;
       }
 
-      setPlayer2FullValid(isFullValid);
-      resultFeedback(isFullValid);
-
-      let correct;
-      if (isFullValid) {
-        // Award all active tiles as correct
-        const seen = new Set();
-        correct = [];
-        activeRuns.flat().forEach(({ x, y }) => {
-          const key = `${x},${y}`;
-          if (!seen.has(key)) { seen.add(key); correct.push({ x, y }); }
-        });
-      } else {
-        // Only tiles that match player 1's exact placement score
-        correct = checkCorrectTiles(board, player1Board);
-      }
-
-      setCorrectTiles(correct);
-      setGameState('end');
-      setSelectedLetter(null);
-      if (dailyMode) {
-        localStorage.setItem(DAILY_STORAGE_KEY, todayString());
-        setDailyPlayed(true);
-      }
+      applyRoundResult(isFullValid);
     }
   };
 
@@ -815,6 +867,7 @@ const DroidGame = () => {
     setTimedAutoReveals(0);
     setTimerSeconds(0);
     setReadingSecondsLeft(0);
+    finalizingRef.current = false;
     setBoardShape('droid');
     setPendingMode(null);
     setPlayer2FullValid(false);
@@ -827,6 +880,7 @@ const DroidGame = () => {
     resetGhostState();
     setIsPaused(false);
     setShowLeaderboard(false);
+    setShowPaymentModal(false);
     setGameState('start');
   };
 
@@ -1139,6 +1193,14 @@ const DroidGame = () => {
 
   return (
     <div className="game-container">
+      {/* Lightning payment modal */}
+      {showPaymentModal && (
+        <PaymentModal
+          onPaid={() => { setShowPaymentModal(false); handleModeSelect('computer'); }}
+          onCancel={() => setShowPaymentModal(false)}
+        />
+      )}
+
       {/* Leaderboard overlay — sits above everything */}
       {showLeaderboard && (
         <Leaderboard
@@ -1163,11 +1225,15 @@ const DroidGame = () => {
         <StartScreen
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('daily')}
+          onStartCustomVsComputer={() => setShowPaymentModal(true)}
           onStartGhost={() => handleModeSelect('ghost')}
           onShowLeaderboard={() => setShowLeaderboard(true)}
+          onShowHowToPlay={() => setShowHowToPlay(true)}
           dailyPlayed={dailyPlayed}
         />
       )}
+
+      {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
 
       {gameState === 'preparingDaily' && (
         <div className="start-screen preparing-droid-screen">
