@@ -4,11 +4,15 @@ import { BOARD_SHAPES, SHAPE_IDS } from '../utils/computerPlayer';
 const ShapeSelection = ({ onSelect, sessionPlayedShapes = [], sessionScores = {}, sessionTotal = 0, sessionCount = 0 }) => {
   return (
     <div className="shape-selection">
-      <h2 className="shape-heading">Choose Droid</h2>
+      <div className="shape-header">
+        <span className="start-badge">Board Setup</span>
+        <h2 className="shape-heading">Choose Droid</h2>
+        <p className="shape-subtitle">Each shape changes the word slots, score ceiling, and solve rhythm.</p>
+      </div>
 
       {sessionCount > 0 && (
         <div className="session-total-banner">
-          Combined total ({sessionCount} droid{sessionCount !== 1 ? 's' : ''}): {sessionTotal}%
+          Average score ({sessionCount} droid{sessionCount !== 1 ? 's' : ''}): {sessionTotal}%
         </div>
       )}
 
@@ -33,6 +37,7 @@ const ShapeSelection = ({ onSelect, sessionPlayedShapes = [], sessionScores = {}
                 ))}
               </div>
               <span className="shape-name">{shape.name}</span>
+              <span className="shape-meta">{played ? 'Completed' : 'Available'}</span>
               {played && score !== undefined && (
                 <span className="shape-score">{score}%</span>
               )}
