@@ -1060,56 +1060,30 @@ body {
   width: 100%;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.85rem;
+  justify-content: space-between;
+  gap: 1rem;
   margin-bottom: 0.45rem;
-  padding: 0.7rem 0.9rem;
-  border: 1px solid rgba(134,239,172,0.75);
+  padding: 0.52rem 0.7rem;
+  border: 1px solid rgba(134,239,172,0.45);
   border-radius: var(--radius-sm);
-  background: rgba(34,197,94,0.16);
+  background: rgba(34,197,94,0.08);
   color: #dcfce7;
-  box-shadow: var(--shadow-sm), 0 0 22px rgba(34,197,94,0.28);
+  box-shadow: var(--shadow-sm);
 }
 
 .reading-time-title {
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .reading-time-count {
-  min-width: 2.2rem;
-  display: inline-block;
+  min-width: 2rem;
   font-family: 'Press Start 2P', monospace;
-  font-size: clamp(1.5rem, 7vw, 2.15rem);
-  line-height: 1;
-  text-align: center;
+  font-size: 0.9rem;
+  text-align: right;
   color: #86efac;
-  text-shadow: 0 0 14px rgba(134,239,172,0.55);
-  /* Re-keyed on every tick in the JSX, so this replays once a second. */
-  animation: reading-time-tick 0.62s ease-out;
-}
-
-/* The last few seconds turn amber so the deadline is unmistakable. */
-.reading-time-count.is-urgent {
-  color: #fcd34d;
-  text-shadow: 0 0 14px rgba(252,211,77,0.6);
-}
-
-.reading-time-banner.is-urgent {
-  border-color: rgba(252,211,77,0.8);
-  background: rgba(245,158,11,0.18);
-  box-shadow: var(--shadow-sm), 0 0 22px rgba(245,158,11,0.32);
-}
-
-@keyframes reading-time-tick {
-  from { transform: scale(1.4); opacity: 0.5; }
-  to   { transform: scale(1);   opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .reading-time-count { animation: none; }
 }
 
 /* ===== BOARD ===== */
@@ -1739,6 +1713,23 @@ body {
   letter-spacing: 0.08em;
   line-height: 1.1;
   text-transform: uppercase;
+}
+
+/* The countdown to play. Re-keyed in the JSX on every tick, so this replays
+   once a second and the corner catches the eye without a banner. */
+.dvh-countdown {
+  display: inline-block;
+  animation: dvh-countdown-pulse 0.9s ease-out;
+}
+
+@keyframes dvh-countdown-pulse {
+  0%   { transform: scale(1.45); opacity: 0.45; }
+  55%  { transform: scale(1);    opacity: 1; }
+  100% { transform: scale(1);    opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dvh-countdown { animation: none; }
 }
 
 .dvh-panel.is-paused .dvh-pause-button {
@@ -2842,18 +2833,16 @@ body {
   }
 
   .reading-time-banner {
-    padding: 0.5rem 0.6rem;
+    padding: 0.38rem 0.55rem;
     margin-bottom: var(--mobile-play-gap);
   }
 
   .reading-time-title {
-    font-size: 0.68rem;
+    font-size: 0.6rem;
   }
 
-  /* Kept large on phones: this is the only warning that the board is about
-     to be hidden, so shrinking it here defeats the point. */
   .reading-time-count {
-    font-size: clamp(1.25rem, 6.5vw, 1.9rem);
+    font-size: 0.72rem;
   }
 
   .actions {

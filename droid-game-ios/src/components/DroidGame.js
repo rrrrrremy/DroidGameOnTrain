@@ -1318,7 +1318,12 @@ const DroidGame = () => {
                 </div>
                 <button className="dvh-pause-button" onClick={() => setIsPaused((prev) => !prev)}>
                   <span>{isPaused ? 'Restart Game' : isReadingTime ? 'Game Starts' : 'Pause Game'}</span>
-                  {isReadingTime && !isPaused && <small>in {readingSecondsLeft}s</small>}
+                  {isReadingTime && !isPaused && (
+                    /* Re-keyed each tick so the pulse replays every second. */
+                    <small key={readingSecondsLeft} className="dvh-countdown">
+                      in {readingSecondsLeft}s
+                    </small>
+                  )}
                 </button>
               </div>
 
@@ -1326,21 +1331,6 @@ const DroidGame = () => {
                 <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
                 <span>{todayString()}</span>
               </div>
-
-              {/* Sits directly above the board, because that is where you are
-                  looking while memorising it. Until now the only sign of the
-                  countdown on this screen was small print under Pause. */}
-              {isReadingTime && !isPaused && (
-                <div className={`reading-time-banner${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}>
-                  <span className="reading-time-title">Memorise the board</span>
-                  <span
-                    key={readingSecondsLeft}
-                    className={`reading-time-count${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}
-                  >
-                    {readingSecondsLeft}
-                  </span>
-                </div>
-              )}
 
               {challenge && (
                 <div className="challenge-target-badge dvh-challenge">
@@ -1409,16 +1399,9 @@ const DroidGame = () => {
                     )}
                   </div>
                   {isReadingTime && (
-                    <div className={`reading-time-banner${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}>
+                    <div className="reading-time-banner">
                       <span className="reading-time-title">Reading Time</span>
-                      {/* Keyed on the value so the tick animation replays
-                          each second rather than only on mount. */}
-                      <span
-                        key={readingSecondsLeft}
-                        className={`reading-time-count${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}
-                      >
-                        {readingSecondsLeft}
-                      </span>
+                      <span className="reading-time-count">{readingSecondsLeft}</span>
                     </div>
                   )}
                   {wordHintUsed && hintWord && (
