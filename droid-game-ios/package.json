@@ -23,7 +23,9 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "ios": "npm run build && npx cap sync ios && npx cap open ios",
-    "sync": "npm run build && npx cap sync ios"
+    "sync": "npm run build && npx cap sync ios",
+    "build:testing": "REACT_APP_UNLIMITED_DAILY_PLAYS=1 react-scripts build",
+    "sync:testing": "npm run build:testing && npx cap sync ios"
   },
   "eslintConfig": {
     "extends": [

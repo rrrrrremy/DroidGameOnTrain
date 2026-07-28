@@ -27,7 +27,7 @@ IOS = os.path.join(ROOT, 'droid-game-ios')
 # iOS-only files, never overwritten by the copy from the web app.
 IOS_ONLY = {
     'src/config.js',
-    'src/native/ios.js',
+    'src/native',
     'src/styles/ios.css',
     'src/index.js',
     'public/index.html',

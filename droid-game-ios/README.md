@@ -52,6 +52,29 @@ Do not hand-edit `src/` here — the next sync overwrites it. Changes belong in
 For fast iteration you can also just run `npm start` and develop in a desktop
 browser; everything except the native plugins behaves identically.
 
+## Playing more than one game a day while testing
+
+The daily limit is enforced through `localStorage`, so it survives reinstalls
+and would otherwise leave you waiting until tomorrow after a single game. Build
+with:
+
+```bash
+npm run sync:testing
+```
+
+then run from Xcode as usual. That build forgets the day has been played and
+stops recording it, so `PLAY DROID` stays available indefinitely. The Safari
+console shows `TESTING BUILD: the one-game-a-day limit is disabled` on launch.
+
+`npm run build`, `npm run sync`, and `npm run ios` are all unaffected — the
+override is switched on by a build-time variable that only `sync:testing` sets,
+and it is stripped from a normal build entirely, so **there is no flag to
+remember to turn off** and no way to ship the limit disabled by accident. To go
+back to a shippable build, just run `npm run sync` again.
+
+The override lives in `src/native/testing.js` and touches nothing in the game
+itself, so it costs the sync script no extra patches.
+
 ## What differs from the web version
 
 The game logic, scoring, computer player, and Firebase leaderboard are
