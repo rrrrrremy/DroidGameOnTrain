@@ -1,16 +1,17 @@
 // Lightning pay-per-game over LNURL-pay (LUD-16 lightning address) with
 // LUD-21 verify. The app is a static client with no backend, so the whole
-// flow is two HTTPS endpoints served by the payment stack — BTCPay Server
-// in front of our own node:
+// flow is two HTTPS endpoints served by whatever stack fronts the address:
 //
 //   1. https://<host>/.well-known/lnurlp/<name>   -> pay params + callback
 //   2. <callback>?amount=<msats>                  -> { pr, verify }
 //
-// The verify URL is then polled until the node reports the invoice settled.
-// The preimage it returns is the cryptographic receipt for the payment.
+// The verify URL is then polled until the invoice settles. The preimage it
+// returns is the cryptographic receipt for the payment. Anything speaking
+// these two endpoints works here — currently an Alby-fronted address whose
+// funds land on our own Alby Hub node.
 
-// The lightning address BTCPay serves for the store (Store -> Lightning ->
-// Lightning Address). Changing this constant is the entire wallet migration.
+// Changing this constant is the entire wallet migration. The modal fails
+// loudly if the new address's callback offers no LUD-21 verify URL.
 export const LIGHTNING_ADDRESS = 'friendlysky737215@getalby.com';
 
 export const GAME_PRICE_SATS = 100;
