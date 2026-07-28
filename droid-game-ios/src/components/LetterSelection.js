@@ -6,6 +6,7 @@ const VOWELS = new Set(['A', 'E', 'I', 'O', 'U']);
 const LetterSelection = ({
   availableLetters,
   selectedLetter,
+  selectedIndex,
   onLetterClick,
   onDragStart,
 }) => {
@@ -24,8 +25,10 @@ const LetterSelection = ({
             <LetterTile
               key={letter + i}
               letter={letter}
-              selected={selectedLetter === letter}
-              onClick={() => onLetterClick(letter)}
+              /* Matched on position as well as value, so picking one of
+                 several identical letters highlights only the one touched. */
+              selected={selectedLetter === letter && selectedIndex === i}
+              onClick={() => onLetterClick(letter, i)}
               onDragStart={(e) => onDragStart(e, letter)}
             />
           ))}

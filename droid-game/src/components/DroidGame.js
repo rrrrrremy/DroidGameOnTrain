@@ -184,6 +184,10 @@ const DroidGame = () => {
   const [letterCounts, setLetterCounts] = useState({});
   const [correctTiles, setCorrectTiles] = useState([]);
   const [selectedLetter, setSelectedLetter] = useState(null);
+  // Which tile in the letter pool was tapped. Only used to highlight that
+  // one tile when the pool holds several copies of the same letter; a stale
+  // value is harmless because the highlight also requires selectedLetter.
+  const [selectedPoolIndex, setSelectedPoolIndex] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
@@ -461,10 +465,12 @@ const DroidGame = () => {
     }
   };
 
-  const handleLetterClick = (letter) => {
+  const handleLetterClick = (letter, index) => {
     if (isReadingTime) return;
     if (isPaused) return;
-    setSelectedLetter((prev) => (prev === letter ? null : letter));
+    const isSameTile = selectedLetter === letter && selectedPoolIndex === index;
+    setSelectedLetter(isSameTile ? null : letter);
+    setSelectedPoolIndex(isSameTile ? null : index);
   };
 
   const handleRemoveTile = (x, y) => {
@@ -1333,6 +1339,7 @@ const DroidGame = () => {
                 <LetterSelection
                   availableLetters={availableLetters}
                   selectedLetter={selectedLetter}
+                  selectedIndex={selectedPoolIndex}
                   onLetterClick={handleLetterClick}
                   onDragStart={handleDragStart}
                 />
@@ -1398,6 +1405,7 @@ const DroidGame = () => {
               <LetterSelection
                 availableLetters={availableLetters}
                 selectedLetter={selectedLetter}
+                selectedIndex={selectedPoolIndex}
                 onLetterClick={handleLetterClick}
                 onDragStart={handleDragStart}
               />

@@ -226,13 +226,12 @@ def main():
   useEffect(() => onShareLinkOpened(loadSharedBoard), [loadSharedBoard]);""",
     )
 
-    # HTML5 drag-and-drop never fires in WKWebView, so tapping a filled tile
-    # picks the letter up rather than only clearing it: a two-tap move.
+    # Tapping the board only ever places or clears; it never leaves a letter
+    # selected. Picking the letter up into the hand was tried and reads wrong,
+    # because the letter visibly returns to the pool at the same moment.
     s = patch(
-        s, 'tap to move',
-        """    if (selectedLetter) {
-      const newBoard = board.map((r) => [...r]);
-      newBoard[y][x] = selectedLetter;
+        s, 'board tap feedback',
+        """      newBoard[y][x] = selectedLetter;
       setBoard(newBoard);
       setSelectedLetter(null);
     } else if (letter) {
@@ -241,19 +240,14 @@ def main():
       setBoard(newBoard);
     }
   };""",
-        """    if (selectedLetter) {
-      const newBoard = board.map((r) => [...r]);
-      newBoard[y][x] = selectedLetter;
+        """      newBoard[y][x] = selectedLetter;
       setBoard(newBoard);
       setSelectedLetter(null);
       tapFeedback();
     } else if (letter) {
-      // Pick the letter up into the hand instead of dropping it back in the
-      // pool; the tile's x button still clears a tile outright.
       const newBoard = board.map((r) => [...r]);
       newBoard[y][x] = null;
       setBoard(newBoard);
-      setSelectedLetter(letter);
       tapFeedback();
     }
   };""",
@@ -261,8 +255,8 @@ def main():
 
     s = patch(
         s, 'letter tap feedback',
-        "    setSelectedLetter((prev) => (prev === letter ? null : letter));\n  };",
-        "    setSelectedLetter((prev) => (prev === letter ? null : letter));\n"
+        "    setSelectedPoolIndex(isSameTile ? null : index);\n  };",
+        "    setSelectedPoolIndex(isSameTile ? null : index);\n"
         "    tapFeedback();\n  };",
     )
 

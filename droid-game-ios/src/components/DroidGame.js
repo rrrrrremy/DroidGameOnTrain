@@ -182,6 +182,10 @@ const DroidGame = () => {
   const [letterCounts, setLetterCounts] = useState({});
   const [correctTiles, setCorrectTiles] = useState([]);
   const [selectedLetter, setSelectedLetter] = useState(null);
+  // Which tile in the letter pool was tapped. Only used to highlight that
+  // one tile when the pool holds several copies of the same letter; a stale
+  // value is harmless because the highlight also requires selectedLetter.
+  const [selectedPoolIndex, setSelectedPoolIndex] = useState(null);
   const [isValidating, setIsValidating] = useState(false);
   const [validationError, setValidationError] = useState(null);
   const [invalidWordTiles, setInvalidWordTiles] = useState([]);
@@ -463,20 +467,19 @@ const DroidGame = () => {
       setSelectedLetter(null);
       tapFeedback();
     } else if (letter) {
-      // Pick the letter up into the hand instead of dropping it back in the
-      // pool; the tile's x button still clears a tile outright.
       const newBoard = board.map((r) => [...r]);
       newBoard[y][x] = null;
       setBoard(newBoard);
-      setSelectedLetter(letter);
       tapFeedback();
     }
   };
 
-  const handleLetterClick = (letter) => {
+  const handleLetterClick = (letter, index) => {
     if (isReadingTime) return;
     if (isPaused) return;
-    setSelectedLetter((prev) => (prev === letter ? null : letter));
+    const isSameTile = selectedLetter === letter && selectedPoolIndex === index;
+    setSelectedLetter(isSameTile ? null : letter);
+    setSelectedPoolIndex(isSameTile ? null : index);
     tapFeedback();
   };
 
@@ -1352,6 +1355,7 @@ const DroidGame = () => {
                 <LetterSelection
                   availableLetters={availableLetters}
                   selectedLetter={selectedLetter}
+                  selectedIndex={selectedPoolIndex}
                   onLetterClick={handleLetterClick}
                   onDragStart={handleDragStart}
                 />
@@ -1417,6 +1421,7 @@ const DroidGame = () => {
               <LetterSelection
                 availableLetters={availableLetters}
                 selectedLetter={selectedLetter}
+                selectedIndex={selectedPoolIndex}
                 onLetterClick={handleLetterClick}
                 onDragStart={handleDragStart}
               />
