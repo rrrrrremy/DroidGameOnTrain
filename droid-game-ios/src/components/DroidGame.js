@@ -357,6 +357,16 @@ const DroidGame = () => {
     return letters.sort();
   }, [currentPlayer, letterCounts, board]);
 
+  // How many tiles the pool holds when full, so it can reserve the space and
+  // not shrink as letters are placed. Mirrors how availableLetters is derived.
+  const poolCapacity = useMemo(() => {
+    if (currentPlayer === 1) return 26;
+    const total = Object.values(letterCounts).reduce((sum, n) => sum + n, 0);
+    // Preserved letters start on the board and can never return to the pool,
+    // so counting them would reserve a row that stays empty all game.
+    return Math.max(0, total - preservedTiles.length);
+  }, [currentPlayer, letterCounts, preservedTiles]);
+
   // Clear validation errors whenever the board changes
   useEffect(() => {
     setValidationError(null);
@@ -1317,6 +1327,21 @@ const DroidGame = () => {
                 <span>{todayString()}</span>
               </div>
 
+              {/* Sits directly above the board, because that is where you are
+                  looking while memorising it. Until now the only sign of the
+                  countdown on this screen was small print under Pause. */}
+              {isReadingTime && !isPaused && (
+                <div className={`reading-time-banner${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}>
+                  <span className="reading-time-title">Memorise the board</span>
+                  <span
+                    key={readingSecondsLeft}
+                    className={`reading-time-count${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}
+                  >
+                    {readingSecondsLeft}
+                  </span>
+                </div>
+              )}
+
               {challenge && (
                 <div className="challenge-target-badge dvh-challenge">
                   <span className="challenge-target-label">Beat</span>
@@ -1356,6 +1381,7 @@ const DroidGame = () => {
                   availableLetters={availableLetters}
                   selectedLetter={selectedLetter}
                   selectedIndex={selectedPoolIndex}
+                  capacity={poolCapacity}
                   onLetterClick={handleLetterClick}
                   onDragStart={handleDragStart}
                 />
@@ -1383,9 +1409,16 @@ const DroidGame = () => {
                     )}
                   </div>
                   {isReadingTime && (
-                    <div className="reading-time-banner">
+                    <div className={`reading-time-banner${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}>
                       <span className="reading-time-title">Reading Time</span>
-                      <span className="reading-time-count">{readingSecondsLeft}</span>
+                      {/* Keyed on the value so the tick animation replays
+                          each second rather than only on mount. */}
+                      <span
+                        key={readingSecondsLeft}
+                        className={`reading-time-count${readingSecondsLeft <= 3 ? ' is-urgent' : ''}`}
+                      >
+                        {readingSecondsLeft}
+                      </span>
                     </div>
                   )}
                   {wordHintUsed && hintWord && (
@@ -1422,6 +1455,7 @@ const DroidGame = () => {
                 availableLetters={availableLetters}
                 selectedLetter={selectedLetter}
                 selectedIndex={selectedPoolIndex}
+                capacity={poolCapacity}
                 onLetterClick={handleLetterClick}
                 onDragStart={handleDragStart}
               />
