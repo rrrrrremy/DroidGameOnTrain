@@ -3640,6 +3640,15 @@ body {
   font-weight: 600;
 }
 
+/* The settlement preimage — the cryptographic receipt for the payment. */
+.payment-success-wrap small.payment-proof {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 0.04em;
+  color: #86efac;
+  word-break: break-all;
+}
+
 .payment-cancel-link {
   background: none;
   border: none;
