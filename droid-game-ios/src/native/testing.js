@@ -35,6 +35,21 @@ const disableDailyLimit = () => {
     'TESTING BUILD: the one-game-a-day limit is disabled. ' +
     'Rebuild with `npm run sync` for a shippable app.'
   );
+
+  // A console warning is invisible on a phone. Stamp the screen so a testing
+  // build can never be mistaken for - or accidentally shipped as - the real
+  // thing: if this ribbon shows in the App Store archive, stop.
+  const badge = document.createElement('div');
+  badge.textContent = 'TEST BUILD';
+  badge.style.cssText = [
+    'position:fixed', 'top:calc(env(safe-area-inset-top, 0px) + 2px)',
+    'right:4px', 'z-index:99999', 'padding:2px 7px', 'border-radius:4px',
+    'background:rgba(245,158,11,0.85)', 'color:#111',
+    'font:700 9px/1.4 system-ui', 'letter-spacing:0.08em',
+    'pointer-events:none',
+  ].join(';');
+  document.addEventListener('DOMContentLoaded', () => document.body.appendChild(badge));
+  if (document.body) document.body.appendChild(badge);
 };
 
 export const applyTestingOverrides = () => {

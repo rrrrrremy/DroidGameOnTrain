@@ -84,7 +84,9 @@ const fetchLeaderboardRemote = async (date) => {
     console.warn('Fast leaderboard query failed; falling back to date-only query.', error);
   }
 
-  const fallbackQuery = query(collectionRef, where('date', '==', date));
+  // Capped both for cost and because the security rules refuse list
+  // queries without a limit. 200 covers any plausible day of real scores.
+  const fallbackQuery = query(collectionRef, where('date', '==', date), limit(200));
   const snap = await getDocs(fallbackQuery);
   const entries = sortEntries(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
   setCachedLeaderboard(date, entries);
