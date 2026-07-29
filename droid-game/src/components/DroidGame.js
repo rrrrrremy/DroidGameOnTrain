@@ -1265,6 +1265,7 @@ const DroidGame = () => {
       {gameState === 'selectShape' && (
         <ShapeSelection
           onSelect={handleShapeSelect}
+          onBack={resetGame}
           sessionPlayedShapes={sessionPlayedShapes}
           sessionScores={sessionScores}
           sessionTotal={sessionTotal}
@@ -1574,6 +1575,10 @@ const DroidGame = () => {
 
       {gameState === 'share' && (
         <div className="share-panel">
+          <button className="back-to-menu-btn back-to-menu-top" onClick={resetGame}>
+            ← Back to Menu
+          </button>
+
           <div className="share-header">
             <h2>Turn Complete!</h2>
             <p className="share-subtext">
@@ -1596,6 +1601,7 @@ const DroidGame = () => {
               Play on this device instead
             </Button>
           </div>
+
         </div>
       )}
 
@@ -1718,6 +1724,10 @@ const DroidGame = () => {
               </div>
 
             </div>
+
+            <button className="back-to-menu-btn answer-back-btn" onClick={resetGame}>
+              ← Back to Menu
+            </button>
           </div>
         );
       })()}

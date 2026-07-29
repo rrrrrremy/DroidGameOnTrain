@@ -174,6 +174,10 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
           {averagePercent === null ? 'Average of scores played to date' : `Average score to date: ${averagePercent}%`}
         </div>
 
+        <button className="back-to-menu-btn" onClick={onHome || onClose}>
+          ← Back to Menu
+        </button>
+
       </div>
     </div>
   );

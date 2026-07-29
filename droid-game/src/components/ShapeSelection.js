@@ -1,9 +1,15 @@
 import React from 'react';
 import { BOARD_SHAPES, SHAPE_IDS } from '../utils/computerPlayer';
 
-const ShapeSelection = ({ onSelect, sessionPlayedShapes = [], sessionScores = {}, sessionTotal = 0, sessionCount = 0 }) => {
+const ShapeSelection = ({ onSelect, onBack, sessionPlayedShapes = [], sessionScores = {}, sessionTotal = 0, sessionCount = 0 }) => {
   return (
     <div className="shape-selection">
+      {onBack && (
+        <button className="back-to-menu-btn back-to-menu-top" onClick={onBack}>
+          ← Back to Menu
+        </button>
+      )}
+
       <div className="shape-header">
         <span className="start-badge">Board Setup</span>
         <h2 className="shape-heading">Choose Droid</h2>
@@ -45,6 +51,7 @@ const ShapeSelection = ({ onSelect, sessionPlayedShapes = [], sessionScores = {}
           );
         })}
       </div>
+
     </div>
   );
 };

@@ -1086,6 +1086,70 @@ body {
   color: #86efac;
 }
 
+/* ===== BACK TO MENU =====
+   One consistent escape hatch, used on every screen that is not the menu
+   itself: shape selection, the share/turn-complete screen, the answer
+   screen, and the leaderboard. Deliberately quieter than the primary
+   actions so it never competes with them, but always present so a player
+   is never stuck wondering how to get home. */
+
+.back-to-menu-btn {
+  width: 100%;
+  /* Comfortably above Apple's 44pt minimum touch target. */
+  min-height: 3rem;
+  display: grid;
+  place-items: center;
+  padding: 0.6rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(10,12,12,0.36);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  color: var(--text-muted);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.back-to-menu-btn:hover {
+  border-color: var(--border-med);
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.back-to-menu-btn:active {
+  transform: scale(0.985);
+  filter: brightness(0.94);
+}
+
+/* Screens with no home button of their own put it at the top, where it is
+   visible without scrolling past the content. The answer screen and the
+   leaderboard already carry a "D" home button in their top bar, so theirs
+   sits at the bottom instead, after the results worth reading. */
+.back-to-menu-top {
+  align-self: flex-start;
+  justify-self: start;
+  width: auto;
+  min-width: 10rem;
+  max-width: 100%;
+  margin-bottom: 0.35rem;
+}
+
+.shape-selection > .back-to-menu-btn,
+.share-panel > .back-to-menu-btn {
+  max-width: 480px;
+}
+
+.leaderboard-modal > .back-to-menu-btn {
+  margin-top: 0.1rem;
+}
+
 /* ===== BOARD ===== */
 
 .board {
@@ -3040,9 +3104,12 @@ body {
   }
 
   .answer-board-panel .board {
+    /* The 21.7rem accounts for every fixed row on this screen, including the
+       Back to Menu button. The panels are overflow:hidden, so any chrome not
+       subtracted here silently clips the bottom row of tiles. */
     --tile-size: min(
       clamp(1.65rem, calc((100vw - 46px) / 5), 2.6rem),
-      clamp(1.35rem, calc((var(--app-height) - 18rem) / 10), 2.6rem)
+      clamp(1.35rem, calc((var(--app-height) - 21.7rem) / 10), 2.6rem)
     );
   }
 
