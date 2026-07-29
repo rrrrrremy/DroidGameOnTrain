@@ -47,13 +47,24 @@ export const getActiveRuns = (shape = 'droid') => {
  * don't block play.
  */
 export const validateWord = async (word) => {
+  // The free dictionary API can stall for tens of seconds; cap the wait so
+  // a submission can never hang on it.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`,
+      { signal: controller.signal }
     );
-    return res.ok;
+    // Only a 404 is the API's word that the word doesn't exist. Rate limits
+    // and server errors say nothing about the word, so fail open on them,
+    // the same as the network-error path below.
+    if (res.status === 404) return false;
+    return true;
   } catch {
     return true;
+  } finally {
+    clearTimeout(timer);
   }
 };
 

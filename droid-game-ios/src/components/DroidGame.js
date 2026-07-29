@@ -698,6 +698,18 @@ const DroidGame = () => {
     const activeRuns = getActiveRuns(boardShape);
     const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
     if (!allFilled) return { allFilled: false, isFullValid: false };
+
+    // A board identical to the original needs no dictionary lookups — its
+    // words are valid by construction. This is the common case on submit,
+    // and the dictionary API is slow enough (sometimes tens of seconds)
+    // that skipping it is the difference between instant and "stuck".
+    const matchesOriginal =
+      player1Board &&
+      activeRuns.every((run) =>
+        run.every(({ x, y }) => board[y][x] === player1Board[y][x])
+      );
+    if (matchesOriginal) return { allFilled: true, isFullValid: true };
+
     setIsValidating(true);
     try {
       const uniqueWords = [
