@@ -1086,6 +1086,43 @@ body {
   color: #86efac;
 }
 
+/* Timed-round outcome: says plainly whether the board was solved, and why
+   the score is 0 when the clock rather than the answer caused it. */
+.answer-outcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(10,12,12,0.36);
+  text-align: center;
+}
+
+.answer-outcome.is-solved {
+  border-color: rgba(134,239,172,0.5);
+  background: rgba(34,197,94,0.1);
+}
+
+.answer-outcome strong {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.answer-outcome.is-solved strong {
+  color: #86efac;
+}
+
+.answer-outcome small {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
 /* ===== BACK TO MENU =====
    One consistent escape hatch, used on every screen that is not the menu
    itself: shape selection, the share/turn-complete screen, the answer
@@ -3053,18 +3090,29 @@ body {
     overflow: hidden;
   }
 
+  /* Flex rather than an index-based grid template: the panel's children vary
+     (summary, timed outcome, back button all come and go), and a
+     grid-template-rows list has to be kept in sync with them by hand. Getting
+     that wrong silently drops content into the wrong row and clips a board.
+     Here every child sizes to its content and only the two board panels share
+     what is left, however many siblings they have. */
   .answer-panel {
     height: 100%;
     max-height: 100%;
-    display: grid;
-    grid-template-rows: auto auto minmax(0, 1fr) minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     gap: clamp(0.24rem, calc(var(--app-height) / 250), 0.44rem);
     padding: 0.42rem;
     overflow: hidden;
   }
 
-  .answer-panel:has(.answer-summary) {
-    grid-template-rows: auto auto auto minmax(0, 1fr) minmax(0, 1fr);
+  .answer-panel > * {
+    flex: 0 0 auto;
+  }
+
+  .answer-panel > .answer-board-panel {
+    flex: 1 1 0;
+    min-height: 0;
   }
 
   .answer-leaderboard-button span {
@@ -3109,7 +3157,16 @@ body {
        subtracted here silently clips the bottom row of tiles. */
     --tile-size: min(
       clamp(1.65rem, calc((100vw - 46px) / 5), 2.6rem),
-      clamp(1.35rem, calc((var(--app-height) - 21.7rem) / 10), 2.6rem)
+      clamp(1.35rem, calc((var(--app-height) - 23rem) / 10), 2.6rem)
+    );
+  }
+
+  /* The timed outcome line adds another fixed row, so the boards get that
+     much less height to work with. */
+  .answer-panel.has-outcome .answer-board-panel .board {
+    --tile-size: min(
+      clamp(1.5rem, calc((100vw - 46px) / 5), 2.6rem),
+      clamp(1.2rem, calc((var(--app-height) - 26.6rem) / 10), 2.6rem)
     );
   }
 

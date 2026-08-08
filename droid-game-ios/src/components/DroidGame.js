@@ -1638,7 +1638,7 @@ const DroidGame = () => {
 
         return (
           <div className="end-screen answer-screen">
-            <div className="answer-panel">
+            <div className={`answer-panel${isTimedComputerScoring ? ' has-outcome' : ''}`}>
               <div className="dvh-topbar answer-topbar">
                 <button className="dvh-home-button" onClick={resetGame} aria-label="Back to home screen">
                   D
@@ -1656,6 +1656,28 @@ const DroidGame = () => {
                 <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
                 <span>{todayString()}</span>
               </div>
+
+              {/* A timed round is scored on the clock alone, so a perfectly
+                  solved board still shows 0.0 once the timer has run it down,
+                  and the penalty summary below stays hidden because the time
+                  is baked into the base score rather than counted as a
+                  penalty. Without this line that reads as the game calling a
+                  correct board wrong. */}
+              {isTimedComputerScoring && (
+                <div className={`answer-outcome${player2FullValid ? ' is-solved' : ' is-unsolved'}`}>
+                  <strong>
+                    {player2FullValid ? '✓ Board solved' : 'Board not solved'}
+                    {' · '}
+                    {formatElapsedTime(timerSeconds)}
+                  </strong>
+                  {player2FullValid && score === 0 && (
+                    <small>
+                      Your board is correct — the clock ran the score down to 0
+                      before you finished.
+                    </small>
+                  )}
+                </div>
+              )}
 
               {(hasPenalties || challengeResult || (!dailyMode && gamesPlayed > 1)) && (
                 <div className="answer-summary">
