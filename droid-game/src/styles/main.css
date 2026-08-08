@@ -1086,6 +1086,13 @@ body {
   color: #86efac;
 }
 
+/* Elapsed clock in the play screen's meta strip. Tabular figures so the
+   digits do not jitter as the seconds tick over. */
+.dvh-elapsed {
+  font-variant-numeric: tabular-nums;
+  color: #86efac;
+}
+
 /* Timed-round outcome: says plainly whether the board was solved, and why
    the score is 0 when the clock rather than the answer caused it. */
 .answer-outcome {

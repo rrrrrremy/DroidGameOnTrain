@@ -205,6 +205,7 @@ const DroidGame = () => {
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timedAutoReveals, setTimedAutoReveals] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
+  const [appHidden, setAppHidden] = useState(false);
   const [readingSecondsLeft, setReadingSecondsLeft] = useState(0);
   const [timerEnabled, setTimerEnabled] = useState(
     () => localStorage.getItem(TIMER_STORAGE_KEY) !== 'false'
@@ -412,14 +413,26 @@ const DroidGame = () => {
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Timer: runs during player2 and ghost phases
+  // The round is scored on elapsed time, so the clock must not keep running
+  // while the app is off screen - backgrounded, or the phone locked. Without
+  // this a player returns to a round that quietly aged, and a board they
+  // solve in four minutes can score as though it took six.
+  useEffect(() => {
+    const onVisibility = () => setAppHidden(document.hidden);
+    onVisibility();
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, []);
+
   useEffect(() => {
     if (!timerEnabled) return;
     if (gameState !== 'player2' && gameState !== 'ghost') return;
     if (isReadingTime) return;
     if (isPaused) return;
+    if (appHidden) return;
     const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [gameState, isPaused, timerEnabled, isReadingTime]);
+  }, [gameState, isPaused, timerEnabled, isReadingTime, appHidden]);
 
   useEffect(() => {
     if (!isReadingTime || isPaused) return;
@@ -1327,6 +1340,11 @@ const DroidGame = () => {
               <div className="dvh-meta-strip">
                 <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
                 <span>{todayString()}</span>
+                {/* A timed round is scored on the clock alone, so hiding the
+                    clock leaves the player no way to see the score falling. */}
+                {timerEnabled && (
+                  <span className="dvh-elapsed">{formatElapsedTime(timerSeconds)}</span>
+                )}
               </div>
 
               {challenge && (
