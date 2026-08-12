@@ -277,6 +277,21 @@ def main():
         count=2,
     )
 
+    # App Store 3.1.1: a digital sats-for-games unlock must go through IAP.
+    # Rather than build that, the native build hides the entry point
+    # entirely. isNative() is already imported for the share-link handling
+    # above, so this needs no new import.
+    s = patch(
+        s, 'hide Lightning purchase on iOS',
+        "          onShowHowToPlay={() => setShowHowToPlay(true)}\n"
+        "          dailyPlayed={dailyPlayed}\n"
+        "        />",
+        "          onShowHowToPlay={() => setShowHowToPlay(true)}\n"
+        "          dailyPlayed={dailyPlayed}\n"
+        "          hideLightning={isNative()}\n"
+        "        />",
+    )
+
     if failures:
         print('Sync failed - the web app has moved under these patches:\n')
         for f in failures:
@@ -287,7 +302,7 @@ def main():
 
     open(path, 'w').write(s)
     print('Synced src/ and public/ from ../droid-game and re-applied '
-          '9 iOS adaptations.')
+          '10 iOS adaptations.')
 
     changed = sync_dependencies()
     if changed:

@@ -1274,6 +1274,7 @@ const DroidGame = () => {
           onShowLeaderboard={() => setShowLeaderboard(true)}
           onShowHowToPlay={() => setShowHowToPlay(true)}
           dailyPlayed={dailyPlayed}
+          hideLightning={isNative()}
         />
       )}
 
