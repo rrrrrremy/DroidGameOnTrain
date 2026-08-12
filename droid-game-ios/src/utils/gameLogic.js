@@ -1,4 +1,4 @@
-import { BOARD_SHAPES } from './computerPlayer';
+import { BOARD_SHAPES, isKnownWord } from './computerPlayer';
 
 /**
  * Return every contiguous run of 2+ active squares on the board
@@ -41,28 +41,33 @@ export const getActiveRuns = (shape = 'droid') => {
 };
 
 /**
- * Check a single word against the Free Dictionary API.
- * Returns true if valid, false if not found.
- * Fails open (returns true) on network errors so connectivity issues
- * don't block play.
+ * Is this a word? Returns true, false, or null when it genuinely cannot be
+ * determined — the caller decides what an unverifiable answer should mean,
+ * because the safe default differs by context.
+ *
+ * The game's own list is consulted first and settles almost every case
+ * without a network call. Only words a player invented reach the dictionary
+ * API, which is free, rate-limited and prone to stalling.
  */
 export const validateWord = async (word) => {
-  // The free dictionary API can stall for tens of seconds; cap the wait so
-  // a submission can never hang on it.
+  if (isKnownWord(word)) return true;
+
+  // Cap the wait so a submission can never hang on a stalled request.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`,
+      `https://api.dictionaryapi.dev/api/v2/entries/en/${String(word).toLowerCase()}`,
       { signal: controller.signal }
     );
-    // Only a 404 is the API's word that the word doesn't exist. Rate limits
-    // and server errors say nothing about the word, so fail open on them,
-    // the same as the network-error path below.
+    // A 404 is the API stating the word does not exist. Anything else - a
+    // rate limit, a server error - says nothing about the word either way,
+    // and must not be read as a verdict in either direction.
     if (res.status === 404) return false;
+    if (!res.ok) return null;
     return true;
   } catch {
-    return true;
+    return null;
   } finally {
     clearTimeout(timer);
   }

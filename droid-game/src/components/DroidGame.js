@@ -719,7 +719,10 @@ const DroidGame = () => {
         ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
       ];
       const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
-      return { allFilled: true, isFullValid: results.every(Boolean) };
+      // Only a definite yes counts. A null means the dictionary could not be
+      // reached, and awarding a solve on that basis marks made-up words
+      // correct; falling back to exact-match scoring is the honest answer.
+      return { allFilled: true, isFullValid: results.every((r) => r === true) };
     } finally {
       setIsValidating(false);
     }
@@ -808,7 +811,10 @@ const DroidGame = () => {
           }))
         );
 
-        const badWords = new Set(results.filter((r) => !r.valid).map((r) => r.word));
+        // Only a definite no blocks the turn: if the dictionary cannot be
+        // reached the word is left alone rather than rejected, so a flaky
+        // API never traps a player who has built a perfectly good board.
+        const badWords = new Set(results.filter((r) => r.valid === false).map((r) => r.word));
 
         if (badWords.size > 0) {
           const badTiles = [];
@@ -1050,8 +1056,8 @@ const DroidGame = () => {
           ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
         ];
         const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
-        isFullValid = results.every(Boolean);
-        if (!isFullValid) validWordSet = new Set(uniqueWords.filter((_, i) => results[i]));
+        isFullValid = results.every((r) => r === true);
+        if (!isFullValid) validWordSet = new Set(uniqueWords.filter((_, i) => results[i] === true));
       } finally {
         setIsValidating(false);
       }
