@@ -211,6 +211,9 @@ const DroidGame = () => {
     () => localStorage.getItem(TIMER_STORAGE_KEY) !== 'false'
   );
   const [boardShape, setBoardShape] = useState('droid');
+  // Who authored the board Player 2 is solving. The turn plays identically
+  // either way; this only decides what the answer screen calls the grid.
+  const [boardAuthor, setBoardAuthor] = useState('droid'); // 'droid' | 'human'
   const [player2FullValid, setPlayer2FullValid] = useState(false);
   const [pendingMode, setPendingMode] = useState(null); // 'player1' | 'computer' | 'daily' | 'ghost'
   const [isPaused, setIsPaused] = useState(false);
@@ -376,6 +379,37 @@ const DroidGame = () => {
     setInvalidWordTiles([]);
   }, [board]);
 
+  /** Start Player 2's turn on a board somebody else authored.
+   *
+   * Solving a board is one turn with one set of rules - the same layout, the
+   * same reading time, the same clock, the same scoring - whether the Droid
+   * built the grid or another person did. The two entry points (opening a
+   * shared link, and handing the phone over after building a board) used to
+   * set the turn up separately, which is how one of them ended up with a
+   * different screen and no timer. Both go through here now.
+   *
+   * vsComputer is what the rest of the component keys the solving turn off;
+   * it means "Player 2 is solving someone else's board", not "the Droid made
+   * it". boardAuthor carries the provenance.
+   */
+  const beginSolvingTurn = ({ author, timed }) => {
+    setBoardAuthor(author);
+    setVsComputer(true);
+    setDailyMode(false);
+    setCurrentPlayer(2);
+    setSelectedLetter(null);
+    setSelectedPoolIndex(null);
+    setLetterHintsUsed(0);
+    setWordHintUsed(false);
+    setTimedAutoReveals(0);
+    setTimerSeconds(0);
+    setIsPaused(false);
+    finalizingRef.current = false;
+    setTimerEnabled(timed);
+    setReadingSecondsLeft(timed ? READING_TIME_SECONDS : 0);
+    setGameState('player2');
+  };
+
   // On mount: detect ?g= share URL and load Player 2 state directly
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -404,11 +438,10 @@ const DroidGame = () => {
     setCombinationCount(combCount);
     setHintWord(makeWordHint(fiveLetterWord));
     setChallenge(incomingChallenge);
-    setVsComputer(true);
-    setDailyMode(false);
-    setTimerEnabled(incomingChallenge?.scoring === 'timed' ? true : timerEnabled);
-    setReadingSecondsLeft(incomingChallenge?.scoring === 'timed' ? READING_TIME_SECONDS : 0);
-    setGameState('player2');
+    beginSolvingTurn({
+      author: 'human',
+      timed: incomingChallenge?.scoring === 'timed' ? true : timerEnabled,
+    });
     window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -585,9 +618,12 @@ const DroidGame = () => {
     if (mode === 'player1') {
       setCombinationCount(null);
       setHintWord(null);
+      setBoardAuthor('human');
       setGameState('player1');
       return;
     }
+
+    setBoardAuthor('droid');
 
     // Computer, daily, or ghost mode — generate the board
     const result = preparedResult || (mode === 'daily'
@@ -898,6 +934,7 @@ const DroidGame = () => {
     setReadingSecondsLeft(0);
     finalizingRef.current = false;
     setBoardShape('droid');
+    setBoardAuthor('droid');
     setPendingMode(null);
     setPlayer2FullValid(false);
     setCombinationCount(null);
@@ -1214,7 +1251,8 @@ const DroidGame = () => {
     ? Math.round(sessionScoreValues.reduce((a, b) => a + b, 0) / sessionScoreValues.length)
     : 0;
   const sessionCount = sessionPlayedShapes.length;
-  const isDroidHumanScreen = gameState === 'player2' && currentPlayer === 2 && vsComputer && !ghostMode;
+  // Player 2 solving a board someone else authored - Droid or human alike.
+  const isSolvingScreen = gameState === 'player2' && currentPlayer === 2 && vsComputer && !ghostMode;
   const isGhostDroidScreen = gameState === 'ghost';
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -1243,7 +1281,7 @@ const DroidGame = () => {
         />
       )}
 
-      {gameState !== 'start' && gameState !== 'preparingDaily' && gameState !== 'selectShape' && !isDroidHumanScreen && !isGhostDroidScreen && (
+      {gameState !== 'start' && gameState !== 'preparingDaily' && gameState !== 'selectShape' && !isSolvingScreen && !isGhostDroidScreen && (
         <header className="site-header">
           <button className="site-header-title" onClick={resetGame}>Droid</button>
         </header>
@@ -1293,8 +1331,8 @@ const DroidGame = () => {
       )}
 
       {(gameState === 'player1' || gameState === 'player2') && (
-        <div className={`game-play${isDroidHumanScreen ? ' droid-human-play' : ''}`}>
-          {isPaused && !isDroidHumanScreen && (
+        <div className={`game-play${isSolvingScreen ? ' droid-human-play' : ''}`}>
+          {isPaused && !isSolvingScreen && (
             <div className="pause-overlay">
               <div className="pause-bg">
                 {[0, 1, 2, 3].map((i) => (
@@ -1322,7 +1360,7 @@ const DroidGame = () => {
             <div className="validation-error">{validationError}</div>
           )}
 
-          {isDroidHumanScreen ? (
+          {isSolvingScreen ? (
             <div className={`dvh-panel${isPaused ? ' is-paused' : ''}`}>
               <div className="dvh-topbar">
                 <button className="dvh-home-button" onClick={resetGame} aria-label="Back to home screen">
@@ -1644,7 +1682,10 @@ const DroidGame = () => {
             <CopyButton url={shareLink} />
           </div>
           <div className="share-actions">
-            <Button primary onClick={() => { setCurrentPlayer(2); setGameState('player2'); }}>
+            <Button
+              primary
+              onClick={() => beginSolvingTurn({ author: 'human', timed: timerEnabled })}
+            >
               Play on this device instead
             </Button>
           </div>
@@ -1743,7 +1784,12 @@ const DroidGame = () => {
               )}
 
               <div className="answer-board-panel">
-                <div className="answer-board-heading">Droid&apos;s Answer</div>
+                {/* Same straight apostrophe the Droid heading has always
+                    used - this line must render byte-identically for a
+                    Droid board. */}
+                <div className="answer-board-heading">
+                  {boardAuthor === 'human' ? "Player 1's Answer" : "Droid's Answer"}
+                </div>
                 <GameBoard
                   board={player1Board}
                   onTileClick={() => {}}
