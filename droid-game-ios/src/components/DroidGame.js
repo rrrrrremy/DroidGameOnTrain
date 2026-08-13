@@ -21,6 +21,7 @@ import {
   BOARD_SHAPES,
   extractFiveLetterWord,
   countBoardCombinations,
+  isKnownWord,
 } from '../utils/computerPlayer';
 import Leaderboard from './Leaderboard';
 import { SHARE_BASE_URL } from '../config';
@@ -758,11 +759,27 @@ const DroidGame = () => {
       );
     if (matchesOriginal) return { allFilled: true, isFullValid: true };
 
+    const uniqueWords = [
+      ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
+    ];
+
+    // A Droid board is judged against the game's own word list and nothing
+    // else. The generator only ships a board when countBoardSolutions finds
+    // exactly one answer - but that search runs over these ~2,600 words, so
+    // asking a full English dictionary whether a submission is valid asks a
+    // different question than the one uniqueness was proved for. That gap is
+    // how a board with "one combination" accepted a second, completely
+    // different solution built from words the generator had never heard of.
+    // Same vocabulary for both halves, and the guarantee holds again - with
+    // the side benefit that judging a Droid board needs no network at all.
+    if (boardAuthor === 'droid') {
+      return { allFilled: true, isFullValid: uniqueWords.every(isKnownWord) };
+    }
+
+    // A human author is not restricted to that list, so their board has to
+    // be judged against the real dictionary.
     setIsValidating(true);
     try {
-      const uniqueWords = [
-        ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
-      ];
       const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
       // Only a definite yes counts. A null means the dictionary could not be
       // reached, and awarding a solve on that basis marks made-up words
@@ -780,8 +797,16 @@ const DroidGame = () => {
     resultFeedback(isFullValid);
 
     let correct;
-    if (isFullValid) {
-      // Award all active tiles as correct
+    if (isFullValid && isTimedComputerGame) {
+      // A timed round charges 0.3 per tile that differs from the author's
+      // grid, so painting every tile green on a valid-but-different board
+      // put the colours and the score in flat contradiction: all correct,
+      // yet "- 3.3 wrong place". Green means "same as the author's tile"
+      // here, which is exactly what the penalty counts.
+      correct = checkCorrectTiles(board, player1Board);
+    } else if (isFullValid) {
+      // Untimed scoring awards the whole board for any valid solution, so
+      // every active tile really is correct.
       const seen = new Set();
       correct = [];
       getActiveRuns(boardShape).flat().forEach(({ x, y }) => {
