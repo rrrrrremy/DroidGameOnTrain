@@ -49,15 +49,19 @@
 		<string>armv7</string>
 	</array>
 	<!-- The 5x5 board is sized off viewport width, so portrait-only keeps the
-	     tiles legible and matches how the game is actually played. -->
+	     tiles legible and matches how the game is actually played.
+
+	     There is deliberately no UISupportedInterfaceOrientations~ipad key:
+	     TARGETED_DEVICE_FAMILY is 1 (iPhone only), and an iPad orientation
+	     list on an iPhone-only app is what triggers App Store Connect error
+	     90474 - it demands all four orientations for iPad multitasking, which
+	     a portrait word grid cannot honour without a real landscape layout.
+	     iPad users can still install and play in iPhone compatibility mode.
+	     If iPad ever becomes a target, the landscape layout has to come
+	     first, then all four orientations go here. -->
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-	</array>
-	<key>UISupportedInterfaceOrientations~ipad</key>
-	<array>
-		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
