@@ -1426,6 +1426,29 @@ const DroidGame = () => {
             </div>
           ) : (
             <>
+              {/* The Droid screen has its own topbar (and its own way home);
+                  this branch - Play Human, both turns - had neither, so the
+                  only way back to the menu was finishing or reloading. */}
+              <div className="play-topbar">
+                <button
+                  className="play-home-button"
+                  onClick={resetGame}
+                  aria-label="Back to home screen"
+                >
+                  D
+                </button>
+                <div className="play-topbar-copy">
+                  <span className="play-topbar-title">
+                    {currentPlayer === 1 ? 'Build the Grid' : 'Solve the Grid'}
+                  </span>
+                  <span className="play-topbar-sub">
+                    {BOARD_SHAPES[boardShape]?.name || 'Droid'}
+                    {' · '}
+                    {currentPlayer === 1 ? 'Player 1' : 'Player 2'}
+                  </span>
+                </div>
+              </div>
+
               {currentPlayer === 2 && (
                 <>
                   <div className="live-hud">
