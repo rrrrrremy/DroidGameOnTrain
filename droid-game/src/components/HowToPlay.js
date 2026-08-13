@@ -27,22 +27,33 @@ const grid = (rows, typeFor) =>
     })
   );
 
-// A real word square — every row AND column spells the same set of words:
-// HEART / EMBER / ABUSE / RESIN / TREND. This is the goal board.
+// A real word square — every row AND column spells a word:
+// HEART / EMBER / ABUSE / RESIN / TREND. This is the answer, which the
+// player never sees until the round is over.
 const WORDS = ['HEART', 'EMBER', 'ABUSE', 'RESIN', 'TREND'];
 
 const GOAL = grid(WORDS, () => 'filled');
 
-// What the solver starts with: a couple of gold hint tiles, rest empty
+// What you actually start with: two locked letters, everything else empty.
 const START = grid(
-  ['H    ', '     ', '  U  ', '     ', '    D'],
+  ['H    ', '     ', '  U  ', '     ', '     '],
   (x, y, ch) => (ch !== ' ' ? 'hint' : 'empty')
+);
+
+// Mid-solve: a few letters placed from the pool, the rest still to go.
+const WORKING = grid(
+  ['HEART', '     ', '  U  ', '     ', '     '],
+  (x, y, ch) => {
+    if (ch === ' ') return 'empty';
+    if ((x === 0 && y === 0) || (x === 2 && y === 2)) return 'hint';
+    return 'filled';
+  }
 );
 
 // After submitting: greens for correct, one grey wrong
 const SOLVED = grid(WORDS, (x, y) => (x === 4 && y === 3 ? 'wrong' : 'correct'));
 
-const HowToPlay = ({ onClose }) => (
+const HowToPlay = ({ onClose, hideLightning = false }) => (
   <div className="htp-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
     <div className="htp-modal" role="dialog" aria-label="How to play Droid">
       <div className="htp-topbar">
@@ -57,7 +68,7 @@ const HowToPlay = ({ onClose }) => (
           <div className="htp-hero-copy">
             <span className="htp-kicker">The Goal</span>
             <p>
-              Rebuild the hidden word grid. Every <strong>row</strong> and every{' '}
+              Work out the hidden word grid. Every <strong>row</strong> and every{' '}
               <strong>column</strong> must spell a real word.
             </p>
           </div>
@@ -67,19 +78,27 @@ const HowToPlay = ({ onClose }) => (
         <div className="htp-steps">
           <div className="htp-step">
             <div className="htp-step-num">1</div>
-            <MiniBoard cells={GOAL} />
+            <MiniBoard cells={START} />
             <div className="htp-step-text">
-              <strong>Take a look</strong>
-              <span>During Reading Time the full board is shown. Memorise the words.</span>
+              <strong>Two letters, and a pool</strong>
+              <span>
+                The Droid builds a grid, then takes it away — leaving just two
+                gold letters locked in place. Every other letter it used is
+                waiting in the pool below the board.
+              </span>
             </div>
           </div>
 
           <div className="htp-step">
             <div className="htp-step-num">2</div>
-            <MiniBoard cells={START} />
+            <MiniBoard cells={WORKING} />
             <div className="htp-step-text">
-              <strong>The board clears</strong>
-              <span>A few gold hint tiles stay locked in place. You also get the pool of letters that were used.</span>
+              <strong>Work out where they go</strong>
+              <span>
+                Tap a letter, then tap a tile to place it. Nothing is hidden
+                from you — it's a puzzle, not a memory test. Use the two locked
+                letters and the crossings between words to reason out the rest.
+              </span>
             </div>
           </div>
 
@@ -87,8 +106,12 @@ const HowToPlay = ({ onClose }) => (
             <div className="htp-step-num">3</div>
             <MiniBoard cells={SOLVED} />
             <div className="htp-step-text">
-              <strong>Put it back together</strong>
-              <span>Drag or tap letters into the grid, then Submit. Correct tiles turn green.</span>
+              <strong>Submit your grid</strong>
+              <span>
+                Fill every tile, then Submit. Tiles matching the Droid's grid
+                turn green. You don't have to match it exactly — any grid where
+                every word is real counts as solved.
+              </span>
             </div>
           </div>
         </div>
@@ -97,10 +120,10 @@ const HowToPlay = ({ onClose }) => (
         <section className="htp-section">
           <h3 className="htp-h3">Tile Colours</h3>
           <div className="htp-key">
-            <div className="htp-key-item"><span className="htp-swatch htp-cell-hint">A</span> Hint — free &amp; locked</div>
+            <div className="htp-key-item"><span className="htp-swatch htp-cell-hint">A</span> Locked — free, can't be moved</div>
             <div className="htp-key-item"><span className="htp-swatch htp-cell-filled">B</span> Letter you placed</div>
-            <div className="htp-key-item"><span className="htp-swatch htp-cell-correct">C</span> Correct</div>
-            <div className="htp-key-item"><span className="htp-swatch htp-cell-wrong">D</span> Wrong</div>
+            <div className="htp-key-item"><span className="htp-swatch htp-cell-correct">C</span> Matches the Droid</div>
+            <div className="htp-key-item"><span className="htp-swatch htp-cell-wrong">D</span> Different from the Droid</div>
           </div>
         </section>
 
@@ -109,9 +132,20 @@ const HowToPlay = ({ onClose }) => (
           <h3 className="htp-h3">Rules</h3>
           <ul className="htp-rules">
             <li>Words must fill the <strong>entire</strong> row or column — no partial words.</li>
-            <li>You can only use letters from the pool shown.</li>
-            <li>Stuck? Reveal-a-letter hints help, but each one costs you points.</li>
-            <li>Finish faster and use fewer hints for a higher score.</li>
+            <li>You can only use the letters in the pool — no more, no fewer.</li>
+            <li>Tap a placed letter to lift it back off the board and try it elsewhere.</li>
+            <li>The two gold letters are locked and can't be moved.</li>
+          </ul>
+        </section>
+
+        {/* Scoring */}
+        <section className="htp-section">
+          <h3 className="htp-h3">Scoring</h3>
+          <ul className="htp-rules">
+            <li>Against the Droid you start on <strong>6 points</strong> and the clock eats into it — solve it quickly to keep them.</li>
+            <li>Before the clock starts you get a few seconds to read the board and the clue.</li>
+            <li>Reveal a letter, or unlock a clue about the long word, for a points penalty.</li>
+            <li>Tiles that don't match the Droid's own grid cost a little, even when your words are valid.</li>
           </ul>
         </section>
 
@@ -120,12 +154,12 @@ const HowToPlay = ({ onClose }) => (
           <h3 className="htp-h3">Game Modes</h3>
           <div className="htp-modes">
             <div className="htp-mode">
-              <strong>Droid v Human</strong>
-              <span>The daily challenge against the AI. Compete on the leaderboard.</span>
+              <strong>Play Droid</strong>
+              <span>The daily puzzle, scored against the clock. Post your score to the leaderboard.</span>
             </div>
             <div className="htp-mode">
-              <strong>Human v Human</strong>
-              <span>One friend builds a board, the other rebuilds it.</span>
+              <strong>Play Human</strong>
+              <span>Build a grid yourself, then hand it over — your friend gets two letters and your pool.</span>
             </div>
             {/* Ghost Droid temporarily disabled — hidden from players.
             <div className="htp-mode">
@@ -133,10 +167,15 @@ const HowToPlay = ({ onClose }) => (
               <span>Letters appear one at a time — place each as it arrives.</span>
             </div>
             */}
-            <div className="htp-mode htp-mode-lightning">
-              <strong>⚡ Play Any Shape</strong>
-              <span>Pay 100 sats to play any shape against the Droid.</span>
-            </div>
+            {/* Hidden on iOS alongside the button itself: describing a
+                purchase the native build does not offer is an App Store
+                problem in its own right. */}
+            {!hideLightning && (
+              <div className="htp-mode htp-mode-lightning">
+                <strong>⚡ Play More Today</strong>
+                <span>Pay 100 sats to play another Droid on any shape.</span>
+              </div>
+            )}
           </div>
         </section>
       </div>

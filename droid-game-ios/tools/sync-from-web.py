@@ -292,6 +292,20 @@ def main():
         "        />",
     )
 
+    # How to Play lists the modes, so it has to hide the same entry - a rules
+    # screen describing a purchase the native build does not offer is an App
+    # Store problem in its own right.
+    s = patch(
+        s, 'hide Lightning from How to Play on iOS',
+        "{showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}",
+        "{showHowToPlay && (\n"
+        "        <HowToPlay\n"
+        "          onClose={() => setShowHowToPlay(false)}\n"
+        "          hideLightning={isNative()}\n"
+        "        />\n"
+        "      )}",
+    )
+
     if failures:
         print('Sync failed - the web app has moved under these patches:\n')
         for f in failures:
@@ -302,7 +316,7 @@ def main():
 
     open(path, 'w').write(s)
     print('Synced src/ and public/ from ../droid-game and re-applied '
-          '10 iOS adaptations.')
+          '11 iOS adaptations.')
 
     changed = sync_dependencies()
     if changed:

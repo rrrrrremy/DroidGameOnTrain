@@ -1278,7 +1278,12 @@ const DroidGame = () => {
         />
       )}
 
-      {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
+      {showHowToPlay && (
+        <HowToPlay
+          onClose={() => setShowHowToPlay(false)}
+          hideLightning={isNative()}
+        />
+      )}
 
       {gameState === 'preparingDaily' && (
         <div className="start-screen preparing-droid-screen">
