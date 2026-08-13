@@ -38,6 +38,10 @@ IOS_ONLY = {
 WEB_ONLY = {
     'public/_redirects',
     'public/robots.txt',
+    # The App Store listing links to the hosted copy; shipping a second,
+    # bundled copy would only create a version of the policy that can go
+    # stale without anyone noticing.
+    'public/privacy.html',
 }
 
 failures = []
