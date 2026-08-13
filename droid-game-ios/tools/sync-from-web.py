@@ -207,14 +207,14 @@ def main():
     const result = decodeShareParam(token);""",
     )
 
+    # beginSolvingTurn already clears the selected letter and sets the game
+    # state, so the tail only has to hand the history rewrite over to the
+    # mount effect - a droid:// link has no query string to clean up.
     s = patch(
         s, 'deep link: loader tail',
-        """    setGameState('player2');
-    window.history.replaceState(null, '', window.location.pathname);
+        """    window.history.replaceState(null, '', window.location.pathname);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps""",
-        """    setSelectedLetter(null);
-    setGameState('player2');
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+        """  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // On mount: detect a ?g= share URL and load Player 2 state directly.
   useEffect(() => {
