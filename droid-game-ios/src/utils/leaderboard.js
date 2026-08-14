@@ -49,10 +49,32 @@ export const markLeaderboardScoreSubmitted = (date) => {
   localStorage.setItem(submittedKey(date), 'true');
 };
 
+/** Two uppercase letters, the arcade high-score convention.
+ *
+ * A free-text name field is user-generated content, and App Store guideline
+ * 1.2 then requires filtering, reporting and blocking. Two letters is a
+ * 676-option pick list wearing a text field's clothing - there is close to
+ * nothing objectionable you can spell in it - so the obligation does not
+ * arise. Three letters would be a different matter; plenty of slurs are
+ * exactly three long.
+ */
+export const initialsFrom = (value) =>
+  String(value || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
+
+// "Close to nothing" is not nothing. These carry extremist meaning and cost
+// nothing to refuse.
+const BLOCKED_INITIALS = new Set(['SS', 'HH', 'WP', 'KK', 'NS', 'AH', 'CP']);
+
+export const isAllowedInitials = (value) => {
+  const initials = initialsFrom(value);
+  return initials.length === 2 && !BLOCKED_INITIALS.has(initials);
+};
+
 /** Submit a score to the daily leaderboard. */
 export const submitScore = async ({ name, score, maxScore, date, shape }) => {
+  if (!isAllowedInitials(name)) throw new Error('Initials must be two letters.');
   await addDoc(collection(db, COLLECTION), {
-    name: name.trim().slice(0, 20),
+    name: initialsFrom(name),
     score,
     maxScore,
     percent: maxScore > 0 ? Math.round((score / maxScore) * 100) : 0,
