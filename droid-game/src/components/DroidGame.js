@@ -758,15 +758,20 @@ const DroidGame = () => {
     // answer, using a word the generator has never heard of, costs a lookup.
     setIsValidating(true);
     try {
-      const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
+      const results = await Promise.all(
+        uniqueWords.map(async (word) => ({ word, verdict: await validateWord(word) }))
+      );
       // Three outcomes per word, not two. false is a definite "not a word";
-      // null means the dictionary could not be reached, which is not the same
-      // claim and must not be reported as one.
-      const unreachable = results.some((r) => r === null);
+      // null means the dictionary did not answer, which is a different claim.
+      // Both can occur on one board - type two made-up words and the second
+      // request may be rate-limited while the first returns a clean 404 - so
+      // the caller is given the definite answers and the doubt separately,
+      // rather than one flag that cannot express the difference.
       return {
         allFilled: true,
-        isFullValid: results.every((r) => r === true),
-        unreachable,
+        isFullValid: results.every((r) => r.verdict === true),
+        badWords: results.filter((r) => r.verdict === false).map((r) => r.word),
+        unanswered: results.filter((r) => r.verdict === null).map((r) => r.word),
       };
     } finally {
       setIsValidating(false);
@@ -872,7 +877,9 @@ const DroidGame = () => {
           });
           setInvalidWordTiles(badTiles);
           setValidationError(
-            `Not a valid English word${badWords.size > 1 ? 's' : ''}: ${[...badWords].join(', ')}`
+            badWords.size > 1
+              ? `Not valid English words: ${[...badWords].join(', ')}`
+              : `Not a valid English word: ${[...badWords][0]}`
           );
           return;
         }
@@ -896,21 +903,27 @@ const DroidGame = () => {
       setGameState('share');
       setSelectedLetter(null);
     } else {
-      const { allFilled, isFullValid, unreachable } = await validateSolverBoard();
+      const { allFilled, isFullValid, badWords = [], unanswered = [] } =
+        await validateSolverBoard();
 
       // In timed Droid v Human, a wrong submission doesn't end the game —
       // the player is told it's incorrect and play resumes until they solve
       // it or the score reaches 0.
       if (isTimedComputerActive && !isFullValid) {
+        // A word the dictionary definitely rejected outranks one it failed to
+        // answer for. Both happen together whenever a board carries more than
+        // one made-up word: the first gets a clean 404 and a later one is rate
+        // limited. Leading with the connection made the game blame the network
+        // for the player's own invented word, and named neither.
         setValidationError(
           !allFilled
             ? 'Fill every tile with valid words before submitting.'
-            : unreachable
-              // Telling someone their word is wrong when the truth is that
-              // the dictionary did not answer is how a correct board gets
-              // called incorrect. Name the real problem.
-              ? "Couldn't reach the dictionary to check a word — check your connection and try again."
-              : "Not quite — one or more words aren't valid. Keep trying!"
+            : badWords.length > 0
+              ? badWords.length > 1
+                ? `Not valid English words: ${badWords.join(', ')}`
+                : `Not a valid English word: ${badWords[0]}`
+              : `Couldn't check ${unanswered.length > 1 ? 'some words' : `"${unanswered[0]}"`} `
+                + 'against the dictionary just now — try submitting again.'
         );
         return;
       }
