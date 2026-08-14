@@ -108,9 +108,10 @@ const HowToPlay = ({ onClose, hideLightning = false }) => (
             <div className="htp-step-text">
               <strong>Submit your grid</strong>
               <span>
-                Fill every tile, then Submit. Tiles matching the Droid's grid
-                turn green. You don't have to match it exactly — any grid where
-                every word is real counts as solved.
+                Fill every tile, then Submit. If a word isn't real the grid
+                comes back so you can keep working — nothing is lost but time.
+                You don't have to match the Droid exactly: any grid where every
+                word is real counts as solved, and scores the same.
               </span>
             </div>
           </div>
@@ -145,7 +146,7 @@ const HowToPlay = ({ onClose, hideLightning = false }) => (
             <li>Against the Droid you start on <strong>6 points</strong> and the clock eats into it — solve it quickly to keep them.</li>
             <li>Before the clock starts you get a few seconds to read the board and the clue.</li>
             <li>Reveal a letter, or unlock a clue about the long word, for a points penalty.</li>
-            <li>Tiles that don't match the Droid's own grid cost a little, even when your words are valid.</li>
+            <li>You don't have to match the Droid exactly. Any grid where every word is real scores in full — the clock is the only thing taking points off.</li>
           </ul>
         </section>
 
