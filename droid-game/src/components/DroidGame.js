@@ -21,7 +21,6 @@ import {
   BOARD_SHAPES,
   extractFiveLetterWord,
   countBoardCombinations,
-  isKnownWord,
 } from '../utils/computerPlayer';
 import Leaderboard from './Leaderboard';
 import PaymentModal from './PaymentModal';
@@ -41,7 +40,6 @@ const TIME_INTERVAL = { droid: 10, cross: 12, invader: 15, bolt: 20 };
 const TIMED_COMPUTER_MAX_SCORE = 6;
 // Seconds at which a letter is auto-revealed
 const AUTO_REVEAL_SECONDS = [60, 120, 180, 240];
-const WRONG_PLACE_PENALTY = 0.3;
 const READING_TIME_SECONDS = 6;
 const GHOST_SCORE_MAX = 6;
 const GHOST_SHIFT_SWAP_MILESTONES = [8, 11, 14];
@@ -754,28 +752,22 @@ const DroidGame = () => {
       ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
     ];
 
-    // A Droid board is judged against the game's own word list and nothing
-    // else. The generator only ships a board when countBoardSolutions finds
-    // exactly one answer - but that search runs over these ~2,600 words, so
-    // asking a full English dictionary whether a submission is valid asks a
-    // different question than the one uniqueness was proved for. That gap is
-    // how a board with "one combination" accepted a second, completely
-    // different solution built from words the generator had never heard of.
-    // Same vocabulary for both halves, and the guarantee holds again - with
-    // the side benefit that judging a Droid board needs no network at all.
-    if (boardAuthor === 'droid') {
-      return { allFilled: true, isFullValid: uniqueWords.every(isKnownWord) };
-    }
-
-    // A human author is not restricted to that list, so their board has to
-    // be judged against the real dictionary.
+    // Every word the generator can use is in the game's own list, so a board
+    // built only from those needs no network either - validateWord checks the
+    // list before it reaches for the dictionary. Only a genuinely different
+    // answer, using a word the generator has never heard of, costs a lookup.
     setIsValidating(true);
     try {
       const results = await Promise.all(uniqueWords.map((w) => validateWord(w)));
-      // Only a definite yes counts. A null means the dictionary could not be
-      // reached, and awarding a solve on that basis marks made-up words
-      // correct; falling back to exact-match scoring is the honest answer.
-      return { allFilled: true, isFullValid: results.every((r) => r === true) };
+      // Three outcomes per word, not two. false is a definite "not a word";
+      // null means the dictionary could not be reached, which is not the same
+      // claim and must not be reported as one.
+      const unreachable = results.some((r) => r === null);
+      return {
+        allFilled: true,
+        isFullValid: results.every((r) => r === true),
+        unreachable,
+      };
     } finally {
       setIsValidating(false);
     }
@@ -787,16 +779,11 @@ const DroidGame = () => {
     setPlayer2FullValid(isFullValid);
 
     let correct;
-    if (isFullValid && isTimedComputerGame) {
-      // A timed round charges 0.3 per tile that differs from the author's
-      // grid, so painting every tile green on a valid-but-different board
-      // put the colours and the score in flat contradiction: all correct,
-      // yet "- 3.3 wrong place". Green means "same as the author's tile"
-      // here, which is exactly what the penalty counts.
-      correct = checkCorrectTiles(board, player1Board);
-    } else if (isFullValid) {
-      // Untimed scoring awards the whole board for any valid solution, so
-      // every active tile really is correct.
+    if (isFullValid) {
+      // Every active tile is green on a solved board. There is no longer a
+      // per-tile penalty for differing from the Droid's own grid, so a
+      // second correct answer is simply correct - no colours to reconcile
+      // against a charge that no longer exists.
       const seen = new Set();
       correct = [];
       getActiveRuns(boardShape).flat().forEach(({ x, y }) => {
@@ -909,16 +896,21 @@ const DroidGame = () => {
       setGameState('share');
       setSelectedLetter(null);
     } else {
-      const { allFilled, isFullValid } = await validateSolverBoard();
+      const { allFilled, isFullValid, unreachable } = await validateSolverBoard();
 
       // In timed Droid v Human, a wrong submission doesn't end the game —
       // the player is told it's incorrect and play resumes until they solve
       // it or the score reaches 0.
       if (isTimedComputerActive && !isFullValid) {
         setValidationError(
-          allFilled
-            ? "Not quite — one or more words aren't valid. Keep trying!"
-            : 'Fill every tile with valid words before submitting.'
+          !allFilled
+            ? 'Fill every tile with valid words before submitting.'
+            : unreachable
+              // Telling someone their word is wrong when the truth is that
+              // the dictionary did not answer is how a correct board gets
+              // called incorrect. Name the real problem.
+              ? "Couldn't reach the dictionary to check a word — check your connection and try again."
+              : "Not quite — one or more words aren't valid. Keep trying!"
         );
         return;
       }
@@ -1151,9 +1143,9 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const { score, rawScore, incorrectTiles, timePenalty, wrongPlacePenalty } = useMemo(() => {
+  const { score, rawScore, incorrectTiles, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
-      return { score: 0, rawScore: 0, incorrectTiles: [], timePenalty: 0, wrongPlacePenalty: 0 };
+      return { score: 0, rawScore: 0, incorrectTiles: [], timePenalty: 0 };
     }
     const preservedSet = new Set(preservedTiles.map((t) => `${t.x},${t.y}`));
 
@@ -1173,7 +1165,9 @@ const DroidGame = () => {
       return arr;
     })();
 
-    const incorrect = isTimedComputerScoring ? exactWrongTiles : player2FullValid ? [] : (() => {
+    // A solved board is solved: nothing on it is marked wrong. Only an
+    // unfinished or invalid one has tiles to call out.
+    const incorrect = player2FullValid ? [] : isTimedComputerScoring ? exactWrongTiles : (() => {
       const correctSet = new Set(correctTiles.map((t) => `${t.x},${t.y}`));
       const arr = [];
       board.forEach((row, y) =>
@@ -1192,13 +1186,17 @@ const DroidGame = () => {
     const wordHintDeduction = wordHintUsed ? 2 : 0;
 
     if (isTimedComputerScoring) {
+      // A board whose every word is real is a solved board, and it is scored
+      // on the clock alone. Charging per tile that differs from the Droid's
+      // own grid punished a second correct answer for not being the first -
+      // and since the base score already decays with time, the round is
+      // "full marks minus however long you took" and nothing else.
       const raw = calcTimedComputerBaseScore(timerSeconds);
-      const wp = Math.round(exactWrongTiles.length * WRONG_PLACE_PENALTY * 10) / 10;
       const s = Math.min(
         TIMED_COMPUTER_MAX_SCORE,
-        Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction - wp) * 10) / 10)
+        Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction) * 10) / 10)
       );
-      return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: 0, wrongPlacePenalty: wp };
+      return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: 0 };
     }
 
     const correctTileCount = player2FullValid
@@ -1208,14 +1206,14 @@ const DroidGame = () => {
     if (ghostMode) {
       const raw = Math.round((correctTileCount / Math.max(1, maxScore)) * GHOST_SCORE_MAX * 10) / 10;
       const s = Math.min(GHOST_SCORE_MAX, Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction) * 10) / 10));
-      return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: 0, wrongPlacePenalty: 0 };
+      return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: 0 };
     }
 
     const raw = correctTileCount;
     const tp = timerEnabled ? calcTimePenalty(timerSeconds, boardShape) : 0;
     const s = Math.min(maxScore, Math.max(0, Math.round((raw - hintDeduction - wordHintDeduction - tp) * 10) / 10));
 
-    return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: tp, wrongPlacePenalty: 0 };
+    return { score: s, rawScore: raw, incorrectTiles: incorrect, timePenalty: tp };
   }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty, wordHintUsed, timerEnabled, isTimedComputerScoring, ghostMode]);
 
   const scoreMax = isTimedComputerScoring || ghostMode ? GHOST_SCORE_MAX : maxScore;
@@ -1722,7 +1720,7 @@ const DroidGame = () => {
         const thisScoreClass = getScoreColorClass(score, scoreMax);
         const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
         const wordHintDeduction = wordHintUsed ? 2 : 0;
-        const hasPenalties = letterHintsUsed > 0 || wordHintUsed || timePenalty > 0 || wrongPlacePenalty > 0;
+        const hasPenalties = letterHintsUsed > 0 || wordHintUsed || timePenalty > 0;
         const allPlayed = [...sessionPlayedShapes, boardShape];
         const allScores = { ...sessionScores, [boardShape]: scorePercent };
         const allScoreValues = Object.values(allScores);
@@ -1790,7 +1788,6 @@ const DroidGame = () => {
                       {letterHintsUsed > 0 && ` - ${hintDeduction} hint${letterHintsUsed !== 1 ? 's' : ''}`}
                       {wordHintUsed && ` - ${wordHintDeduction} word hint`}
                       {timePenalty > 0 && ` - ${timePenalty} time`}
-                      {wrongPlacePenalty > 0 && ` - ${wrongPlacePenalty} wrong place`}
                       {' '}= {score}/{scoreMax}
                     </div>
                   )}
