@@ -266,10 +266,10 @@ def main():
 
     s = patch(
         s, 'invalid word feedback',
-        "            `Not a valid English word${badWords.size > 1 ? 's' : ''}"
-        ": ${[...badWords].join(', ')}`\n          );",
-        "            `Not a valid English word${badWords.size > 1 ? 's' : ''}"
-        ": ${[...badWords].join(', ')}`\n          );\n          resultFeedback(false);",
+        "              : `Not a valid English word: ${[...badWords][0]}`\n"
+        "          );",
+        "              : `Not a valid English word: ${[...badWords][0]}`\n"
+        "          );\n          resultFeedback(false);",
     )
 
     # Two scoring paths reach a verdict (the two-player turn and the solo
