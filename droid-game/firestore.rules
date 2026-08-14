@@ -14,9 +14,12 @@ service cloud.firestore {
           ['name', 'score', 'maxScore', 'percent', 'date', 'shape', 'createdAt'])
         && request.resource.data.keys().hasAll(
           ['name', 'score', 'maxScore', 'percent', 'date', 'shape', 'createdAt'])
+        // Exactly two uppercase letters. The client restricts the field as
+        // you type, but the client is not the boundary - anyone can address
+        // Firestore directly, so "users cannot submit free text" is only
+        // true if it is true here.
         && request.resource.data.name is string
-        && request.resource.data.name.size() >= 1
-        && request.resource.data.name.size() <= 20
+        && request.resource.data.name.matches('^[A-Z][A-Z]$')
         && request.resource.data.score is number
         && request.resource.data.score >= 0
         && request.resource.data.score <= 30

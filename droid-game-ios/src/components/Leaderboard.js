@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   submitScore,
+  initialsFrom,
+  isAllowedInitials,
   fetchLeaderboard,
   getCachedLeaderboard,
   hasSubmittedLeaderboardScore,
@@ -52,7 +54,7 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!name.trim() || submitting || submitted || hasSubmittedLeaderboardScore(date)) return;
+    if (!isAllowedInitials(name) || submitting || submitted || hasSubmittedLeaderboardScore(date)) return;
     setSubmitting(true);
     setError(null);
     try {
@@ -62,7 +64,7 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
       onSubmitted?.();
       const optimisticEntry = {
         id: `local-${Date.now()}`,
-        name: name.trim().slice(0, 20),
+        name: initialsFrom(name),
         score,
         maxScore,
         percent,
@@ -116,16 +118,21 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
               <input
                 type="text"
                 className="leaderboard-name-input"
-                placeholder="Enter your name"
+                placeholder="AB"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={20}
+                onChange={(e) => setName(initialsFrom(e.target.value))}
+                maxLength={2}
+                inputMode="text"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                aria-label="Your initials, two letters"
                 autoFocus
               />
               <button
                 type="submit"
                 className="leaderboard-submit-btn"
-                disabled={!name.trim() || submitting}
+                disabled={!isAllowedInitials(name) || submitting}
               >
                 {submitting ? 'Saving…' : 'Submit'}
               </button>
