@@ -4334,4 +4334,54 @@ body {
   .home-how-to,
   .home-leaderboard-btn { min-height: 2rem; padding: 0.34rem 0.55rem; font-size: 0.78rem; }
   .home-footer { gap: 0.02rem; padding: 0.34rem 0.45rem; font-size: 0.54rem; line-height: 1.12; }
+
+  /* The play screens, in a window too short for their natural height.
+     Below the phone breakpoint the layout already fits itself to
+     --app-height; above it the panel kept a fixed ~655px and the letter
+     pool and Submit fell below the fold, with body overflow hidden and
+     nothing scrollable, so the round could not be finished at all. iPad
+     Split View, Stage Manager and any resized window on iPadOS 26 land
+     here.
+
+     Two defences, in order: shrink the parts that were fixed so the panel
+     usually fits outright, and let the screen scroll if it still does not.
+     Scrolling alone would leave Submit reachable but out of sight; the
+     shrink alone would fail at some height. */
+  .droid-human-play,
+  .ghost-droid-play {
+    height: var(--app-height);
+    max-height: var(--app-height);
+    justify-content: flex-start;
+    padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dvh-panel,
+  .ghost-panel { gap: 0.4rem; padding: 0.5rem; }
+
+  .dvh-home-button,
+  .dvh-pause-button,
+  .dvh-score { min-height: clamp(2.6rem, calc(var(--app-height) * 0.115), 4.5rem); }
+
+  .dvh-home-button { font-size: clamp(1.35rem, calc(var(--app-height) * 0.055), 2.65rem); }
+  .dvh-score .live-score-grade { font-size: clamp(1.5rem, calc(var(--app-height) * 0.06), 3.25rem); }
+  .dvh-pause-button { font-size: clamp(0.78rem, calc(var(--app-height) * 0.03), 1.25rem); }
+
+  .dvh-meta-strip {
+    min-height: clamp(1.9rem, calc(var(--app-height) * 0.06), 2.8rem);
+    padding: 0.35rem 0.5rem;
+    font-size: clamp(0.6rem, calc(var(--app-height) * 0.021), 0.86rem);
+  }
+
+  .dvh-board-frame { min-height: 0; padding: 0.5rem; }
+  .dvh-letter-panel { padding: 0.4rem; }
+  .dvh-section-title { font-size: 0.7rem; margin-bottom: 0.3rem; }
+
+  .dvh-panel > .button,
+  .ghost-panel > .button { min-height: 2.6rem; padding: 0.5rem; }
+
+  /* The results screen has the same problem for the same reason. */
+  .answer-screen { height: auto; min-height: var(--app-height); overflow-y: auto; }
 }
