@@ -2768,13 +2768,39 @@ body {
     --mobile-play-gap: clamp(0.16rem, calc(var(--app-height) / 230), 0.32rem);
     --tile-size: min(
       clamp(2.65rem, calc((100vw - 28px) / 5), 3.8rem),
-      clamp(2.35rem, calc((var(--app-height) - 15.6rem) / 5), 3.8rem)
+      /* The height budget reserves room for everything that is not the
+         board. 15.6rem was measured against the Player 2 solving screen,
+         whose pool holds only the letters left to place. This container is
+         now the Player 1 authoring screen alone, and that screen carries the
+         full A-Z - five rows of tiles - plus a header and an actions row,
+         about 27rem in total. Under the old figure the board stayed at its
+         maximum size on a short screen and pushed End Turn off the bottom,
+         where overflow: hidden sliced it in half. Apple rejected the app on
+         that screen; iPhone SE showed the same thing. */
+      clamp(1.9rem, calc((var(--app-height) - 27rem) / 5), 3.8rem)
     );
     height: calc(var(--app-height) - var(--mobile-header-height));
     flex: 0 0 auto;
     justify-content: space-between;
     overflow: hidden;
     padding: var(--mobile-play-gap) 0.25rem max(0.45rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* A last resort, and deliberately not applied to the Droid screen, which
+     fits itself precisely and must not gain a scrollbar. If the authoring
+     screen still cannot fit - a very short window, larger system text - it
+     scrolls rather than hiding the button that ends the turn. */
+  .game-play:not(.droid-human-play):not(.ghost-droid-play) {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* The pool is five rows here, so it is the second biggest thing on the
+     screen after the board and has to give way on a short one too. */
+  .game-play:not(.droid-human-play) .letter-tile {
+    /* 0.05 is deliberate: on a tall phone it still exceeds the 2.6rem
+       ceiling, so those screens clamp exactly as before and do not change. */
+    height: clamp(1.6rem, calc(var(--app-height) * 0.05), 2.6rem);
   }
 
   .droid-human-play {
@@ -2814,8 +2840,8 @@ body {
   }
 
   .play-home-button {
-    width: clamp(3.2rem, calc(var(--app-height) * 0.098), 4.2rem);
-    min-height: clamp(3.2rem, calc(var(--app-height) * 0.098), 4.2rem);
+    width: clamp(2.5rem, calc(var(--app-height) * 0.082), 4.2rem);
+    min-height: clamp(2.5rem, calc(var(--app-height) * 0.082), 4.2rem);
     font-size: clamp(1.45rem, 8vw, 2.25rem);
   }
 
