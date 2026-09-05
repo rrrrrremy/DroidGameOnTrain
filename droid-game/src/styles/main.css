@@ -3225,6 +3225,7 @@ body {
   .shape-selection { justify-content: flex-start; padding-top: max(2rem, env(safe-area-inset-top, 2rem)); }
   .shape-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .shape-option { min-height: 9.8rem; }
+
   .hint-actions { flex-wrap: wrap; }
   .hint-actions .hint-btn { min-width: calc(50% - 0.25rem); }
 
@@ -4429,4 +4430,54 @@ body {
 
   /* The results screen has the same problem for the same reason. */
   .answer-screen { height: auto; min-height: var(--app-height); overflow-y: auto; }
+}
+
+/* Choose Droid, in a window too short to show all six shapes.
+   The screen is min-height: 100dvh and centred, with nothing scrollable
+   above it, so on a short window the last row sat below the bottom edge
+   with no way to reach it. Apple's iPad window and iPhone SE both showed
+   it; iPhone 13 is tall enough to escape, which is why it went unnoticed.
+
+   Scrolling is the right answer for a list - but a centred flex container
+   puts overflow above the TOP edge where it cannot be scrolled to, so the
+   two changes have to happen together. `justify-content: safe center`
+   would say this directly and is unavailable on iOS 15, which this app
+   still supports, hence the explicit breakpoint. */
+@media (max-height: 820px) {
+  .shape-selection {
+    height: var(--app-height);
+    min-height: 0;
+    justify-content: flex-start;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    gap: 1rem;
+    padding: max(1rem, env(safe-area-inset-top, 0px)) 1rem
+             max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .shape-option {
+    min-height: clamp(6.5rem, calc(var(--app-height) * 0.135), 9.8rem);
+    padding: 0.6rem 0.55rem;
+    gap: 0.4rem;
+  }
+
+  /* The card's height is set by its preview, not by min-height, so the
+     preview is what has to give for all six shapes to fit at once. Height
+     rather than viewport width drives it here: the problem is vertical. */
+  .shape-cell {
+    width: clamp(9px, calc(var(--app-height) * 0.019), 18px);
+    height: clamp(9px, calc(var(--app-height) * 0.019), 18px);
+  }
+
+  /* The heading block is the last 30-odd pixels standing between six cards
+     and a screen that needs no scrolling at all. */
+  .shape-heading { font-size: clamp(1.05rem, 5vw, 2rem); }
+
+  .shape-subtitle {
+    margin-top: 0.45rem;
+    font-size: clamp(0.76rem, calc(var(--app-height) * 0.019), 0.9rem);
+    line-height: 1.35;
+  }
+
+  .shape-options { gap: 0.55rem; }
 }
