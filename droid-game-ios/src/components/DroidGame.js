@@ -746,10 +746,7 @@ const DroidGame = () => {
     const allFilled = activeRuns.every((run) => run.every(({ x, y }) => board[y][x]));
     if (!allFilled) return { allFilled: false, isFullValid: false };
 
-    // A board identical to the original needs no dictionary lookups — its
-    // words are valid by construction. This is the common case on submit,
-    // and the dictionary API is slow enough (sometimes tens of seconds)
-    // that skipping it is the difference between instant and "stuck".
+    // The original board's words are valid by construction.
     const matchesOriginal =
       player1Board &&
       activeRuns.every((run) =>
@@ -761,26 +758,16 @@ const DroidGame = () => {
       ...new Set(activeRuns.map((run) => run.map(({ x, y }) => board[y][x]).join(''))),
     ];
 
-    // Every word the generator can use is in the game's own list, so a board
-    // built only from those needs no network either - validateWord checks the
-    // list before it reaches for the dictionary. Only a genuinely different
-    // answer, using a word the generator has never heard of, costs a lookup.
+    // Alternative answers use the bundled dictionary, including offline.
     setIsValidating(true);
     try {
       const results = await Promise.all(
         uniqueWords.map(async (word) => ({ word, verdict: await validateWord(word) }))
       );
-      // Three outcomes per word, not two. false is a definite "not a word";
-      // null means the dictionary did not answer, which is a different claim.
-      // Both can occur on one board - type two made-up words and the second
-      // request may be rate-limited while the first returns a clean 404 - so
-      // the caller is given the definite answers and the doubt separately,
-      // rather than one flag that cannot express the difference.
       return {
         allFilled: true,
         isFullValid: results.every((r) => r.verdict === true),
         badWords: results.filter((r) => r.verdict === false).map((r) => r.word),
-        unanswered: results.filter((r) => r.verdict === null).map((r) => r.word),
       };
     } finally {
       setIsValidating(false);
@@ -874,9 +861,7 @@ const DroidGame = () => {
           }))
         );
 
-        // Only a definite no blocks the turn: if the dictionary cannot be
-        // reached the word is left alone rather than rejected, so a flaky
-        // API never traps a player who has built a perfectly good board.
+        // Every lookup returns a definite local verdict in both game modes.
         const badWords = new Set(results.filter((r) => r.valid === false).map((r) => r.word));
 
         if (badWords.size > 0) {
@@ -917,27 +902,19 @@ const DroidGame = () => {
       setGameState('share');
       setSelectedLetter(null);
     } else {
-      const { allFilled, isFullValid, badWords = [], unanswered = [] } =
+      const { allFilled, isFullValid, badWords = [] } =
         await validateSolverBoard();
 
       // In timed Droid v Human, a wrong submission doesn't end the game —
       // the player is told it's incorrect and play resumes until they solve
       // it or the score reaches 0.
       if (isTimedComputerActive && !isFullValid) {
-        // A word the dictionary definitely rejected outranks one it failed to
-        // answer for. Both happen together whenever a board carries more than
-        // one made-up word: the first gets a clean 404 and a later one is rate
-        // limited. Leading with the connection made the game blame the network
-        // for the player's own invented word, and named neither.
         setValidationError(
           !allFilled
             ? 'Fill every tile with valid words before submitting.'
-            : badWords.length > 0
-              ? badWords.length > 1
-                ? `Not valid English words: ${badWords.join(', ')}`
-                : `Not a valid English word: ${badWords[0]}`
-              : `Couldn't check ${unanswered.length > 1 ? 'some words' : `"${unanswered[0]}"`} `
-                + 'against the dictionary just now — try submitting again.'
+            : badWords.length > 1
+              ? `Not valid English words: ${badWords.join(', ')}`
+              : `Not a valid English word: ${badWords[0]}`
         );
         return;
       }
@@ -1388,7 +1365,7 @@ const DroidGame = () => {
       )}
 
       {(gameState === 'player1' || gameState === 'player2') && (
-        <div className={`game-play${isSolvingScreen ? ' droid-human-play' : ''}`}>
+        <div className={`game-play${isSolvingScreen ? ' droid-human-play' : ''}${validationError || isValidating ? ' has-validation-message' : ''}`}>
           {isPaused && !isSolvingScreen && (
             <div className="pause-overlay">
               <div className="pause-bg">

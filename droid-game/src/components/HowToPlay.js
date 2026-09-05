@@ -132,6 +132,7 @@ const HowToPlay = ({ onClose, hideLightning = false }) => (
         <section className="htp-section">
           <h3 className="htp-h3">Rules</h3>
           <ul className="htp-rules">
+            <li>Words are checked against Droid's built-in English dictionary, including offline.</li>
             <li>Words must fill the <strong>entire</strong> row or column — no partial words.</li>
             <li>You can only use the letters in the pool — no more, no fewer.</li>
             <li>Tap a placed letter to lift it back off the board and try it elsewhere.</li>

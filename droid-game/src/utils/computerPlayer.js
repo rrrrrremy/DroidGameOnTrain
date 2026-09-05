@@ -375,10 +375,8 @@ const filterWords = (words, index, constraints) => {
 const ALL_WORDS_SET = new Set([...WORDS_3, ...WORDS_4, ...WORDS_5]);
 
 /**
- * The game's own dictionary, and the authority on what counts as a word here:
- * every board the droid builds is made from these, so anything it can ask a
- * player to find is in this set. Checking it first means the common case
- * needs no network at all.
+ * The generator's vocabulary. Every word the Droid asks a player to find
+ * must stay valid, alongside the broader dictionary used for player answers.
  */
 export const isKnownWord = (word) =>
   ALL_WORDS_SET.has(String(word || '').toUpperCase());

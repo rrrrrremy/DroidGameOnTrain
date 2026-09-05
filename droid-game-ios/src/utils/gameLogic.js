@@ -1,4 +1,5 @@
 import { BOARD_SHAPES, isKnownWord } from './computerPlayer';
+import englishWords from '../data/english-words.json';
 
 /**
  * Return every contiguous run of 2+ active squares on the board
@@ -40,82 +41,17 @@ export const getActiveRuns = (shape = 'droid') => {
   return runs;
 };
 
-/**
- * Is this a word? Returns true, false, or null when it genuinely cannot be
- * determined — the caller decides what an unverifiable answer should mean,
- * because the safe default differs by context.
- *
- * The game's own list is consulted first and settles almost every case
- * without a network call. Only words a player invented reach the dictionary
- * API, which is free, rate-limited and prone to stalling.
- */
-// Verdicts are permanent facts about the language, so they are worth keeping.
-// Only definite answers are cached - a null is the absence of an answer.
-const VERDICT_CACHE_KEY = 'droid_word_verdicts';
+// Imported into the app bundle, rather than fetched at runtime, so even a
+// first launch offline can give a definite answer. Keep the generator's
+// vocabulary too: every existing puzzle must remain solvable. The broader
+// list validates player answers without changing daily puzzle generation.
+const ENGLISH_WORDS = new Set(englishWords);
 
-const readVerdictCache = () => {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(VERDICT_CACHE_KEY) || '{}');
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  } catch {
-    return {};
-  }
-};
-
-const cacheVerdict = (word, verdict) => {
-  try {
-    const cache = readVerdictCache();
-    cache[word] = verdict;
-    localStorage.setItem(VERDICT_CACHE_KEY, JSON.stringify(cache));
-  } catch {
-    // The cache is a speed and reliability boost only.
-  }
-};
-
-/** One request. true = a word, false = definitely not, null = no answer. */
-const askDictionary = async (word) => {
-  // Cap the wait so a submission can never hang on a stalled request. The
-  // clock is running while this happens, so the budget is deliberately tight.
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
-  try {
-    const res = await fetch(
-      `https://api.dictionaryapi.dev/api/v2/entries/en/${word.toLowerCase()}`,
-      { signal: controller.signal }
-    );
-    // A 404 is the API stating the word does not exist. Anything else - a
-    // rate limit, a server error - says nothing about the word either way,
-    // and must not be read as a verdict in either direction.
-    if (res.status === 404) return false;
-    if (!res.ok) return null;
-    return true;
-  } catch {
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-};
-
+/** A definite dictionary verdict, with no network, retries, or cached API answers. */
 export const validateWord = async (word) => {
-  const upper = String(word || '').toUpperCase();
-  if (isKnownWord(upper)) return true;
-
-  const cached = readVerdictCache()[upper];
-  if (typeof cached === 'boolean') return cached;
-
-  // dictionaryapi.dev is free and rate-limits under load, so a single failed
-  // request says more about the moment than about the word. Retry briefly
-  // before reporting no answer - but keep the whole budget bounded, because
-  // every second here costs the player score.
-  for (const backoff of [250, 750, 0]) {
-    const verdict = await askDictionary(upper);
-    if (verdict !== null) {
-      cacheVerdict(upper, verdict);
-      return verdict;
-    }
-    if (backoff) await new Promise((resolve) => setTimeout(resolve, backoff));
-  }
-  return null;
+  if (typeof word !== 'string' || !/^[a-z]{2,5}$/i.test(word)) return false;
+  const upper = word.toUpperCase();
+  return isKnownWord(upper) || ENGLISH_WORDS.has(upper);
 };
 
 export const countLetters = (board) => {
