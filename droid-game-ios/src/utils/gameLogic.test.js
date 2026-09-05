@@ -37,6 +37,15 @@ describe('offline word validation', () => {
       .toEqual([false, false, false, false]);
   });
 
+  test('accepts vetted additional words and excludes candidate names and abbreviations', async () => {
+    for (const word of ['EMOJI', 'VAPE', 'VAPED', 'EJIDO', 'FUFU', 'LEFSE']) {
+      expect(await validateWord(word)).toBe(true);
+    }
+    for (const word of ['AARON', 'ABBY', 'ABBR', 'ABC', 'KG', 'MG']) {
+      expect(await validateWord(word)).toBe(false);
+    }
+  });
+
   test('old API verdicts cannot override the bundled dictionary', async () => {
     localStorage.setItem('droid_word_verdicts', JSON.stringify({ AIOLI: false, QZXWV: true }));
     expect(await validateWord('AIOLI')).toBe(true);
