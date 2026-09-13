@@ -34,6 +34,20 @@ Browne). Two codebases, one game:
 - **Leaderboard**: Firestore (project `onebitcoin-38ea0`), rules in
   `firestore.rules`.
 
+## Releasing to the App Store
+
+- Both version numbers live in `droid-game-ios/ios/App/App.xcodeproj/project.pbxproj`
+  and are tracked in git. Do not let Xcode manage them during Distribute:
+  it increments the build number without writing it back, so the repo and
+  App Store Connect drift apart.
+- `MARKETING_VERSION` must go **up for every release**. Once a version is
+  approved, that train closes and App Store Connect refuses any further
+  build under it (errors 90062 and 90186), whatever the build number is.
+- `CURRENT_PROJECT_VERSION` must be unique within a train. Incrementing it
+  every upload, across trains, is the simplest way to never collide.
+- A new marketing version also needs a matching version created in App
+  Store Connect before a build can be submitted against it.
+
 ## Known open items
 
 - App Store guideline 3.1.1: sats-for-games unlocking will likely need
