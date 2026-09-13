@@ -11,11 +11,9 @@ import {
  * Two initials and a Submit button — the only route a score takes to the
  * leaderboard.
  *
- * It lives in one component because two screens offer it: the results screen
- * prompts for it as soon as a daily round ends, and the leaderboard overlay
- * still offers it for anyone who skipped the prompt. A pair of separately
- * maintained forms both writing to the same collection is exactly the kind
- * of thing that quietly drifts apart.
+ * Kept apart from the leaderboard's own rendering so that posting a score
+ * and listing them stay separable concerns: the form owns the write and
+ * the validation, the overlay owns the table.
  */
 const ScoreSubmitForm = ({
   date,

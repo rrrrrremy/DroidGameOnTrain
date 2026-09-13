@@ -2577,71 +2577,6 @@ body {
   margin: 0;
 }
 
-/* The prompt to post a score, on the results screen. The leaderboard used
-   to be somewhere a player had to know to go; after a daily round the score
-   is asked for where the score is shown. */
-.answer-leaderboard-prompt {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.5rem;
-  padding: 0.7rem;
-  border: 1px solid rgba(134,239,172,0.4);
-  border-radius: var(--radius-sm);
-  background:
-    linear-gradient(135deg, rgba(34,197,94,0.13), rgba(13,148,136,0.07)),
-    rgba(10,12,12,0.36);
-  text-align: center;
-}
-
-.answer-leaderboard-prompt > strong {
-  color: var(--text);
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-/* The prompt keeps its shape once posted so the panel does not jump. */
-button.answer-leaderboard-prompt {
-  align-items: center;
-  justify-content: center;
-  gap: 0.2rem;
-  min-height: 3.4rem;
-  color: var(--text);
-  cursor: pointer;
-  font: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
-  touch-action: manipulation;
-}
-
-button.answer-leaderboard-prompt:hover { border-color: var(--indigo); }
-button.answer-leaderboard-prompt:active { transform: scale(0.98); }
-
-button.answer-leaderboard-prompt small {
-  color: #86efac;
-  font-size: 0.68rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-/* Inside the prompt the form is already framed by the prompt itself. */
-.answer-leaderboard-prompt .leaderboard-form {
-  gap: 0.45rem;
-  padding: 0;
-  border: 0;
-  background: none;
-}
-
-.answer-leaderboard-prompt .leaderboard-name-input { min-height: 2.8rem; }
-
-.leaderboard-form-error {
-  color: #fca5a5;
-  font-size: 0.78rem;
-  text-align: center;
-}
-
 .answer-summary {
   display: flex;
   flex-direction: column;
@@ -4165,6 +4100,12 @@ button.answer-leaderboard-prompt small {
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: rgba(10,12,12,0.36);
+}
+
+.leaderboard-form-error {
+  color: #fca5a5;
+  font-size: 0.78rem;
+  text-align: center;
 }
 
 .leaderboard-your-score {

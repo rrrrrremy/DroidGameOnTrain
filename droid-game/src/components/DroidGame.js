@@ -25,7 +25,6 @@ import {
 import Leaderboard from './Leaderboard';
 import PaymentModal from './PaymentModal';
 import HowToPlay from './HowToPlay';
-import ScoreSubmitForm from './ScoreSubmitForm';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
@@ -263,6 +262,16 @@ const DroidGame = () => {
       window.visualViewport?.removeEventListener('resize', setViewportHeight);
     };
   }, []);
+
+  // Finishing the daily round opens the leaderboard on its own: the entry
+  // form is at the top of it, and a button in the corner of the results
+  // screen was never going to be found by most players. It runs on the
+  // round ending rather than on every render of the results screen, so
+  // closing it keeps it closed.
+  useEffect(() => {
+    if (gameState !== 'end' || !dailyMode) return;
+    setShowLeaderboard(true);
+  }, [gameState, dailyMode]);
 
   useEffect(() => {
     const preload = () => preloadLeaderboard(todayString());
@@ -1292,6 +1301,8 @@ const DroidGame = () => {
           onSubmitted={() => setDailyScoreSubmitted(true)}
           onClose={() => setShowLeaderboard(false)}
           onHome={resetGame}
+          onBack={gameState === 'end' ? () => setShowLeaderboard(false) : undefined}
+          backLabel={gameState === 'end' ? '← Back to your result' : '← Back to Menu'}
         />
       )}
 
@@ -1737,32 +1748,6 @@ const DroidGame = () => {
                   <span>Leader board</span>
                 </button>
               </div>
-
-              {dailyMode && (
-                dailyScoreSubmitted ? (
-                  <button
-                    className="answer-leaderboard-prompt is-posted"
-                    onClick={() => setShowLeaderboard(true)}
-                  >
-                    <strong>Score posted</strong>
-                    <small>See where you rank today</small>
-                  </button>
-                ) : (
-                  <div className="answer-leaderboard-prompt">
-                    <strong>Add your score to today&apos;s leaderboard</strong>
-                    {/* No autoFocus: opening the keyboard over the answer the
-                        player just earned is the wrong first move. */}
-                    <ScoreSubmitForm
-                      date={todayString()}
-                      shape={boardShape || dailyShape()}
-                      score={score}
-                      maxScore={scoreMax}
-                      submitLabel="Post"
-                      onSubmitted={() => setDailyScoreSubmitted(true)}
-                    />
-                  </div>
-                )
-              )}
 
               <div className="dvh-meta-strip answer-meta-strip">
                 <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>

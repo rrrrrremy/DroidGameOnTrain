@@ -7,7 +7,14 @@ import {
 import ScoreSubmitForm from './ScoreSubmitForm';
 import { BOARD_SHAPES } from '../utils/computerPlayer';
 
-const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit, onSubmitted }) => {
+const Leaderboard = ({
+  date, shape, score, maxScore, onClose, onHome, canSubmit, onSubmitted,
+  // Where the bottom button goes. It is the menu when the player opened the
+  // board themselves, and back to the results screen when the board opened
+  // itself over one - otherwise finishing a round and dismissing the board
+  // would skip past the answer without ever showing it.
+  onBack, backLabel = '← Back to Menu',
+}) => {
   const [submitted, setSubmitted] = useState(() => hasSubmittedLeaderboardScore(date));
   const [ownEntryId, setOwnEntryId] = useState(null);
   const [entries, setEntries] = useState([]);
@@ -140,8 +147,8 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
           {averagePercent === null ? 'Average of scores played to date' : `Average score to date: ${averagePercent}%`}
         </div>
 
-        <button className="back-to-menu-btn" onClick={onHome || onClose}>
-          ← Back to Menu
+        <button className="back-to-menu-btn" onClick={onBack || onHome || onClose}>
+          {backLabel}
         </button>
 
       </div>
