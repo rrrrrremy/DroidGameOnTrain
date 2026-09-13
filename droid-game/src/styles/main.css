@@ -4248,13 +4248,34 @@ button.answer-leaderboard-prompt small {
   min-height: 21rem;
   max-height: 46vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: rgba(10,12,12,0.36);
   padding: 0.7rem;
+  /* Block, not flex: a centred flex container puts the top of a long list
+     above the scroll origin, where it cannot be reached. Centring is only
+     wanted for the one-line loading and empty states below. */
+  display: block;
+}
+
+.leaderboard-list-wrap.is-message {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+/* The list can now be long enough to scroll the column labels away. */
+.leaderboard-row-header {
+  position: sticky;
+  /* The wrapper has 0.7rem of padding; offsetting by it keeps the header
+     flush with the top edge rather than floating a gap above itself. */
+  top: -0.7rem;
+  z-index: 1;
+  background: #14161a;
+  /* Without an edge, a row sliding underneath reads as an overlapping
+     glitch rather than as scrolling. */
+  box-shadow: 0 1px 0 var(--border), 0 6px 10px -8px rgba(0,0,0,0.9);
 }
 
 .leaderboard-loading,

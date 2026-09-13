@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   fetchLeaderboard,
   getCachedLeaderboard,
@@ -16,6 +16,15 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
   const [error, setError] = useState(null);
 
   const shapeName = BOARD_SHAPES[shape]?.name || 'Droid';
+
+  const ownRowRef = useRef(null);
+
+  // A player posting into a busy day can land far below the fold, so bring
+  // their row to them rather than leaving them to hunt for it.
+  useEffect(() => {
+    if (!ownEntryId || !ownRowRef.current) return;
+    ownRowRef.current.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }, [ownEntryId, entries]);
 
   const loadEntries = async ({ showSpinner = true } = {}) => {
     setError(null);
@@ -60,13 +69,6 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
   };
 
   const rankedEntries = entries.map((entry, index) => ({ ...entry, rank: index + 1 }));
-  const topEntries = rankedEntries.slice(0, 5);
-  const ownEntry = ownEntryId
-    ? rankedEntries.find((entry) => entry.id === ownEntryId)
-    : null;
-  const visibleEntries = ownEntry && ownEntry.rank > 5
-    ? [...topEntries, ownEntry]
-    : topEntries;
   const averagePercent = entries.length > 0
     ? Math.round(entries.reduce((sum, entry) => sum + (entry.percent || 0), 0) / entries.length)
     : null;
@@ -105,7 +107,7 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
           <div className="leaderboard-refreshing">Updating scores…</div>
         )}
 
-        <div className="leaderboard-list-wrap">
+        <div className={`leaderboard-list-wrap${loading || entries.length === 0 ? ' is-message' : ''}`}>
           {loading ? (
             <div className="leaderboard-loading">Loading…</div>
           ) : entries.length === 0 ? (
@@ -118,8 +120,12 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
                 <span className="lb-score">Score</span>
                 <span className="lb-pct">%</span>
               </div>
-              {visibleEntries.map((entry) => (
-                <div key={`${entry.id}-${entry.rank}`} className={`leaderboard-row${entry.id === ownEntryId ? ' is-own-score' : ''}`}>
+              {rankedEntries.map((entry) => (
+                <div
+                  key={`${entry.id}-${entry.rank}`}
+                  ref={entry.id === ownEntryId ? ownRowRef : null}
+                  className={`leaderboard-row${entry.id === ownEntryId ? ' is-own-score' : ''}`}
+                >
                   <span className="lb-rank">{entry.rank}</span>
                   <span className="lb-name">{entry.name}</span>
                   <span className="lb-score">{entry.score}/{entry.maxScore}</span>

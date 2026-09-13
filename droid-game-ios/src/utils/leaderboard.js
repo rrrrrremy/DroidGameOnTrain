@@ -11,6 +11,10 @@ import {
 } from 'firebase/firestore';
 
 const COLLECTION = 'daily_scores';
+// How many of the day's scores the board holds. The list scrolls, so this is
+// about how far down a player can look, not about what fits on screen. The
+// security rules refuse a list query above 200.
+const MAX_ENTRIES = 100;
 const CACHE_TTL_MS = 5 * 60 * 1000;
 const inFlightRequests = new Map();
 
@@ -18,7 +22,9 @@ const cacheKey = (date) => `droid_leaderboard_${date}`;
 const submittedKey = (date) => `droid_leaderboard_submitted_${date}`;
 
 const sortEntries = (entries) =>
-  [...entries].sort((a, b) => b.percent - a.percent || b.score - a.score).slice(0, 50);
+  [...entries]
+    .sort((a, b) => b.percent - a.percent || b.score - a.score)
+    .slice(0, MAX_ENTRIES);
 
 export const getCachedLeaderboard = (date) => {
   try {
@@ -84,8 +90,8 @@ export const submitScore = async ({ name, score, maxScore, date, shape }) => {
   });
 };
 
-/** Fetch today's leaderboard from Firestore. Prefer an indexed top-50 query;
- * fall back to the original date-only query if the composite index is missing. */
+/** Fetch today's leaderboard from Firestore. Prefer the indexed, ordered
+ * query; fall back to the date-only one if the composite index is missing. */
 const fetchLeaderboardRemote = async (date) => {
   const collectionRef = collection(db, COLLECTION);
 
@@ -95,7 +101,7 @@ const fetchLeaderboardRemote = async (date) => {
       where('date', '==', date),
       orderBy('percent', 'desc'),
       orderBy('score', 'desc'),
-      limit(50)
+      limit(MAX_ENTRIES)
     );
     const snap = await getDocs(fastQuery);
     const entries = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
