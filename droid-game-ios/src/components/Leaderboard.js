@@ -1,26 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import {
-  submitScore,
-  initialsFrom,
-  isAllowedInitials,
   fetchLeaderboard,
   getCachedLeaderboard,
   hasSubmittedLeaderboardScore,
-  markLeaderboardScoreSubmitted,
 } from '../utils/leaderboard';
+import ScoreSubmitForm from './ScoreSubmitForm';
 import { BOARD_SHAPES } from '../utils/computerPlayer';
 
 const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit, onSubmitted }) => {
-  const [name, setName] = useState('');
   const [submitted, setSubmitted] = useState(() => hasSubmittedLeaderboardScore(date));
-  const [submitting, setSubmitting] = useState(false);
   const [ownEntryId, setOwnEntryId] = useState(null);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
-  const percent = maxScore > 0 ? Math.round((score / maxScore) * 100) : 0;
   const shapeName = BOARD_SHAPES[shape]?.name || 'Droid';
 
   const loadEntries = async ({ showSpinner = true } = {}) => {
@@ -52,38 +46,17 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
     }
   }, [date]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!isAllowedInitials(name) || submitting || submitted || hasSubmittedLeaderboardScore(date)) return;
-    setSubmitting(true);
-    setError(null);
-    try {
-      await submitScore({ name, score, maxScore, date, shape });
-      markLeaderboardScoreSubmitted(date);
-      setSubmitted(true);
-      onSubmitted?.();
-      const optimisticEntry = {
-        id: `local-${Date.now()}`,
-        name: initialsFrom(name),
-        score,
-        maxScore,
-        percent,
-        date,
-        shape,
-      };
-      setOwnEntryId(optimisticEntry.id);
-      setEntries((prev) =>
-        [...prev, optimisticEntry]
-          .sort((a, b) => b.percent - a.percent || b.score - a.score)
-          .slice(0, 50)
-      );
-      loadEntries({ showSpinner: false });
-    } catch (err) {
-      console.error('Submit error:', err);
-      setError('Failed to submit. Check Firestore rules.');
-    } finally {
-      setSubmitting(false);
-    }
+  /** Show the new score immediately, then reconcile with the server. */
+  const handleSubmitted = (optimisticEntry) => {
+    setSubmitted(true);
+    onSubmitted?.();
+    setOwnEntryId(optimisticEntry.id);
+    setEntries((prev) =>
+      [...prev, optimisticEntry]
+        .sort((a, b) => b.percent - a.percent || b.score - a.score)
+        .slice(0, 50)
+    );
+    loadEntries({ showSpinner: false });
   };
 
   const rankedEntries = entries.map((entry, index) => ({ ...entry, rank: index + 1 }));
@@ -113,34 +86,14 @@ const Leaderboard = ({ date, shape, score, maxScore, onClose, onHome, canSubmit,
         </div>
 
         {canSubmit && !submitted && (
-          <form className="leaderboard-form" onSubmit={handleSubmit}>
-            <div className="leaderboard-input-row">
-              <input
-                type="text"
-                className="leaderboard-name-input"
-                placeholder="AB"
-                value={name}
-                onChange={(e) => setName(initialsFrom(e.target.value))}
-                maxLength={2}
-                inputMode="text"
-                autoCapitalize="characters"
-                autoCorrect="off"
-                spellCheck={false}
-                aria-label="Your initials, two letters"
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="leaderboard-submit-btn"
-                disabled={!isAllowedInitials(name) || submitting}
-              >
-                {submitting ? 'Saving…' : 'Submit'}
-              </button>
-            </div>
-            <div className="leaderboard-your-score">
-              Your score: <strong>{score}/{maxScore} ({percent}%)</strong>
-            </div>
-          </form>
+          <ScoreSubmitForm
+            date={date}
+            shape={shape}
+            score={score}
+            maxScore={maxScore}
+            autoFocus
+            onSubmitted={handleSubmitted}
+          />
         )}
 
         {submitted && (

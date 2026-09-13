@@ -25,6 +25,7 @@ import {
 import Leaderboard from './Leaderboard';
 import PaymentModal from './PaymentModal';
 import HowToPlay from './HowToPlay';
+import ScoreSubmitForm from './ScoreSubmitForm';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
@@ -1736,6 +1737,32 @@ const DroidGame = () => {
                   <span>Leader board</span>
                 </button>
               </div>
+
+              {dailyMode && (
+                dailyScoreSubmitted ? (
+                  <button
+                    className="answer-leaderboard-prompt is-posted"
+                    onClick={() => setShowLeaderboard(true)}
+                  >
+                    <strong>Score posted</strong>
+                    <small>See where you rank today</small>
+                  </button>
+                ) : (
+                  <div className="answer-leaderboard-prompt">
+                    <strong>Add your score to today&apos;s leaderboard</strong>
+                    {/* No autoFocus: opening the keyboard over the answer the
+                        player just earned is the wrong first move. */}
+                    <ScoreSubmitForm
+                      date={todayString()}
+                      shape={boardShape || dailyShape()}
+                      score={score}
+                      maxScore={scoreMax}
+                      submitLabel="Post"
+                      onSubmitted={() => setDailyScoreSubmitted(true)}
+                    />
+                  </div>
+                )
+              )}
 
               <div className="dvh-meta-strip answer-meta-strip">
                 <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
