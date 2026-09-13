@@ -26,11 +26,13 @@ Browne). Two codebases, one game:
 
 - **Node**: Start9 (StartOS 0.4) box, always on. Runs Bitcoin and
   **Alby Hub** (embedded LDK node — the box's separate LND is unused).
-- **Payments**: LNURL-pay lightning address fronted by Alby
-  (`getalby.com`), funds land on the Alby Hub. The address lives in ONE
-  constant: `droid-game/src/utils/lightning.js` → `LIGHTNING_ADDRESS`.
-  The app requires the callback to return a LUD-21 `verify` URL and fails
-  loudly without it.
+- **Payments**: removed from the game. The paid "play more today" mode was
+  hidden on iOS for App Store guideline 3.1.1, then taken out of the web
+  build too, so nothing in either build reaches a payment. `PaymentModal.js`
+  and `utils/lightning.js` are left in place, unreferenced and therefore not
+  bundled, so the LNURL-pay work is recoverable: the address is one constant
+  (`LIGHTNING_ADDRESS`), fronted by Alby, settling to the Alby Hub, and the
+  flow requires a LUD-21 `verify` URL.
 - **Leaderboard**: Firestore (project `onebitcoin-38ea0`), rules in
   `firestore.rules`.
 
@@ -50,8 +52,7 @@ Browne). Two codebases, one game:
 
 ## Known open items
 
-- App Store guideline 3.1.1: sats-for-games unlocking will likely need
-  StoreKit IAP or hiding the paid mode on iOS before submission.
-- How to Play claims the full board is shown during Reading Time; the board
-  actually shows only the preserved letters. Copy or behaviour needs
-  reconciling (owner's call).
+- Force-quitting the app mid-round still keeps the daily: it is only spent
+  when a round ends or is deliberately forfeited. Closing that means
+  marking the day as played the moment a round starts, which would cost a
+  player their day on a crash (owner's call).

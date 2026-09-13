@@ -53,7 +53,7 @@ const WORKING = grid(
 // After submitting: greens for correct, one grey wrong
 const SOLVED = grid(WORDS, (x, y) => (x === 4 && y === 3 ? 'wrong' : 'correct'));
 
-const HowToPlay = ({ onClose, hideLightning = false }) => (
+const HowToPlay = ({ onClose }) => (
   <div className="htp-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
     <div className="htp-modal" role="dialog" aria-label="How to play Droid">
       <div className="htp-topbar">
@@ -169,15 +169,6 @@ const HowToPlay = ({ onClose, hideLightning = false }) => (
               <span>Letters appear one at a time — place each as it arrives.</span>
             </div>
             */}
-            {/* Hidden on iOS alongside the button itself: describing a
-                purchase the native build does not offer is an App Store
-                problem in its own right. */}
-            {!hideLightning && (
-              <div className="htp-mode htp-mode-lightning">
-                <strong>⚡ Play More Today</strong>
-                <span>Pay 100 sats to play another Droid on any shape.</span>
-              </div>
-            )}
           </div>
         </section>
       </div>

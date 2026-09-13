@@ -5,12 +5,10 @@ const LETTERS = 'DROID'.split('');
 const StartScreen = ({
   onStart,
   onStartVsComputer,
-  onStartCustomVsComputer,
   onStartGhost,
   onShowLeaderboard,
   onShowHowToPlay,
   dailyPlayed,
-  hideLightning = false,
 }) => {
   return (
     <div className="start-screen">
@@ -58,19 +56,6 @@ const StartScreen = ({
             </button>
             */}
           </div>
-
-          {/* Digital sats-for-games unlocks are an App Store 3.1.1 problem on
-              iOS (must go through IAP), so the native build hides this entry
-              entirely rather than risk rejection or ship a dead button. The
-              web build is untouched - hideLightning defaults to false. */}
-          {!hideLightning && (
-            <button className="home-subscribe home-lightning-btn" onClick={onStartCustomVsComputer}>
-              <span className="home-lightning-label">
-                <strong><span className="home-lightning-icon">⚡</span> PLAY MORE TODAY</strong>
-                <small>100 sats · pay with Lightning</small>
-              </span>
-            </button>
-          )}
 
           {/* Secondary actions share a row: they are utilities, not modes,
               and pairing them keeps the play buttons the tallest things

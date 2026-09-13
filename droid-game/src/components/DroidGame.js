@@ -23,7 +23,6 @@ import {
   countBoardCombinations,
 } from '../utils/computerPlayer';
 import Leaderboard from './Leaderboard';
-import PaymentModal from './PaymentModal';
 import HowToPlay from './HowToPlay';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
@@ -241,9 +240,6 @@ const DroidGame = () => {
   // ── Leaderboard state ──────────────────────────────────────────────────────
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [confirmQuit, setConfirmQuit] = useState(false);
-
-  // ── Lightning payment state ───────────────────────────────────────────────
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // ── How-to-play overlay ────────────────────────────────────────────────────
   const [showHowToPlay, setShowHowToPlay] = useState(false);
@@ -965,7 +961,6 @@ const DroidGame = () => {
     resetGhostState();
     setIsPaused(false);
     setShowLeaderboard(false);
-    setShowPaymentModal(false);
     setGameState('start');
   };
 
@@ -1305,14 +1300,6 @@ const DroidGame = () => {
 
   return (
     <div className="game-container">
-      {/* Lightning payment modal */}
-      {showPaymentModal && (
-        <PaymentModal
-          onPaid={() => { setShowPaymentModal(false); handleModeSelect('computer'); }}
-          onCancel={() => setShowPaymentModal(false)}
-        />
-      )}
-
       {confirmQuit && (
         <div className="quit-overlay" role="dialog" aria-modal="true" aria-label="Leave this game?">
           <div className="quit-modal">
@@ -1360,7 +1347,6 @@ const DroidGame = () => {
         <StartScreen
           onStart={() => handleModeSelect('player1')}
           onStartVsComputer={() => handleModeSelect('daily')}
-          onStartCustomVsComputer={() => setShowPaymentModal(true)}
           onStartGhost={() => handleModeSelect('ghost')}
           onShowLeaderboard={() => setShowLeaderboard(true)}
           onShowHowToPlay={() => setShowHowToPlay(true)}
