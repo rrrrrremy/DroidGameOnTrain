@@ -240,6 +240,7 @@ const DroidGame = () => {
 
   // ── Leaderboard state ──────────────────────────────────────────────────────
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [confirmQuit, setConfirmQuit] = useState(false);
 
   // ── Lightning payment state ───────────────────────────────────────────────
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -472,17 +473,18 @@ const DroidGame = () => {
     if (isReadingTime) return;
     if (isPaused) return;
     if (appHidden) return;
+    if (confirmQuit) return;
     const id = setInterval(() => setTimerSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
-  }, [gameState, isPaused, timerEnabled, isReadingTime, appHidden]);
+  }, [gameState, isPaused, timerEnabled, isReadingTime, appHidden, confirmQuit]);
 
   useEffect(() => {
-    if (!isReadingTime || isPaused) return;
+    if (!isReadingTime || isPaused || confirmQuit) return;
     const id = setInterval(() => {
       setReadingSecondsLeft((seconds) => Math.max(0, seconds - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [isReadingTime, isPaused]);
+  }, [isReadingTime, isPaused, confirmQuit]);
 
   useEffect(() => {
     if (!isTimedComputerActive) return;
@@ -967,6 +969,27 @@ const DroidGame = () => {
     setGameState('start');
   };
 
+  /** Is a round actually under way, as opposed to being set up or over? */
+  const roundInProgress =
+    gameState === 'player1' || gameState === 'player2' || gameState === 'ghost';
+
+  /** The D button. Only interrupts when there is a round to lose. */
+  const goHome = () => {
+    if (roundInProgress) setConfirmQuit(true);
+    else resetGame();
+  };
+
+  /** Leaving mid-round spends the daily. Marked before the reset, which
+   *  clears dailyMode along with everything else. */
+  const quitAndForfeit = () => {
+    if (dailyMode) {
+      localStorage.setItem(DAILY_STORAGE_KEY, todayString());
+      setDailyPlayed(true);
+    }
+    setConfirmQuit(false);
+    resetGame();
+  };
+
   const revealCorrectLetter = ({ countAsHint = true } = {}) => {
     if (!player1Board) return;
 
@@ -1290,6 +1313,27 @@ const DroidGame = () => {
         />
       )}
 
+      {confirmQuit && (
+        <div className="quit-overlay" role="dialog" aria-modal="true" aria-label="Leave this game?">
+          <div className="quit-modal">
+            <strong className="quit-title">Leave this game?</strong>
+            <p className="quit-body">
+              {dailyMode
+                ? "Today's Droid will count as played. You won't be able to start it again until tomorrow."
+                : 'This game will be lost.'}
+            </p>
+            <div className="quit-actions">
+              <button className="button primary" onClick={() => setConfirmQuit(false)}>
+                Keep playing
+              </button>
+              <button className="quit-forfeit" onClick={quitAndForfeit}>
+                {dailyMode ? 'Forfeit today\u2019s Droid' : 'Leave game'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Leaderboard overlay — sits above everything */}
       {showLeaderboard && (
         <Leaderboard
@@ -1308,7 +1352,7 @@ const DroidGame = () => {
 
       {gameState !== 'start' && gameState !== 'preparingDaily' && gameState !== 'selectShape' && !isSolvingScreen && !isGhostDroidScreen && (
         <header className="site-header">
-          <button className="site-header-title" onClick={resetGame}>Droid</button>
+          <button className="site-header-title" onClick={goHome}>Droid</button>
         </header>
       )}
 
@@ -1388,7 +1432,7 @@ const DroidGame = () => {
           {isSolvingScreen ? (
             <div className={`dvh-panel${isPaused ? ' is-paused' : ''}`}>
               <div className="dvh-topbar">
-                <button className="dvh-home-button" onClick={resetGame} aria-label="Back to home screen">
+                <button className="dvh-home-button" onClick={goHome} aria-label="Back to home screen">
                   D
                 </button>
                 <div className={`live-score-badge dvh-score ${liveScoreClass}`}>
@@ -1473,7 +1517,7 @@ const DroidGame = () => {
               <div className="play-topbar">
                 <button
                   className="play-home-button"
-                  onClick={resetGame}
+                  onClick={goHome}
                   aria-label="Back to home screen"
                 >
                   D
@@ -1591,7 +1635,7 @@ const DroidGame = () => {
 
           <div className={`dvh-panel ghost-panel${isPaused ? ' is-paused' : ''}`}>
             <div className="dvh-topbar">
-              <button className="dvh-home-button" onClick={resetGame} aria-label="Back to home screen">
+              <button className="dvh-home-button" onClick={goHome} aria-label="Back to home screen">
                 D
               </button>
               <div className={`live-score-badge dvh-score ${liveScoreClass}`}>
