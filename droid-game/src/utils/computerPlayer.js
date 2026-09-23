@@ -325,6 +325,7 @@ const buildIndex = (words) => {
 
 const IDX3 = buildIndex(WORDS_3);
 const IDX4 = buildIndex(WORDS_4);
+const WORDS_3_SET = new Set(WORDS_3);
 
 // ── Seeded PRNG (mulberry32) ────────────────────────────────────────────────
 
@@ -354,7 +355,30 @@ const shuffle = (arr, rng = Math.random) => {
 };
 
 // Filter words matching constraints: { position: letter }
+//
+// The solution counters ask the same handful of questions ("4-letter words
+// with A second and T third") millions of times while proving a board has one
+// answer, so answers are remembered per word list. The result is always the
+// same array for the same question; callers only read it (shuffle copies).
+const filterMemo = new WeakMap();
+
 const filterWords = (words, index, constraints) => {
+  let memo = filterMemo.get(index);
+  if (!memo) {
+    memo = new Map();
+    filterMemo.set(index, memo);
+  }
+  let key = '';
+  for (const pos in constraints) key += `${pos}${constraints[pos]}`;
+  let found = memo.get(key);
+  if (!found) {
+    found = filterWordsUncached(words, index, constraints);
+    memo.set(key, found);
+  }
+  return found;
+};
+
+const filterWordsUncached = (words, index, constraints) => {
   let candidates = null;
   for (const [pos, letter] of Object.entries(constraints)) {
     const p = Number(pos);
@@ -520,7 +544,7 @@ export const extractFiveLetterWord = (board, shapeId) => {
 export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixedTiles = []) => {
   if (!fiveLetterWord) return 0;
   const w = fiveLetterWord;
-  const wordsSet3 = new Set(WORDS_3);
+  const wordsSet3 = WORDS_3_SET;
   let count = 0;
 
   const fitsPool = (allLetters) => {
@@ -532,13 +556,21 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixe
     return true;
   };
 
+  // Early outs, all exact: letters already placed on the board must fit the
+  // pool on their own, so a word (or partial board) that overdraws it cannot
+  // be part of any counted answer. Each check covers only cells the final
+  // `allLetters` check also covers, so the count is unchanged; it just stops
+  // walking branches that were always going to be rejected at the end.
+  const fitting = (options, cells) => options.filter((o) => fitsPool(w + cells(o)));
+
   if (shapeId === 'droid') {
     // row1 = w; iterate col1, col2, col3
-    const col1Options = filterWords(WORDS_4, IDX4, { 0: w[1] });
-    const col2Options = filterWords(WORDS_4, IDX4, { 1: w[2] });
-    const col3Options = filterWords(WORDS_4, IDX4, { 0: w[3] });
+    const col1Options = fitting(filterWords(WORDS_4, IDX4, { 0: w[1] }), (c) => c.slice(1));
+    const col2Options = fitting(filterWords(WORDS_4, IDX4, { 1: w[2] }), (c) => c[0] + c.slice(2));
+    const col3Options = fitting(filterWords(WORDS_4, IDX4, { 0: w[3] }), (c) => c.slice(1));
     for (const col1 of col1Options) {
       for (const col2 of col2Options) {
+        if (!fitsPool(w + col1.slice(1) + col2[0] + col2.slice(2))) continue;
         for (const col3 of col3Options) {
           const row2 = col1[1] + col2[2] + col3[1];
           const row3 = col1[2] + col2[3] + col3[2];
@@ -555,11 +587,12 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixe
     }
   } else if (shapeId === 'cross') {
     // row2 = w; iterate col1, col2, col3
-    const col1Options = filterWords(WORDS_4, IDX4, { 1: w[1] });
-    const col2Options = filterWords(WORDS_4, IDX4, { 2: w[2] });
-    const col3Options = filterWords(WORDS_4, IDX4, { 1: w[3] });
+    const col1Options = fitting(filterWords(WORDS_4, IDX4, { 1: w[1] }), (c) => c[0] + c.slice(2));
+    const col2Options = fitting(filterWords(WORDS_4, IDX4, { 2: w[2] }), (c) => c.slice(0, 2) + c[3]);
+    const col3Options = fitting(filterWords(WORDS_4, IDX4, { 1: w[3] }), (c) => c[0] + c.slice(2));
     for (const col1 of col1Options) {
       for (const col2 of col2Options) {
+        if (!fitsPool(w + col1[0] + col1.slice(2) + col2.slice(0, 2) + col2[3])) continue;
         for (const col3 of col3Options) {
           const row1 = col1[0] + col2[1] + col3[0];
           const row3 = col1[2] + col2[3] + col3[2];
@@ -576,14 +609,16 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixe
     }
   } else if (shapeId === 'invader') {
     // row1 = w; iterate col1, col2, col3
-    const col1Options = filterWords(WORDS_4, IDX4, { 0: w[1] });
-    const col2Options = filterWords(WORDS_4, IDX4, { 1: w[2] });
-    const col3Options = filterWords(WORDS_3, IDX3, { 0: w[3] });
+    const col1Options = fitting(filterWords(WORDS_4, IDX4, { 0: w[1] }), (c) => c.slice(1));
+    const col2Options = fitting(filterWords(WORDS_4, IDX4, { 1: w[2] }), (c) => c[0] + c.slice(2));
+    const col3Options = fitting(filterWords(WORDS_3, IDX3, { 0: w[3] }), (c) => c.slice(1));
     for (const col1 of col1Options) {
       for (const col2 of col2Options) {
+        if (!fitsPool(w + col1.slice(1) + col2[0] + col2.slice(2))) continue;
         for (const col3 of col3Options) {
           const row2 = col1[1] + col2[2] + col3[1];
           if (!wordsSet3.has(row2)) continue;
+          if (!fitsPool(w + col1.slice(1) + col2[0] + col2.slice(2) + col3.slice(1))) continue;
           const row3Options = filterWords(WORDS_4, IDX4, { 0: col1[2], 1: col2[3], 2: col3[2] });
           for (const row3 of row3Options) {
             const allLetters = w + col1.slice(1) + col2[0] + col2.slice(2) + col3.slice(1) + row3[3];
@@ -599,12 +634,14 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixe
     }
   } else if (shapeId === 'bolt') {
     // col3 = w; iterate row1, col1, col2
-    const row1Options = filterWords(WORDS_4, IDX4, { 3: w[1] });
+    const row1Options = fitting(filterWords(WORDS_4, IDX4, { 3: w[1] }), (r) => r.slice(0, 3));
     for (const row1 of row1Options) {
       const col1Options = filterWords(WORDS_3, IDX3, { 0: row1[1] });
       for (const col1 of col1Options) {
+        if (!fitsPool(w + row1.slice(0, 3) + col1.slice(1))) continue;
         const col2Options = filterWords(WORDS_3, IDX3, { 0: row1[2] });
         for (const col2 of col2Options) {
+          if (!fitsPool(w + row1.slice(0, 3) + col1.slice(1) + col2.slice(1))) continue;
           const row2Options = filterWords(WORDS_4, IDX4, { 0: col1[1], 1: col2[1], 2: w[2] });
           for (const row2 of row2Options) {
             const row3Options = filterWords(WORDS_4, IDX4, { 1: col1[2], 2: col2[2], 3: w[3] });
@@ -623,11 +660,14 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixe
     }
   } else if (shapeId === 'skating') {
     // row3 = w; iterate col0, col1, col2, then find row1
-    const col0Options = filterWords(WORDS_4, IDX4, { 2: w[0] });
+    const col0Options = fitting(filterWords(WORDS_4, IDX4, { 2: w[0] }), (c) => c[0] + c[1] + c[3]);
+    const col1Fitting = fitting(filterWords(WORDS_4, IDX4, { 3: w[1] }), (c) => c.slice(0, 3));
+    const col2Fitting = fitting(filterWords(WORDS_3, IDX3, { 2: w[2] }), (c) => c.slice(0, 2));
     for (const col0 of col0Options) {
-      const col1Options = filterWords(WORDS_4, IDX4, { 3: w[1] });
+      const col1Options = col1Fitting;
       for (const col1 of col1Options) {
-        const col2Options = filterWords(WORDS_3, IDX3, { 2: w[2] });
+        if (!fitsPool(w + col0[0] + col0[1] + col0[3] + col1.slice(0, 3))) continue;
+        const col2Options = col2Fitting;
         for (const col2 of col2Options) {
           const row2 = col0[1] + col1[2] + col2[1];
           if (!wordsSet3.has(row2)) continue;
@@ -646,11 +686,14 @@ export const countBoardCombinations = (shapeId, fiveLetterWord, letterPool, fixe
     }
   } else if (shapeId === 'sleeping') {
     // col1 = w; iterate row1, row2, row3; col2/col3 derived
-    const row1Options = filterWords(WORDS_4, IDX4, { 0: w[1] });
+    const row1Options = fitting(filterWords(WORDS_4, IDX4, { 0: w[1] }), (r) => r.slice(1));
+    const row2Fitting = fitting(filterWords(WORDS_4, IDX4, { 1: w[2] }), (r) => r[0] + r.slice(2));
+    const row3Fitting = fitting(filterWords(WORDS_4, IDX4, { 0: w[3] }), (r) => r.slice(1));
     for (const row1 of row1Options) {
-      const row2Options = filterWords(WORDS_4, IDX4, { 1: w[2] });
+      const row2Options = row2Fitting;
       for (const row2 of row2Options) {
-        const row3Options = filterWords(WORDS_4, IDX4, { 0: w[3] });
+        if (!fitsPool(w + row1.slice(1) + row2[0] + row2.slice(2))) continue;
+        const row3Options = row3Fitting;
         for (const row3 of row3Options) {
           const col2 = row1[1] + row2[2] + row3[1];
           const col3 = row1[2] + row2[3] + row3[2];

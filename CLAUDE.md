@@ -50,6 +50,19 @@ Browne). Two codebases, one game:
 - A new marketing version also needs a matching version created in App
   Store Connect before a build can be submitted against it.
 
+## Daily board build
+
+- The daily board is built from the date seed and must have exactly one
+  solution, which the solution counter in `utils/computerPlayer.js` proves.
+  It runs in a Web Worker (`utils/dailyBoardBuilder.js`), falling back to
+  the main thread if a worker fails, and is cached in local storage for the
+  day. On the main thread it froze the home screen for up to ~15 s on the
+  first open of the day.
+- Any change to the generators or the counter must leave every daily board
+  identical (players on web and iOS must get the same puzzle). Compare a
+  couple of months of `generateDailyBoard` output against the previous
+  version before shipping.
+
 ## Known open items
 
 - The daily round is saved as it is played (`utils/dailyProgress.js`), so

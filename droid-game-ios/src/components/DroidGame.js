@@ -14,6 +14,7 @@ import {
   decodeShareParam,
 } from '../utils/gameLogic';
 import { saveDailyProgress, readDailyProgress, clearDailyProgress } from '../utils/dailyProgress';
+import { buildDailyBoard } from '../utils/dailyBoardBuilder';
 import {
   generateComputerBoard,
   generateDailyBoard,
@@ -207,6 +208,7 @@ const DroidGame = () => {
   );
   const [preparedDailyGame, setPreparedDailyGame] = useState(null);
   const [isPreparingDaily, setIsPreparingDaily] = useState(false);
+  const dailyPrepareTicketRef = useRef(0);
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timedAutoReveals, setTimedAutoReveals] = useState(0);
   const [timerSeconds, setTimerSeconds] = useState(0);
@@ -309,7 +311,9 @@ const DroidGame = () => {
     }
   };
 
-  const prepareDailyGame = () => {
+  // Resolves to today's prepared game, or null. The build itself runs in a
+  // worker (utils/dailyBoardBuilder.js) so the home screen stays tappable.
+  const prepareDailyGame = async () => {
     if (isPreparedDailyGame(preparedDailyGame)) return preparedDailyGame;
 
     const cached = readPreparedDailyGame();
@@ -318,11 +322,9 @@ const DroidGame = () => {
       return cached;
     }
 
-    const shape = dailyShape();
-    const result = generateDailyBoard(shape);
-    if (!result) return null;
+    const prepared = await buildDailyBoard();
+    if (!prepared.result || !isPreparedDailyGame(prepared)) return null;
 
-    const prepared = { date: todayString(), shape, result };
     try {
       localStorage.setItem(preparedDailyCacheKey(), JSON.stringify(prepared));
     } catch {
@@ -773,10 +775,14 @@ const DroidGame = () => {
         return;
       }
 
+      // Still building (usually the first open of the day). Wait on the same
+      // build rather than starting a second one. Going home from the waiting
+      // screen bumps the ticket, so a build that lands later starts nothing.
+      const ticket = ++dailyPrepareTicketRef.current;
       setIsPreparingDaily(true);
       setGameState('preparingDaily');
-      window.setTimeout(() => {
-        const freshPrepared = prepareDailyGame();
+      prepareDailyGame().then((freshPrepared) => {
+        if (ticket !== dailyPrepareTicketRef.current) return;
         setIsPreparingDaily(false);
         if (freshPrepared) {
           startDaily(freshPrepared.shape, freshPrepared.result);
@@ -784,7 +790,7 @@ const DroidGame = () => {
           setValidationError('Failed to prepare board — please try again.');
           setGameState('start');
         }
-      }, 0);
+      });
       return;
     }
     setGameState('selectShape');
@@ -994,6 +1000,8 @@ const DroidGame = () => {
 
   // Full reset including session
   const resetGame = () => {
+    dailyPrepareTicketRef.current += 1;
+    setIsPreparingDaily(false);
     setBoard(emptyBoard());
     setPlayer1Board(null);
     setCurrentPlayer(1);
