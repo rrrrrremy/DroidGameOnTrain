@@ -159,50 +159,245 @@ body {
   gap: 0.85rem;
 }
 
-/* No frame of its own: it used to box seven boxes, which read as clutter. */
+/* Home screen: a slim brand bar, one card for today's Droid holding the
+   main action, then the other mode and the leaderboard. The card takes the
+   spare height, so nothing floats in a void on tall phones. */
 .home-panel {
   width: 100%;
+  max-width: 500px;
+  flex: 1 1 auto;
+  max-height: 54rem;
+  margin-block: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 1rem;
 }
 
-/* Only things you can tap get a frame. The brand, the tagline and the legal
-   footer are read, not pressed, so they sit directly on the background. */
-.home-mode-button,
-.home-daily-button,
-.home-subscribe,
-.home-leaderboard-btn,
-.home-how-to {
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  background: rgba(10,12,12,0.36);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
-}
-
-.home-logo-card {
-  padding: 0.5rem 0.25rem 0;
-}
-
-.home-header {
+.home-topbar {
+  flex: 0 0 auto;
   display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
+  align-items: center;
+  justify-content: space-between;
 }
 
-/* Utilities sit side by side so the play buttons stay the tallest things
-   on the screen. */
-.home-utility-row {
+.home-wordmark {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.home-wordmark-mark {
+  width: 2.75rem;
+  height: 2.75rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.55rem;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--indigo);
+  color: #07110b;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1rem;
 }
 
-.home-logo-card .brand-lockup {
-  grid-template-columns: 4rem 1fr;
+.home-wordmark-text {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 1.375rem;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+
+.home-help {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.home-daily-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+  padding: 1.375rem;
+  border: 1px solid #2f3a33;
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+.home-daily-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.home-daily-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--indigo);
+}
+
+.home-daily-date {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #a6a8a9;
+}
+
+.home-daily-shape {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 0.875rem;
 }
 
+.home-shape-grid {
+  width: min(13rem, 100%);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.home-shape-cell {
+  aspect-ratio: 1;
+  box-sizing: border-box;
+  border: 2px dashed #26282a;
+  border-radius: 6px;
+}
+
+.home-shape-cell.is-on {
+  border: 2px solid var(--indigo);
+  background: #22301f;
+}
+
+.home-daily-card.is-played .home-shape-cell.is-on {
+  border-color: #3f5446;
+  background: #1f2621;
+}
+
+.home-daily-meta {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #a6a8a9;
+  text-align: center;
+}
+
+.home-play-button {
+  flex: 0 0 auto;
+  min-height: 5.25rem;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  padding: 0.6rem 1rem;
+  border: 0;
+  border-radius: 16px;
+  background: var(--indigo);
+  color: #07110b;
+  font-family: inherit;
+  font-size: 1.75rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  line-height: 1.08;
+  box-shadow: 0 16px 36px rgba(34, 197, 94, 0.22);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.home-play-button:hover { background: #4ade80; }
+
+.home-play-button:disabled {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+.home-human-button {
+  flex: 0 0 auto;
+  min-height: 4.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 1.25rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.home-human-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.home-human-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.home-human-sub {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #a6a8a9;
+}
+
+.home-leaderboard-btn {
+  flex: 0 0 auto;
+  min-height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.home-help:hover,
+.home-human-button:hover,
+.home-leaderboard-btn:hover {
+  border-color: var(--border-med);
+  background: var(--surface2);
+}
+
+.home-help:active,
+.home-play-button:not(:disabled):active,
+.home-human-button:active,
+.home-leaderboard-btn:active {
+  transform: scale(0.985);
+  filter: brightness(0.94);
+}
+
+/* Also the "Preparing Droid..." line, which shares the start screen. */
 .home-tagline {
   margin: 0;
   padding: 0.8rem 0.9rem;
@@ -211,87 +406,6 @@ body {
   font-weight: 800;
   line-height: 1.25;
   text-align: center;
-}
-
-.home-timer-toggle {
-  box-shadow: none;
-}
-
-.home-mode-stack {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.home-mode-button {
-  width: 100%;
-  min-height: 5.15rem;
-  display: grid;
-  place-items: center;
-  padding: 0.85rem 1rem;
-  color: var(--text);
-  cursor: pointer;
-  font-size: clamp(1.35rem, 6vw, 2rem);
-  font-weight: 800;
-  line-height: 1.08;
-  text-align: center;
-  text-transform: uppercase;
-  transition: transform 0.1s ease, border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-  touch-action: manipulation;
-}
-
-.home-mode-primary {
-  background:
-    linear-gradient(135deg, rgba(40,212,102,0.96), rgba(13,148,136,0.94)),
-    var(--surface);
-  border-color: rgba(220,252,231,0.54);
-  color: #07110b;
-  box-shadow: 0 16px 34px rgba(0,0,0,0.3), 0 0 28px rgba(34,197,94,0.2);
-}
-
-.home-mode-button:hover,
-.home-daily-button:hover {
-  border-color: var(--border-med);
-  background: var(--surface2);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.24);
-}
-
-.home-mode-primary:hover {
-  background:
-    linear-gradient(135deg, #4ade80, #0d9488),
-    var(--surface);
-  border-color: rgba(220,252,231,0.7);
-  box-shadow: 0 18px 42px rgba(0,0,0,0.34), 0 0 34px rgba(34,197,94,0.28);
-}
-
-.home-mode-button:active,
-.home-daily-button:active {
-  transform: scale(0.985);
-  filter: brightness(0.94);
-}
-
-/* Daily challenge already played today — greyed out, non-interactive */
-.home-mode-button.is-played,
-.home-mode-button:disabled {
-  background: rgba(10,12,12,0.36);
-  border-color: var(--border);
-  color: var(--text-muted);
-  box-shadow: none;
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-.home-mode-button.is-played:hover,
-.home-mode-button:disabled:hover {
-  background: rgba(10,12,12,0.36);
-  border-color: var(--border);
-  box-shadow: none;
-}
-
-.home-mode-button.is-played:active,
-.home-mode-button:disabled:active {
-  transform: none;
-  filter: none;
 }
 
 .home-mode-note {
@@ -303,156 +417,21 @@ body {
   color: var(--text-muted);
 }
 
-/* Muted grey is right on the greyed-out "Played today" button and unreadable
-   on the live green one, which is where "Resume" puts it. Dark text matches
-   the button's own label. */
-.home-mode-primary:not(.is-played) .home-mode-note {
+/* Muted grey suits the greyed-out "Played today" button and is unreadable on
+   the live green one, which is where "Resume" puts it. */
+.home-play-button:not(:disabled) .home-mode-note {
   color: rgba(7, 17, 11, 0.72);
 }
 
-.home-daily-button {
-  min-height: 3.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 0.9rem;
-  color: var(--text);
-  cursor: pointer;
-  border-color: rgba(201, 180, 88, 0.48);
-  background: linear-gradient(135deg, rgba(201,180,88,0.13), rgba(10,12,12,0.36));
-  text-align: left;
-}
-
-.home-daily-button span {
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  line-height: 1.2;
-  text-transform: uppercase;
-}
-
-.home-daily-button small {
-  color: var(--text-muted);
-  font-size: 0.7rem;
-  line-height: 1.2;
-  text-align: right;
-}
-
-.home-daily-button.is-complete {
-  border-color: rgba(134,239,172,0.32);
-  background: rgba(10,12,12,0.36);
-}
-
-.home-subscribe {
-  min-height: 4.75rem;
-  display: grid;
-  place-items: center;
-  padding: 0.7rem 0.9rem;
-  cursor: pointer;
-  border-color: rgba(251,191,36,0.3);
-  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
-}
-
-.home-subscribe:hover {
-  border-color: rgba(251,191,36,0.55);
-  background: rgba(251,191,36,0.06);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2), 0 0 16px rgba(251,191,36,0.08);
-}
-
-.home-subscribe:active {
-  transform: scale(0.985);
-  filter: brightness(0.94);
-}
-
-.home-lightning-icon {
-  font-size: 0.9em;
-  line-height: 1;
-}
-
-.home-lightning-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  text-align: center;
-}
-
-.home-lightning-label strong {
-  color: var(--text);
-  font-size: clamp(1.35rem, 6vw, 2rem);
-  font-weight: 800;
-  line-height: 1.08;
-  text-transform: uppercase;
-}
-
-.home-lightning-label small {
-  color: rgba(251,191,36,0.75);
-  font-size: 0.82rem;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.home-leaderboard-btn {
-  width: 100%;
-  min-height: 3rem;
-  display: grid;
-  place-items: center;
-  padding: 0.55rem 0.85rem;
-  color: var(--text);
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-  text-align: center;
-  cursor: pointer;
-  font-family: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.home-leaderboard-btn:hover {
-  border-color: var(--border-med);
-  background: var(--surface2);
-}
-
-.home-leaderboard-btn:active {
-  transform: scale(0.985);
-  filter: brightness(0.94);
-}
-
-.home-how-to {
-  width: 100%;
-  min-height: 3rem;
-  display: grid;
-  place-items: center;
-  padding: 0.55rem 0.85rem;
-  color: var(--text);
-  font-size: 1rem;
-  font-weight: 800;
-  line-height: 1.2;
-  text-align: center;
-  cursor: pointer;
-  font-family: inherit;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-.home-how-to:hover {
-  border-color: var(--border-med);
-  background: var(--surface2);
-}
-
-.home-how-to:active {
-  transform: scale(0.985);
-  filter: brightness(0.94);
-}
-
 .home-footer {
+  flex: 0 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0.12rem;
-  padding: 0.8rem 0.7rem;
-  color: var(--text-muted);
-  font-size: 0.74rem;
-  font-weight: 700;
-  line-height: 1.3;
+  color: #8a8c8d;
+  font-size: 0.66rem;
+  font-weight: 600;
+  line-height: 1.4;
   text-align: center;
 }
 
@@ -466,66 +445,6 @@ body {
   text-transform: uppercase;
   color: var(--text-muted);
   margin-bottom: 0.4rem;
-}
-
-/* ─── TITLE ─── */
-
-.brand-lockup {
-  display: grid;
-  grid-template-columns: 4.4rem 1fr;
-  align-items: center;
-  gap: 1rem;
-}
-
-.brand-mark {
-  width: 4.4rem;
-  height: 4.4rem;
-  display: grid;
-  place-items: center;
-  background: linear-gradient(135deg, #28d466, #0d9488);
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: var(--radius-sm);
-  color: #07110b;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 1.6rem;
-  box-shadow: 0 14px 34px rgba(0,0,0,0.36), 0 0 28px rgba(34,197,94,0.22);
-}
-
-.brand-copy {
-  min-width: 0;
-}
-
-.game-title {
-  font-family: 'Press Start 2P', monospace;
-  font-size: clamp(1.85rem, 9vw, 3rem);
-  font-weight: 400;
-  letter-spacing: 0.06em;
-  display: flex;
-  justify-content: flex-start;
-  gap: 0.06em;
-  line-height: 1.05;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50%       { transform: translateY(-10px); }
-}
-
-.game-letter {
-  display: inline-block;
-  cursor: default;
-  transition: color 0.2s, text-shadow 0.2s;
-}
-
-.game-letter:nth-child(1) { color: #dcfce7; }
-.game-letter:nth-child(2) { color: #86efac; }
-.game-letter:nth-child(3) { color: #4ade80; }
-.game-letter:nth-child(4) { color: #22c55e; }
-.game-letter:nth-child(5) { color: #14b8a6; }
-
-.game-letter.hovered {
-  color: #dcfce7 !important;
-  text-shadow: 0 0 28px rgba(134, 239, 172, 0.8);
 }
 
 .start-subtitle {
@@ -3139,86 +3058,29 @@ body {
     padding: max(0.35rem, env(safe-area-inset-top, 0px)) 0.35rem max(0.35rem, env(safe-area-inset-bottom, 0px));
     overflow: hidden;
   }
-  .start-content {
-    width: 100%;
-    max-width: 100%;
-    height: 100%;
-    min-height: 0;
-  }
+  /* The home screen fits the phone's height exactly: the card gives up
+     its spare room first, and the fixed parts scale with the height. */
   .home-panel {
     height: 100%;
     min-height: 0;
-    /* Spreads the leftover height between the groups as breathing room,
-       rather than pooling it in one void under the footer. */
-    justify-content: space-between;
-    gap: clamp(0.2rem, calc(var(--app-height) / 280), 0.36rem);
-    padding: clamp(0.34rem, calc(var(--app-height) / 150), 0.5rem);
+    max-height: none;
+    margin: 0;
+    padding: clamp(0.5rem, calc(var(--app-height) * 0.018), 1rem) 0.65rem clamp(0.25rem, calc(var(--app-height) * 0.01), 0.6rem);
+    gap: clamp(0.55rem, calc(var(--app-height) * 0.017), 1rem);
     overflow: hidden;
   }
-  .home-header {
-    flex: 0 0 auto;
-    gap: clamp(0.15rem, calc(var(--app-height) / 420), 0.3rem);
+  .home-daily-card {
+    padding: clamp(0.85rem, calc(var(--app-height) * 0.026), 1.375rem);
+    gap: clamp(0.55rem, calc(var(--app-height) * 0.019), 1.1rem);
   }
-  .home-logo-card {
-    flex: 0 0 auto;
-    padding: clamp(0.42rem, calc(var(--app-height) / 120), 0.68rem);
+  .home-shape-grid { width: min(13rem, 100%, calc(var(--app-height) * 0.25)); }
+  .home-play-button {
+    min-height: clamp(3.9rem, calc(var(--app-height) * 0.1), 5.25rem);
+    font-size: clamp(1.35rem, calc(var(--app-height) * 0.034), 1.75rem);
   }
-  .home-logo-card .brand-lockup { grid-template-columns: clamp(2.55rem, calc(var(--app-height) * 0.062), 3.25rem) 1fr; gap: 0.55rem; }
-  .brand-lockup  { grid-template-columns: 3.8rem 1fr; gap: 0.8rem; }
-  .brand-mark    { width: 3.8rem; height: 3.8rem; font-size: 1.25rem; }
-  .home-logo-card .brand-mark {
-    width: clamp(2.55rem, calc(var(--app-height) * 0.062), 3.25rem);
-    height: clamp(2.55rem, calc(var(--app-height) * 0.062), 3.25rem);
-    font-size: clamp(0.92rem, calc(var(--app-height) * 0.019), 1.08rem);
-  }
-  .game-title    { font-size: clamp(1.42rem, calc(var(--app-height) * 0.038), 2.05rem); }
-  .start-badge   { font-size: clamp(0.48rem, calc(var(--app-height) * 0.01), 0.62rem); }
-  .home-tagline  {
-    flex: 0 0 auto;
-    padding: clamp(0.38rem, calc(var(--app-height) / 135), 0.58rem) 0.55rem;
-    font-size: clamp(0.78rem, calc(var(--app-height) * 0.017), 0.98rem);
-  }
-  .home-mode-stack {
-    flex: 0 0 auto;
-    gap: clamp(0.22rem, calc(var(--app-height) / 310), 0.34rem);
-  }
-  .home-mode-button {
-    /* Taller than before so the play actions dominate, but a fixed size:
-       letting them absorb the spare height turns them into empty panels. */
-    flex: 0 0 auto;
-    min-height: clamp(3.2rem, calc(var(--app-height) * 0.15), 5.8rem);
-    padding: 0.42rem 0.65rem;
-    font-size: clamp(1rem, calc(var(--app-height) * 0.027), 1.42rem);
-  }
-  .home-daily-button {
-    flex: 0 0 auto;
-    min-height: clamp(2.35rem, calc(var(--app-height) * 0.064), 3rem);
-    padding: 0.42rem 0.62rem;
-  }
-  .home-daily-button span { font-size: clamp(0.62rem, calc(var(--app-height) * 0.012), 0.74rem); }
-  .home-daily-button small { font-size: clamp(0.54rem, calc(var(--app-height) * 0.011), 0.64rem); }
-  .home-subscribe {
-    flex: 0 0 auto;
-    min-height: clamp(3rem, calc(var(--app-height) * 0.125), 4.8rem);
-    padding: 0.38rem 0.6rem;
-  }
-  .home-lightning-icon { font-size: 0.9em; }
-  .home-lightning-label strong { font-size: clamp(1rem, calc(var(--app-height) * 0.027), 1.42rem); }
-  .home-lightning-label small { font-size: clamp(0.56rem, calc(var(--app-height) * 0.014), 0.72rem); }
-  .home-how-to,
-  .home-leaderboard-btn {
-    flex: 0 0 auto;
-    min-height: clamp(1.9rem, calc(var(--app-height) * 0.052), 2.35rem);
-    padding: 0.35rem 0.55rem;
-    font-size: clamp(0.72rem, calc(var(--app-height) * 0.016), 0.86rem);
-  }
-  .home-footer   {
-    flex: 0 0 auto;
-    gap: 0.04rem;
-    padding: clamp(0.34rem, calc(var(--app-height) / 160), 0.5rem) 0.4rem;
-    font-size: clamp(0.5rem, calc(var(--app-height) * 0.011), 0.6rem);
-    line-height: 1.14;
-  }
+  .home-human-button { min-height: clamp(3.5rem, calc(var(--app-height) * 0.09), 4.75rem); }
+  .home-leaderboard-btn { min-height: clamp(2.9rem, calc(var(--app-height) * 0.066), 3.5rem); }
+  .home-footer { font-size: clamp(0.54rem, calc(var(--app-height) * 0.0125), 0.6rem); line-height: 1.3; }
   .start-button  { min-height: 3.55rem; }
   .start-button-hero { min-height: 5.15rem; }
   .start-button-hero .start-button-title { font-size: 0.92rem; }
@@ -4470,27 +4332,19 @@ body {
   .home-panel {
     height: 100%;
     min-height: 0;
-    gap: 0.32rem;
-    padding: 0.42rem;
+    max-height: none;
+    margin: 0 auto;
+    gap: 0.6rem;
+    padding: 0.5rem;
     overflow: hidden;
   }
 
-  .home-logo-card { padding: 0.5rem 0.65rem; }
-  .home-logo-card .brand-lockup { grid-template-columns: 3rem 1fr; gap: 0.6rem; }
-  .home-logo-card .brand-mark { width: 3rem; height: 3rem; font-size: 1rem; }
-  .game-title { font-size: clamp(1.55rem, 4.2vw, 2rem); }
-  .start-badge { font-size: 0.54rem; }
-  .home-tagline { padding: 0.46rem 0.6rem; font-size: 0.88rem; }
-  .home-mode-stack { gap: 0.32rem; }
-  .home-mode-button { min-height: 3rem; padding: 0.45rem 0.7rem; font-size: clamp(1.05rem, 3vw, 1.35rem); }
-  .home-daily-button { min-height: 2.55rem; padding: 0.45rem 0.65rem; }
-  .home-subscribe { min-height: 2.85rem; padding: 0.34rem 0.6rem; }
-  .home-lightning-icon { font-size: 0.9em; }
-  .home-lightning-label strong { font-size: clamp(1.05rem, 3vw, 1.35rem); }
-  .home-lightning-label small { font-size: 0.62rem; }
-  .home-how-to,
-  .home-leaderboard-btn { min-height: 2rem; padding: 0.34rem 0.55rem; font-size: 0.78rem; }
-  .home-footer { gap: 0.02rem; padding: 0.34rem 0.45rem; font-size: 0.54rem; line-height: 1.12; }
+  .home-daily-card { padding: 0.9rem; gap: 0.6rem; }
+  .home-shape-grid { width: min(11rem, calc(var(--app-height) * 0.24)); }
+  .home-play-button { min-height: 3.9rem; font-size: 1.4rem; }
+  .home-human-button { min-height: 3.4rem; }
+  .home-leaderboard-btn { min-height: 2.9rem; }
+  .home-footer { font-size: 0.56rem; line-height: 1.25; }
 
   /* The play screens, in a window too short for their natural height.
      Below the phone breakpoint the layout already fits itself to
