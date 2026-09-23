@@ -9,6 +9,7 @@ const StartScreen = ({
   onShowLeaderboard,
   onShowHowToPlay,
   dailyPlayed,
+  dailyInProgress = false,
 }) => {
   return (
     <div className="start-screen">
@@ -42,8 +43,13 @@ const StartScreen = ({
               onClick={onStartVsComputer}
               disabled={dailyPlayed}
             >
-              <span>PLAY DROID</span>
+              {/* An unfinished round is carried on, never restarted, so the
+                  button says so rather than promising a fresh start. */}
+              <span>{dailyInProgress ? 'RESUME DROID' : 'PLAY DROID'}</span>
               {dailyPlayed && <small className="home-mode-note">Played today</small>}
+              {!dailyPlayed && dailyInProgress && (
+                <small className="home-mode-note">Carry on where you left off</small>
+              )}
             </button>
 
             <button className="home-mode-button" onClick={onStart}>

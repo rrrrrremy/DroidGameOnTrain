@@ -13,6 +13,7 @@ import {
   encodeShareParam,
   decodeShareParam,
 } from '../utils/gameLogic';
+import { saveDailyProgress, readDailyProgress, clearDailyProgress } from '../utils/dailyProgress';
 import {
   generateComputerBoard,
   generateDailyBoard,
@@ -193,6 +194,14 @@ const DroidGame = () => {
   const [dailyPlayed, setDailyPlayed] = useState(
     () => localStorage.getItem(DAILY_STORAGE_KEY) === todayString()
   );
+  // True when the app was closed partway through today's round. The home
+  // screen then offers to resume it, and never a fresh start.
+  const [dailyInProgress, setDailyInProgress] = useState(
+    () => readDailyProgress(todayString()) !== null
+  );
+  // The date the current daily round began on. A round can run past
+  // midnight, and its save must stay tied to the puzzle it belongs to.
+  const dailyRoundDateRef = useRef(null);
   const [dailyScoreSubmitted, setDailyScoreSubmitted] = useState(
     () => hasSubmittedLeaderboardScore(todayString())
   );
@@ -462,6 +471,22 @@ const DroidGame = () => {
   // while the app is off screen - backgrounded, or the phone locked. Without
   // this a player returns to a round that quietly aged, and a board they
   // solve in four minutes can score as though it took six.
+  // Save the daily round as it is played - every placement, every hint and
+  // every second of the clock - so that reopening the app resumes it rather
+  // than starting it again.
+  useEffect(() => {
+    if (gameState !== 'player2' || !dailyMode || !dailyRoundDateRef.current) return;
+    saveDailyProgress({
+      date: dailyRoundDateRef.current,
+      board,
+      preservedTiles,
+      timerSeconds,
+      letterHintsUsed,
+      wordHintUsed,
+      timedAutoReveals,
+    });
+  }, [gameState, dailyMode, board, preservedTiles, timerSeconds, letterHintsUsed, wordHintUsed, timedAutoReveals]);
+
   useEffect(() => {
     const onVisibility = () => setAppHidden(document.hidden);
     onVisibility();
@@ -713,6 +738,26 @@ const DroidGame = () => {
     }
   };
 
+  /** Start today's round, or carry it on if one was left unfinished.
+   *
+   *  The puzzle is rebuilt from the daily seed exactly as it was the first
+   *  time; only what the player had done is laid back over it. Reading time
+   *  is not given again - they have already seen the board - and the clock
+   *  picks up where it stopped. */
+  const startDaily = (shape, result) => {
+    handleShapeSelect(shape, 'daily', result);
+    dailyRoundDateRef.current = todayString();
+    const saved = readDailyProgress(todayString());
+    if (!saved) return;
+    setBoard(saved.board);
+    setPreservedTiles(saved.preservedTiles);
+    setTimerSeconds(saved.timerSeconds);
+    setLetterHintsUsed(saved.letterHintsUsed);
+    setWordHintUsed(saved.wordHintUsed);
+    setTimedAutoReveals(saved.timedAutoReveals);
+    setReadingSecondsLeft(0);
+  };
+
   const handleModeSelect = (mode) => {
     setPendingMode(mode);
     if (mode === 'daily') {
@@ -724,7 +769,7 @@ const DroidGame = () => {
 
       if (prepared) {
         setPreparedDailyGame(prepared);
-        handleShapeSelect(prepared.shape, 'daily', prepared.result);
+        startDaily(prepared.shape, prepared.result);
         return;
       }
 
@@ -734,7 +779,7 @@ const DroidGame = () => {
         const freshPrepared = prepareDailyGame();
         setIsPreparingDaily(false);
         if (freshPrepared) {
-          handleShapeSelect(freshPrepared.shape, 'daily', freshPrepared.result);
+          startDaily(freshPrepared.shape, freshPrepared.result);
         } else {
           setValidationError('Failed to prepare board — please try again.');
           setGameState('start');
@@ -783,6 +828,15 @@ const DroidGame = () => {
   };
 
   // Compute correct tiles and transition to the end screen.
+  /** Today's daily is over - finished or forfeited - and cannot be started
+   *  or resumed again. */
+  const markDailySpent = () => {
+    localStorage.setItem(DAILY_STORAGE_KEY, todayString());
+    setDailyPlayed(true);
+    clearDailyProgress();
+    setDailyInProgress(false);
+  };
+
   const applyRoundResult = (isFullValid) => {
     finalizingRef.current = true;
     setPlayer2FullValid(isFullValid);
@@ -809,10 +863,7 @@ const DroidGame = () => {
     setValidationError(null);
     setGameState('end');
     setSelectedLetter(null);
-    if (dailyMode) {
-      localStorage.setItem(DAILY_STORAGE_KEY, todayString());
-      setDailyPlayed(true);
-    }
+    if (dailyMode) markDailySpent();
   };
 
   const handleEndTurn = async () => {
@@ -991,10 +1042,7 @@ const DroidGame = () => {
   /** Leaving mid-round spends the daily. Marked before the reset, which
    *  clears dailyMode along with everything else. */
   const quitAndForfeit = () => {
-    if (dailyMode) {
-      localStorage.setItem(DAILY_STORAGE_KEY, todayString());
-      setDailyPlayed(true);
-    }
+    if (dailyMode) markDailySpent();
     setConfirmQuit(false);
     resetGame();
   };
@@ -1366,6 +1414,7 @@ const DroidGame = () => {
           onShowLeaderboard={() => setShowLeaderboard(true)}
           onShowHowToPlay={() => setShowHowToPlay(true)}
           dailyPlayed={dailyPlayed}
+          dailyInProgress={dailyInProgress}
         />
       )}
 

@@ -52,7 +52,13 @@ Browne). Two codebases, one game:
 
 ## Known open items
 
-- Force-quitting the app mid-round still keeps the daily: it is only spent
-  when a round ends or is deliberately forfeited. Closing that means
-  marking the day as played the moment a round starts, which would cost a
-  player their day on a crash (owner's call).
+- The daily round is saved as it is played (`utils/dailyProgress.js`), so
+  closing the app mid-round resumes it - same board, placements, hints and
+  clock - instead of starting it again. What stays open: the clock is
+  paused while the app is backgrounded or closed (a deliberate fix for
+  rounds scored as if the phone had been left running), so a player can
+  still think away from the clock. Counting time away would close that and
+  reopen the original complaint (owner's call).
+- All daily limits live in local storage with no accounts, so deleting and
+  reinstalling the app, or clearing site data on the web, resets them.
+  Closing that needs a server-side record per player.

@@ -303,6 +303,13 @@ body {
   color: var(--text-muted);
 }
 
+/* Muted grey is right on the greyed-out "Played today" button and unreadable
+   on the live green one, which is where "Resume" puts it. Dark text matches
+   the button's own label. */
+.home-mode-primary:not(.is-played) .home-mode-note {
+  color: rgba(7, 17, 11, 0.72);
+}
+
 .home-daily-button {
   min-height: 3.75rem;
   display: flex;
