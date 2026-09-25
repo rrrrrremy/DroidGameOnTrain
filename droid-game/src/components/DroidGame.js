@@ -15,6 +15,8 @@ import {
 } from '../utils/gameLogic';
 import { saveDailyProgress, readDailyProgress, clearDailyProgress } from '../utils/dailyProgress';
 import { buildDailyBoard } from '../utils/dailyBoardBuilder';
+import { shortDate } from '../utils/dates';
+import { CloseIcon, CheckIcon, TrophyIcon } from './Icons';
 import {
   generateComputerBoard,
   generateDailyBoard,
@@ -210,6 +212,8 @@ const DroidGame = () => {
   );
   const [preparedDailyGame, setPreparedDailyGame] = useState(null);
   const [isPreparingDaily, setIsPreparingDaily] = useState(false);
+  // Which board the result screen shows: the player's, or the answer.
+  const [resultView, setResultView] = useState('mine');
   const dailyPrepareTicketRef = useRef(0);
   const [letterHintsUsed, setLetterHintsUsed] = useState(0);
   const [timedAutoReveals, setTimedAutoReveals] = useState(0);
@@ -280,6 +284,11 @@ const DroidGame = () => {
     if (gameState !== 'end' || !dailyMode) return;
     setShowLeaderboard(true);
   }, [gameState, dailyMode]);
+
+  // Every result opens on the player's own board.
+  useEffect(() => {
+    if (gameState === 'end') setResultView('mine');
+  }, [gameState]);
 
   useEffect(() => {
     const preload = () => preloadLeaderboard(todayString());
@@ -1217,7 +1226,7 @@ const DroidGame = () => {
 
   // ── Derived end-screen data ───────────────────────────────────────────────
 
-  const { score, rawScore, incorrectTiles, timePenalty } = useMemo(() => {
+  const { score, incorrectTiles, timePenalty } = useMemo(() => {
     if (!player1Board || gameState !== 'end') {
       return { score: 0, rawScore: 0, incorrectTiles: [], timePenalty: 0 };
     }
@@ -1393,7 +1402,7 @@ const DroidGame = () => {
         />
       )}
 
-      {gameState !== 'start' && gameState !== 'preparingDaily' && gameState !== 'selectShape' && !isSolvingScreen && !isGhostDroidScreen && (
+      {gameState !== 'start' && gameState !== 'preparingDaily' && gameState !== 'selectShape' && gameState !== 'end' && !isSolvingScreen && !isGhostDroidScreen && (
         <header className="site-header">
           <button className="site-header-title" onClick={goHome}>Droid</button>
         </header>
@@ -1806,10 +1815,7 @@ const DroidGame = () => {
       )}
 
       {gameState === 'end' && (() => {
-        const thisScoreClass = getScoreColorClass(score, scoreMax);
         const hintDeduction = Math.round(letterHintsUsed * hintPenalty * 10) / 10;
-        const wordHintDeduction = wordHintUsed ? 2 : 0;
-        const hasPenalties = letterHintsUsed > 0 || wordHintUsed || timePenalty > 0;
         const allPlayed = [...sessionPlayedShapes, boardShape];
         const allScores = { ...sessionScores, [boardShape]: scorePercent };
         const allScoreValues = Object.values(allScores);
@@ -1818,142 +1824,184 @@ const DroidGame = () => {
           : 0;
         const gamesPlayed = allPlayed.length;
         const answerScoreLabel = isTimedComputerScoring ? score.toFixed(1) : `${scorePercent}%`;
-        const answerScoreMeta = `${score}/${scoreMax} pts · ${BOARD_SHAPES[boardShape]?.name}`;
+        const shapeName = BOARD_SHAPES[boardShape]?.name || 'Droid';
+        const kicker = dailyMode
+          ? "Today's Droid"
+          : boardAuthor === 'human' ? "Player 1's board" : 'Droid';
+        // Same straight apostrophe the Droid heading has always used.
+        const answerLabel = boardAuthor === 'human' ? "Player 1's answer" : "Droid's answer";
+        const showingAnswer = resultView === 'answer';
+        // Six blocks, whatever the scale: a timed round is out of 6 already,
+        // and a tile-counted one fills the same bar by its percentage.
+        const fraction = scoreMax > 0 ? score / scoreMax : 0;
+        const segments = [0, 1, 2, 3, 4, 5].map((i) =>
+          Math.max(0, Math.min(1, fraction * 6 - i)));
 
         return (
-          <div className="end-screen answer-screen">
-            <div className={`answer-panel${isTimedComputerScoring ? ' has-outcome' : ''}`}>
-              <div className="dvh-topbar answer-topbar">
-                <button className="dvh-home-button" onClick={resetGame} aria-label="Back to home screen">
-                  D
-                </button>
-                <div className={`live-score-badge dvh-score answer-score ${thisScoreClass}`}>
-                  <span className="live-score-grade">{answerScoreLabel}</span>
-                  <span className="live-score-pts">score</span>
+          <div className="end-screen result-screen">
+            <div className="result-panel">
+              <header className="result-topbar">
+                <div className="home-wordmark" aria-label="Droid">
+                  <span className="home-wordmark-mark" aria-hidden="true">D</span>
+                  <span className="home-wordmark-text" aria-hidden="true">DROID</span>
                 </div>
-                <button className="dvh-pause-button answer-leaderboard-button" onClick={() => setShowLeaderboard(true)}>
-                  <span>Leader board</span>
+                <button className="home-help" onClick={resetGame} aria-label="Back to menu">
+                  <CloseIcon />
                 </button>
-              </div>
+              </header>
 
-              <div className="dvh-meta-strip answer-meta-strip">
-                <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
-                <span>{todayString()}</span>
-              </div>
+              <section className="result-card" aria-label="Your score">
+                <div className="home-daily-heading">
+                  <span className="home-daily-label">{kicker}</span>
+                  <span className="home-daily-date">
+                    {shapeName}{dailyMode && ` · ${shortDate()}`}
+                  </span>
+                </div>
 
-              {/* A timed round is scored on the clock alone, so a perfectly
-                  solved board still shows 0.0 once the timer has run it down,
-                  and the penalty summary below stays hidden because the time
-                  is baked into the base score rather than counted as a
-                  penalty. Without this line that reads as the game calling a
-                  correct board wrong. */}
-              {isTimedComputerScoring && (
-                <div className={`answer-outcome${player2FullValid ? ' is-solved' : ' is-unsolved'}`}>
-                  <strong>
-                    {player2FullValid ? '✓ Board solved' : 'Board not solved'}
+                <div className="result-score">
+                  <span className="result-score-value">{answerScoreLabel}</span>
+                  <span className="result-score-max">
+                    {isTimedComputerScoring ? `/ ${scoreMax}` : `${score}/${scoreMax} pts`}
+                  </span>
+                </div>
+
+                <div className="result-meter" aria-hidden="true">
+                  {segments.map((fill, i) => (
+                    <span key={i} className="result-meter-seg" style={{ '--fill': `${fill * 100}%` }} />
+                  ))}
+                </div>
+
+                <div className="result-chips">
+                  <span className={`result-chip ${player2FullValid ? 'is-solved' : 'is-unsolved'}`}>
+                    {player2FullValid && <CheckIcon />}
+                    {player2FullValid ? 'Solved' : 'Not solved'}
+                  </span>
+                  {timerEnabled && (
+                    <span className="result-chip">{formatElapsedTime(timerSeconds)}</span>
+                  )}
+                  {letterHintsUsed > 0 && (
+                    <span className="result-chip">
+                      {letterHintsUsed} hint{letterHintsUsed !== 1 ? 's' : ''} (−{hintDeduction.toFixed(1)})
+                    </span>
+                  )}
+                  {wordHintUsed && <span className="result-chip">Word hint (−2.0)</span>}
+                  {timePenalty > 0 && (
+                    <span className="result-chip">Time (−{timePenalty})</span>
+                  )}
+                </div>
+
+                {/* A timed round is scored on the clock alone, so a solved
+                    board can still score 0.0; without this it reads as the
+                    game calling a correct board wrong. */}
+                {isTimedComputerScoring && player2FullValid && score === 0 && (
+                  <p className="result-note">
+                    Your board is correct — the clock ran the score down to 0
+                    before you finished.
+                  </p>
+                )}
+                {!dailyMode && gamesPlayed > 1 && (
+                  <p className="result-note">
+                    Average score ({gamesPlayed} droids): {combinedTotal}%
+                  </p>
+                )}
+              </section>
+
+              {challengeResult && (
+                <div className={`challenge-result ${challengeResult.won ? 'challenge-won' : 'challenge-lost'}`}>
+                  <span className="challenge-result-kicker">Challenge result</span>
+                  <strong>{challengeResult.won ? 'You won' : 'You lost'}</strong>
+                  <small>
+                    You: {answerScoreLabel} in {formatElapsedTime(timerSeconds)}
                     {' · '}
-                    {formatElapsedTime(timerSeconds)}
-                  </strong>
-                  {player2FullValid && score === 0 && (
-                    <small>
-                      Your board is correct — the clock ran the score down to 0
-                      before you finished.
-                    </small>
-                  )}
+                    Target: {challengeScoreLabel} in {formatElapsedTime(challengeResult.targetSeconds)}
+                  </small>
                 </div>
               )}
 
-              {(hasPenalties || challengeResult || (!dailyMode && gamesPlayed > 1)) && (
-                <div className="answer-summary">
-                  {!dailyMode && gamesPlayed > 1 && (
-                    <div className="session-combined">
-                      Average score ({gamesPlayed} droids): {combinedTotal}%
-                    </div>
-                  )}
-                  <div className="score-label">{answerScoreMeta}</div>
-                  {hasPenalties && (
-                    <div className="score-penalty">
-                      {rawScore}/{scoreMax}
-                      {letterHintsUsed > 0 && ` - ${hintDeduction} hint${letterHintsUsed !== 1 ? 's' : ''}`}
-                      {wordHintUsed && ` - ${wordHintDeduction} word hint`}
-                      {timePenalty > 0 && ` - ${timePenalty} time`}
-                      {' '}= {score}/{scoreMax}
-                    </div>
-                  )}
-                  {challengeResult && (
-                    <div className={`challenge-result ${challengeResult.won ? 'challenge-won' : 'challenge-lost'}`}>
-                      <span className="challenge-result-kicker">Challenge result</span>
-                      <strong>{challengeResult.won ? 'You won' : 'You lost'}</strong>
-                      <small>
-                        You: {answerScoreLabel} in {formatElapsedTime(timerSeconds)}
-                        {' · '}
-                        Target: {challengeScoreLabel} in {formatElapsedTime(challengeResult.targetSeconds)}
-                      </small>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="answer-board-panel">
-                {/* Same straight apostrophe the Droid heading has always
-                    used - this line must render byte-identically for a
-                    Droid board. */}
-                <div className="answer-board-heading">
-                  {boardAuthor === 'human' ? "Player 1's Answer" : "Droid's Answer"}
-                </div>
-                <GameBoard
-                  board={player1Board}
-                  onTileClick={() => {}}
-                  preservedTiles={[]}
-                  correctTiles={[]}
-                  incorrectTiles={[]}
-                  selectedLetter={null}
-                  selectedTile={null}
-                  currentPlayer={1}
-                  onDragStart={() => {}}
-                  onDrop={() => {}}
-                  interactive={false}
-                  removedSquares={removedSquares}
-                />
+              {/* One board at a time: a solved board is the same grid twice,
+                  and comparing is only worth a tap when it isn't. */}
+              <div className="result-toggle">
+                <button
+                  className={`result-toggle-option${showingAnswer ? '' : ' is-active'}`}
+                  aria-pressed={!showingAnswer}
+                  onClick={() => setResultView('mine')}
+                >
+                  Your answer
+                </button>
+                <button
+                  className={`result-toggle-option${showingAnswer ? ' is-active' : ''}`}
+                  aria-pressed={showingAnswer}
+                  onClick={() => setResultView('answer')}
+                >
+                  {answerLabel}
+                </button>
               </div>
 
-              <div className="answer-board-panel answer-player-panel">
-                <div className="answer-board-heading">Your Answer</div>
-                <div className="legend answer-legend">
-                  <div className="legend-item">
-                    <div className="legend-dot correct" />
-                    Correct
-                  </div>
-                  <div className="legend-item">
-                    <div className="legend-dot incorrect" />
-                    Wrong
-                  </div>
-                  <div className="legend-item">
-                    <div className="legend-dot preserved" />
-                    Hint tile
-                  </div>
-                </div>
-                <GameBoard
-                  board={board}
-                  onTileClick={() => {}}
-                  preservedTiles={preservedTiles}
-                  correctTiles={correctTiles}
-                  incorrectTiles={incorrectTiles}
-                  selectedLetter={null}
-                  selectedTile={null}
-                  currentPlayer={2}
-                  onDragStart={() => {}}
-                  onDrop={() => {}}
-                  interactive={false}
-                  removedSquares={removedSquares}
-                />
+              <div className="result-board">
+                {showingAnswer ? (
+                  <GameBoard
+                    board={player1Board}
+                    onTileClick={() => {}}
+                    preservedTiles={[]}
+                    correctTiles={[]}
+                    incorrectTiles={[]}
+                    selectedLetter={null}
+                    selectedTile={null}
+                    currentPlayer={1}
+                    onDragStart={() => {}}
+                    onDrop={() => {}}
+                    interactive={false}
+                    removedSquares={removedSquares}
+                  />
+                ) : (
+                  <>
+                    <GameBoard
+                      board={board}
+                      onTileClick={() => {}}
+                      preservedTiles={preservedTiles}
+                      correctTiles={correctTiles}
+                      incorrectTiles={incorrectTiles}
+                      selectedLetter={null}
+                      selectedTile={null}
+                      currentPlayer={2}
+                      onDragStart={() => {}}
+                      onDrop={() => {}}
+                      interactive={false}
+                      removedSquares={removedSquares}
+                    />
+                    <div className="legend result-legend">
+                      <div className="legend-item">
+                        <div className="legend-dot correct" />
+                        Correct
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-dot incorrect" />
+                        Wrong
+                      </div>
+                      <div className="legend-item">
+                        <div className="legend-dot preserved" />
+                        Hint tile
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
+              <div className="result-actions">
+                {dailyMode && (
+                  <button className="home-play-button result-primary" onClick={() => setShowLeaderboard(true)}>
+                    <TrophyIcon />
+                    <span>Daily Leaderboard</span>
+                  </button>
+                )}
+                <button
+                  className={dailyMode ? 'home-leaderboard-btn' : 'home-play-button result-primary'}
+                  onClick={resetGame}
+                >
+                  Back to menu
+                </button>
+              </div>
             </div>
-
-            <button className="back-to-menu-btn answer-back-btn" onClick={resetGame}>
-              ← Back to Menu
-            </button>
           </div>
         );
       })()}
