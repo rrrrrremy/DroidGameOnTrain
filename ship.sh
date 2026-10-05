@@ -60,8 +60,12 @@ report() {
     echo
     echo "Warnings and errors:"
     # Also ESLint's "Line 12:7: ..." findings, which carry no keyword.
+    # Firebase's "i  ..." lines are progress notes, even when they mention
+    # "errors" ("checking firestore.rules for compilation errors..."); its
+    # real warnings and errors start with ⚠ or "Error:".
     grep -iE 'warn|error|fail|fatal|vulnerab|denied|not found|cannot|\[!\]|line [0-9]+:[0-9]+' "$clean" \
       | grep -viE 'npm warn deprecated|found 0 vulnerabilities|no-audit' \
+      | grep -vE '^i  ' \
       | awk '!seen[$0]++' | head -n 60 > "$clean.hits"
     if [ -s "$clean.hits" ]; then cat "$clean.hits"; else echo "  (none)"; fi
     [ "$deprecations" -gt 0 ] && echo "  (+ $deprecations npm 'deprecated' notices, left out: not actionable)"
