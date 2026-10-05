@@ -1,11 +1,14 @@
 import React from 'react';
 
-const LetterTile = ({ letter, selected, onClick, onDragStart }) => (
+/* `locked` (reading time, paused): the tile shows but takes no touch at all,
+   so a tap cannot leave it looking pressed or picked up. */
+const LetterTile = ({ letter, selected, locked = false, onClick, onDragStart }) => (
   <div
-    className={`letter-tile${selected ? ' selected' : ''}`}
-    onClick={onClick}
-    draggable
-    onDragStart={onDragStart}
+    className={`letter-tile${selected ? ' selected' : ''}${locked ? ' is-locked' : ''}`}
+    onClick={locked ? undefined : onClick}
+    draggable={!locked}
+    onDragStart={locked ? undefined : onDragStart}
+    aria-disabled={locked || undefined}
   >
     {letter}
   </div>

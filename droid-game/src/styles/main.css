@@ -1335,8 +1335,18 @@ body {
   box-shadow: var(--shadow-sm);
 }
 
-.letter-tile:hover  { background: var(--border); border-color: var(--border-med); }
+/* Hover only where a pointer really hovers: on a phone, :hover sticks to
+   the last tile tapped and leaves it looking greyed out. */
+@media (hover: hover) {
+  .letter-tile:hover { background: var(--border); border-color: var(--border-med); }
+}
 .letter-tile:active { transform: scale(0.9); }
+
+/* Reading time and pause: letters stay readable but take no touch. */
+.letter-tile.is-locked {
+  cursor: default;
+  pointer-events: none;
+}
 
 .letter-tile.selected {
   background: linear-gradient(135deg, #28d466, #0d9488);

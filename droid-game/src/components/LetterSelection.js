@@ -10,6 +10,7 @@ const LetterSelection = ({
   capacity,
   onLetterClick,
   onDragStart,
+  locked = false,
 }) => {
   const sorted = [
     ...availableLetters.filter((l) => VOWELS.has(l)),
@@ -32,6 +33,7 @@ const LetterSelection = ({
             /* Matched on position as well as value, so picking one of
                several identical letters highlights only the one touched. */
             selected={selectedLetter === letter && selectedIndex === i}
+            locked={locked}
             onClick={() => onLetterClick(letter, i)}
             onDragStart={(e) => onDragStart(e, letter)}
           />

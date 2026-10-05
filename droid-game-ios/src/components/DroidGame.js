@@ -1655,6 +1655,7 @@ const DroidGame = () => {
                   capacity={poolCapacity}
                   onLetterClick={handleLetterClick}
                   onDragStart={handleDragStart}
+                  locked={isReadingTime || isPaused}
                 />
               </div>
 
@@ -1745,6 +1746,7 @@ const DroidGame = () => {
                 capacity={poolCapacity}
                 onLetterClick={handleLetterClick}
                 onDragStart={handleDragStart}
+                locked={isReadingTime}
               />
 
               <div className="actions">
