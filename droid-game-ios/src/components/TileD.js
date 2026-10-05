@@ -1,13 +1,23 @@
 import React from 'react';
 
-// The Droid "D", the same drawing as the app icon (tools/make-icons.js): a
-// 5x5 board with the letter in green tiles and a gold corner tile, like a
-// locked hint letter. Empty squares are drawn faintly so it reads as a board.
-const D = ['XXXX.', 'X...X', 'X...X', 'X...X', 'XXXX.'];
+// The D of the DROID wordmark, built from small green game tiles. It is
+// the pixel font's own D - two-tile strokes, rounded right side - because a
+// thin one-tile outline (like the app icon's 5x5 board D) reads as a box
+// next to the font's bold letters, and the word reads "ROID". The app icon
+// (tools/make-icons.js) keeps the 5x5 board D, which works on its own.
+const D = [
+  'XXXXX..',
+  'XXXXXX.',
+  'XX..XXX',
+  'XX...XX',
+  'XX..XXX',
+  'XXXXXX.',
+  'XXXXX..',
+];
 const TILE = 10;
-const GAP = 2;
+const GAP = 1;
 const STEP = TILE + GAP;
-const SIZE = 5 * TILE + 4 * GAP;
+const SIZE = D.length * TILE + (D.length - 1) * GAP;
 
 export const TileD = ({ className }) => (
   <svg className={className} viewBox={`0 0 ${SIZE} ${SIZE}`} aria-hidden="true">
@@ -16,22 +26,18 @@ export const TileD = ({ className }) => (
         <stop offset="0" stopColor="#3ee07f" />
         <stop offset="1" stopColor="#16a34a" />
       </linearGradient>
-      <linearGradient id="tiled-gold" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stopColor="#e3cd6a" />
-        <stop offset="1" stopColor="#a88f2c" />
-      </linearGradient>
     </defs>
-    {D.flatMap((row, y) => row.split('').map((c, x) => (
+    {D.flatMap((row, y) => row.split('').map((c, x) => (c === 'X' ? (
       <rect
         key={`${x}-${y}`}
         x={x * STEP}
         y={y * STEP}
         width={TILE}
         height={TILE}
-        rx={1.8}
-        fill={c === 'X' ? (x === 0 && y === 0 ? 'url(#tiled-gold)' : 'url(#tiled-green)') : 'rgba(255,255,255,0.06)'}
+        rx={2}
+        fill="url(#tiled-green)"
       />
-    )))}
+    ) : null)))}
   </svg>
 );
 

@@ -95,9 +95,10 @@ For device or simulator testing use `./ship.sh test` (see Shipping), not
 - The icon is a "D" drawn in game-board tiles (5x5 grid, gold corner tile).
   `tools/make-icons.js` generates every size from one drawing - the App
   Store icon (opaque RGB: App Store rejects alpha) and the web favicons -
-  and says where each file goes. The in-game wordmark draws the same D in
-  `components/TileD.js`, standing in for the first letter of DROID. Change
-  both together.
+  and says where each file goes. The in-game wordmark's D
+  (`components/TileD.js`) is the pixel font's bold D built from tiles, not
+  the icon's thin 5x5 outline: inline with the font's bold letters the
+  outline reads as a box and the word as "ROID".
 
 ## Releasing to the App Store
 
