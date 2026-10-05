@@ -144,8 +144,12 @@ For device or simulator testing use `./ship.sh test` (see Shipping), not
   `@capacitor/local-notifications`. The web build imports a do-nothing
   `utils/reminders.js` with the same interface, and the sync script
   repoints the import. The app re-plans a week of 6 pm reminders on every
-  open and every finished round, skipping today once it is played. Off
-  until the player turns on the switch on the daily result screen.
+  open and every finished round, skipping today once it is played.
+- Reminders are **on by default**; the switch lives in Settings (the gear
+  on the home screen, shown only in the iOS app). iOS permission is asked
+  once, after the player's first finished daily, never as a cold prompt on
+  launch. They go out only while the setting is on and permission is
+  granted; turning permission on later in iOS Settings is enough.
 
 ## Known open items
 

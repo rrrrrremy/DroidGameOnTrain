@@ -20,9 +20,11 @@ import { readHistory, recordDailyResult, computeStats } from '../utils/stats';
 import {
   remindersSupported,
   getReminderSetting,
+  getReminderPermission,
   setReminderSetting,
   refreshReminders,
 } from '../utils/reminders';
+import SettingsSheet from './SettingsSheet';
 import { CloseIcon, CheckIcon, TrophyIcon, FlameIcon, PauseIcon, PlayIcon } from './Icons';
 import {
   generateComputerBoard,
@@ -218,6 +220,8 @@ const DroidGame = () => {
   const [history, setHistory] = useState(() => readHistory());
   const [reminderSetting, setReminderSettingState] = useState(() => getReminderSetting());
   const [reminderNote, setReminderNote] = useState(null);
+  const [reminderPermission, setReminderPermission] = useState('prompt');
+  const [showSettings, setShowSettings] = useState(false);
   const [dailyScoreSubmitted, setDailyScoreSubmitted] = useState(
     () => hasSubmittedLeaderboardScore(todayString())
   );
@@ -1339,17 +1343,32 @@ const DroidGame = () => {
 
   // Re-plan the week's reminders whenever today's status or the streak
   // changes, and on opening. dailyPlayed covers a day played before results
-  // were being recorded.
+  // were being recorded. Reminders are on by default; finishing a daily is
+  // when iOS gets asked for permission (once), since that is when a
+  // reminder to come back tomorrow makes sense.
   const reminderPlayedToday = stats.playedToday || dailyPlayed;
+  const askForReminders = gameState === 'end' && dailyMode;
   useEffect(() => {
-    refreshReminders({ playedToday: reminderPlayedToday, streak: stats.currentStreak });
-  }, [reminderPlayedToday, stats.currentStreak, reminderSetting]);
+    refreshReminders({
+      playedToday: reminderPlayedToday,
+      streak: stats.currentStreak,
+      askIfNeeded: askForReminders,
+    });
+  }, [reminderPlayedToday, stats.currentStreak, reminderSetting, askForReminders]);
+
+  const openSettings = () => {
+    setReminderNote(null);
+    setShowSettings(true);
+    getReminderPermission().then(setReminderPermission);
+  };
 
   const toggleReminders = async () => {
-    const result = await setReminderSetting(reminderSetting !== 'on');
-    setReminderSettingState(result === 'on' ? 'on' : 'off');
+    const turningOn = !(reminderSetting === 'on' && reminderPermission !== 'denied');
+    const result = await setReminderSetting(turningOn);
+    setReminderSettingState(result === 'off' ? 'off' : 'on');
+    setReminderPermission(await getReminderPermission());
     setReminderNote(result === 'denied'
-      ? 'Notifications are off for Droid. Allow them in the Settings app, then try again.'
+      ? 'Notifications are off for Droid. Turn them on in the Settings app, under Notifications > Droid.'
       : null);
   };
   const scorePercent = scoreMax > 0 ? Math.round(score / scoreMax * 100) : 0;
@@ -1470,10 +1489,21 @@ const DroidGame = () => {
           dailyPlayed={dailyPlayed}
           dailyInProgress={dailyInProgress}
           streak={stats.currentStreak}
+          onShowSettings={remindersSupported() ? openSettings : undefined}
         />
       )}
 
       {showHowToPlay && <HowToPlay onClose={() => setShowHowToPlay(false)} />}
+
+      {showSettings && (
+        <SettingsSheet
+          reminderSetting={reminderSetting}
+          permission={reminderPermission}
+          note={reminderNote}
+          onToggleReminder={toggleReminders}
+          onClose={() => setShowSettings(false)}
+        />
+      )}
 
       {gameState === 'preparingDaily' && (
         <div className="start-screen preparing-droid-screen">
@@ -2114,25 +2144,6 @@ const DroidGame = () => {
                   Back to menu
                 </button>
               </div>
-
-              {dailyMode && remindersSupported() && (
-                <div className="result-reminder">
-                  <span className="result-reminder-copy">
-                    <strong>Daily reminder</strong>
-                    <small>6 pm, only on days you haven't played</small>
-                  </span>
-                  <button
-                    className={`result-switch${reminderSetting === 'on' ? ' is-on' : ''}`}
-                    role="switch"
-                    aria-checked={reminderSetting === 'on'}
-                    aria-label="Daily reminder"
-                    onClick={toggleReminders}
-                  >
-                    <span className="result-switch-knob" />
-                  </button>
-                </div>
-              )}
-              {dailyMode && reminderNote && <p className="result-note">{reminderNote}</p>}
             </div>
           </div>
         );

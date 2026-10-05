@@ -1,7 +1,7 @@
 import React from 'react';
 import { BOARD_SHAPES, dailyShape } from '../utils/computerPlayer';
 import { shortDate } from '../utils/dates';
-import { HelpIcon, ChevronIcon, TrophyIcon, FlameIcon } from './Icons';
+import { HelpIcon, ChevronIcon, TrophyIcon, FlameIcon, GearIcon } from './Icons';
 
 const StartScreen = ({
   onStart,
@@ -12,6 +12,7 @@ const StartScreen = ({
   dailyPlayed,
   dailyInProgress = false,
   streak = 0,
+  onShowSettings,
 }) => {
   // Today's shape is shown before play: the board opens on it anyway, and
   // the rotation makes each day's card look different.
@@ -25,9 +26,18 @@ const StartScreen = ({
             <span className="home-wordmark-mark" aria-hidden="true">D</span>
             <span className="home-wordmark-text" aria-hidden="true">DROID</span>
           </div>
-          <button className="home-help" onClick={onShowHowToPlay} aria-label="How to Play">
-            <HelpIcon />
-          </button>
+          <div className="home-topbar-actions">
+            {/* Settings only where there is something to set: reminders,
+                which only the iOS app can send. */}
+            {onShowSettings && (
+              <button className="home-help" onClick={onShowSettings} aria-label="Settings">
+                <GearIcon />
+              </button>
+            )}
+            <button className="home-help" onClick={onShowHowToPlay} aria-label="How to Play">
+              <HelpIcon />
+            </button>
+          </div>
         </header>
 
         <div className={`home-daily-card${dailyPlayed ? ' is-played' : ''}`}>

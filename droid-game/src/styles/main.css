@@ -205,6 +205,12 @@ body {
   color: var(--text);
 }
 
+.home-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .home-help {
   width: 2.75rem;
   height: 2.75rem;
@@ -2735,7 +2741,7 @@ body {
 
 /* Sized from the height left over once the card (with its stats row),
    toggle, legend and buttons have theirs (~38.5rem), so the whole screen fits
-   a phone. The iOS reminder row sits below and may scroll on small ones. */
+   a phone. */
 .result-board .board {
   --tile-size: min(
     clamp(2rem, calc((100vw - 5rem) / 5), 3rem),
@@ -2786,56 +2792,6 @@ body {
 
 .result-stat.is-streak dd { color: #fdba74; }
 
-.result-reminder {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-}
-
-.result-reminder-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.result-reminder-copy strong { font-size: 0.95rem; font-weight: 800; }
-.result-reminder-copy small { color: #a6a8a9; font-size: 0.75rem; font-weight: 600; }
-
-/* An iOS-style switch: 51x31, the system's own size, so it reads as one. */
-.result-switch {
-  position: relative;
-  flex: 0 0 auto;
-  width: 51px;
-  height: 31px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  background: #39393d;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background 0.2s ease;
-}
-
-.result-switch.is-on { background: var(--indigo); }
-
-.result-switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 27px;
-  height: 27px;
-  border-radius: 50%;
-  background: #ffffff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  transition: transform 0.2s ease;
-}
-
-.result-switch.is-on .result-switch-knob { transform: translateX(20px); }
-
 /* The game's tile text is sized to the window width; these tiles shrink
    with the height, so their letters follow the tile instead. */
 .result-board .tile {
@@ -2868,6 +2824,123 @@ body {
   justify-content: center;
   gap: 0.625rem;
   font-size: 1.125rem;
+}
+
+/* ===== SETTINGS =====
+   A sheet over the home screen, opened from the gear. Tapping outside it
+   closes it. */
+
+.settings-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 1rem 1rem max(1rem, env(safe-area-inset-bottom, 0px));
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.settings-sheet {
+  width: 100%;
+  max-width: 30rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 1.1rem 1.25rem 1.25rem;
+  border: 1px solid #2f3a33;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.45);
+  animation: settings-rise 0.2s ease-out;
+}
+
+@keyframes settings-rise {
+  from { transform: translateY(1.5rem); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .settings-sheet { animation: none; }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-header strong { font-size: 1.2rem; font-weight: 900; }
+
+.settings-close {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.settings-row-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.settings-row-copy strong { font-size: 1rem; font-weight: 800; }
+.settings-row-copy small { color: #a6a8a9; font-size: 0.8rem; font-weight: 600; }
+
+/* An iOS-style switch: 51x31, the system's own size, so it reads as one. */
+.settings-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 51px;
+  height: 31px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #39393d;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background 0.2s ease;
+}
+
+.settings-switch.is-on { background: var(--indigo); }
+
+.settings-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  transition: transform 0.2s ease;
+}
+
+.settings-switch.is-on .settings-switch-knob { transform: translateX(20px); }
+
+.settings-note {
+  margin: 0;
+  color: #fdba74;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.4;
 }
 
 /* ===== SHARE PANEL ===== */

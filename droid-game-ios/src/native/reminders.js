@@ -9,6 +9,12 @@
 // daily round ends: one reminder a day at REMINDER_HOUR, skipping today once
 // today is played. If the app goes unopened for a week, the reminders stop
 // rather than nag.
+//
+// On by default: the setting only reads 'off' once the player turns it off
+// in Settings. iOS still needs the player's permission, which the game asks
+// for after their first finished daily (refreshReminders with askIfNeeded),
+// when a reminder makes sense, rather than as a cold prompt on first launch.
+// Reminders actually go out when the setting is on AND permission is granted.
 
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNative } from './ios';
@@ -23,9 +29,20 @@ export const remindersSupported = () => isNative();
 
 export const getReminderSetting = () => {
   try {
-    return localStorage.getItem(SETTING_KEY) === 'on' ? 'on' : 'off';
+    return localStorage.getItem(SETTING_KEY) === 'off' ? 'off' : 'on';
   } catch {
-    return 'off';
+    return 'on';
+  }
+};
+
+/** 'granted', 'denied', 'prompt' (not asked yet) or 'unsupported'. */
+export const getReminderPermission = async () => {
+  if (!remindersSupported()) return 'unsupported';
+  try {
+    const { display } = await LocalNotifications.checkPermissions();
+    return display === 'granted' || display === 'denied' ? display : 'prompt';
+  } catch {
+    return 'unsupported';
   }
 };
 
@@ -41,8 +58,10 @@ const cancelAll = () =>
   LocalNotifications.cancel({ notifications: IDS.map((id) => ({ id })) }).catch(() => {});
 
 /**
- * Turn reminders on or off. Turning on asks iOS for permission the first
- * time; if the player has refused it, resolves 'denied' and stays off.
+ * Turn reminders on or off. Turning on asks iOS for permission if it has
+ * not been asked yet. If permission is refused, resolves 'denied': the
+ * setting stays on, so allowing notifications later in iOS Settings is
+ * enough to start them, with no second trip to the switch.
  */
 export const setReminderSetting = async (on) => {
   if (!remindersSupported()) return 'off';
@@ -54,14 +73,11 @@ export const setReminderSetting = async (on) => {
   try {
     let { display } = await LocalNotifications.checkPermissions();
     if (display !== 'granted') ({ display } = await LocalNotifications.requestPermissions());
-    if (display !== 'granted') {
-      store('off');
-      return 'denied';
-    }
+    store('on');
+    if (display !== 'granted') return 'denied';
   } catch {
     return 'off';
   }
-  store('on');
   return 'on';
 };
 
@@ -76,11 +92,23 @@ const at = (daysAhead) => {
  * Plan the next week's reminders.
  *   playedToday   today's daily is finished or forfeited
  *   streak        the current streak (alive through yesterday or today)
+ *   askIfNeeded   ask iOS for permission if never asked (after a daily
+ *                 round); otherwise a refresh never shows a prompt
  */
-export const refreshReminders = async ({ playedToday, streak }) => {
+export const refreshReminders = async ({ playedToday, streak, askIfNeeded = false }) => {
   if (!remindersSupported()) return;
   await cancelAll();
   if (getReminderSetting() !== 'on') return;
+
+  let permission = await getReminderPermission();
+  if (permission === 'prompt' && askIfNeeded) {
+    try {
+      ({ display: permission } = await LocalNotifications.requestPermissions());
+    } catch {
+      return;
+    }
+  }
+  if (permission !== 'granted') return;
 
   const now = new Date();
   const notifications = [];
