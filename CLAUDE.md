@@ -66,6 +66,11 @@ For device or simulator testing use `./ship.sh test` (see Shipping), not
     BUILD" badge) for the simulator or a cabled phone. Never archived;
     leaves `main` alone.
   - `./deploy.sh` is kept as a shortcut for `./ship.sh web`.
+  - Every run ends with a report of warnings and errors (finished or
+    failed), copied to the clipboard on a Mac and kept in
+    `.ship-logs/latest-report.txt`, with the full log beside it
+    (git-ignored). The owner pastes it back to Claude; read it before
+    anything else when a ship goes wrong.
 - Then archive in Xcode (`droid-game-ios/ios/App/App.xcworkspace`) and
   upload. After adding a native plugin, use Product > Clean Build Folder
   if Xcode reports a missing module.

@@ -9,6 +9,9 @@
 #                      badge, for the simulator or a cabled phone. Never
 #                      archive this one.
 #
+# Every run ends with a short report of warnings and errors, copied to the
+# clipboard on a Mac (and kept in .ship-logs/latest-report.txt).
+#
 # Every mode pulls the branch first and installs dependencies, so a new
 # Capacitor plugin can never surface as "Module not found". Release modes
 # then fast-forward main so GitHub's front page shows what is live.
@@ -27,6 +30,60 @@ case "$TARGET" in
   both|web|ios|test) ;;
   *) echo "usage: ./ship.sh [both|web|ios|test]" >&2; exit 2 ;;
 esac
+
+# ── Report ───────────────────────────────────────────────────────────────
+# Everything below is also written to .ship-logs/. When the script ends -
+# finished or failed - the warnings and errors are pulled into a short
+# report and copied to the clipboard (on a Mac), ready to paste to Claude.
+LOG_DIR=".ship-logs"
+mkdir -p "$LOG_DIR"
+LOG="$LOG_DIR/ship-$(date +%Y%m%d-%H%M%S).log"
+REPORT="$LOG_DIR/latest-report.txt"
+exec > >(tee -a "$LOG") 2>&1
+
+report() {
+  local status=$?
+  set +e
+  sleep 1   # let tee finish writing the log
+  local clean="$LOG_DIR/.clean.log"
+  # Strip colour codes; written so the BSD sed on macOS understands it too.
+  sed "s/$(printf '\033')\[[0-9;]*[A-Za-z]//g" "$LOG" > "$clean"
+  local deprecations
+  deprecations=$(grep -ci 'npm warn deprecated' "$clean")
+  {
+    if [ "$status" -eq 0 ]; then
+      echo "./ship.sh $TARGET: finished OK"
+    else
+      echo "./ship.sh $TARGET: FAILED (exit $status)"
+    fi
+    echo "$(date '+%Y-%m-%d %H:%M') · commit $(git rev-parse --short HEAD 2>/dev/null) on $(git rev-parse --abbrev-ref HEAD 2>/dev/null)"
+    echo
+    echo "Warnings and errors:"
+    # Also ESLint's "Line 12:7: ..." findings, which carry no keyword.
+    grep -iE 'warn|error|fail|fatal|vulnerab|denied|not found|cannot|\[!\]|line [0-9]+:[0-9]+' "$clean" \
+      | grep -viE 'npm warn deprecated|found 0 vulnerabilities|no-audit' \
+      | awk '!seen[$0]++' | head -n 60 > "$clean.hits"
+    if [ -s "$clean.hits" ]; then cat "$clean.hits"; else echo "  (none)"; fi
+    [ "$deprecations" -gt 0 ] && echo "  (+ $deprecations npm 'deprecated' notices, left out: not actionable)"
+    if [ "$status" -ne 0 ]; then
+      echo
+      echo "Last 40 lines:"
+      tail -n 40 "$clean"
+    fi
+    echo
+    echo "Full log: $LOG"
+  } > "$REPORT"
+  rm -f "$clean" "$clean.hits"
+
+  echo
+  if command -v pbcopy >/dev/null 2>&1; then
+    pbcopy < "$REPORT"
+    echo "==> Report copied to your clipboard. Paste it to Claude."
+  else
+    echo "==> Report saved to $REPORT"
+  fi
+}
+trap report EXIT
 
 # Deliberately NOT `git pull --rebase origin main`. All work lives on
 # $BRANCH, and rebasing it onto main would rewrite exactly the history this
