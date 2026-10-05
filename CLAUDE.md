@@ -73,6 +73,14 @@ For device or simulator testing use `./ship.sh test` (see Shipping), not
   `firebase.json` and `public/` are an old placeholder site. Hosting config
   lives in `droid-game/firebase.json`. `netlify.toml` is from an earlier
   Netlify setup and is not part of shipping.
+- The web deploy refuses to run while `npm audit --omit=dev` reports
+  anything. Never `npm audit fix --force`: it "fixes" by downgrading
+  Firebase to 2022. `@grpc/grpc-js` is pinned to a patched release with
+  `overrides` in both `package.json` files, because even current
+  Firestore pins `~1.9` (it is server-side only and not in the app bundle).
+  Drop the override once Firestore depends on a fixed version.
+  `react-scripts` is a devDependency in both projects, so the audit covers
+  only what ships.
 - `index.html` is served `no-cache` and `/static/**` as immutable, so a
   deploy is live on the next load. If the site looks stale, check the
   response headers before suspecting the deploy.

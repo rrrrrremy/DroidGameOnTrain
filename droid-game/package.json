@@ -44,5 +44,8 @@
   "engines": {
     "node": ">=20"
   },
-  "homepage": "."
+  "homepage": ".",
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.5"
+  }
 }
