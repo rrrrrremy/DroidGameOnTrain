@@ -1,6 +1,7 @@
 import React from 'react';
 import { BOARD_SHAPES, dailyShape } from '../utils/computerPlayer';
 import { shortDate } from '../utils/dates';
+import { Wordmark } from './TileD';
 import { HelpIcon, ChevronIcon, TrophyIcon, FlameIcon, GearIcon } from './Icons';
 
 const StartScreen = ({
@@ -22,10 +23,7 @@ const StartScreen = ({
     <div className="start-screen">
       <section className="home-panel" aria-label="Droid home screen">
         <header className="home-topbar">
-          <div className="home-wordmark" aria-label="Droid">
-            <span className="home-wordmark-mark" aria-hidden="true">D</span>
-            <span className="home-wordmark-text" aria-hidden="true">DROID</span>
-          </div>
+          <Wordmark />
           <div className="home-topbar-actions">
             {/* Settings only where there is something to set: reminders,
                 which only the iOS app can send. */}

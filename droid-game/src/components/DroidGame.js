@@ -16,6 +16,7 @@ import {
 import { saveDailyProgress, readDailyProgress, clearDailyProgress } from '../utils/dailyProgress';
 import { buildDailyBoard } from '../utils/dailyBoardBuilder';
 import { shortDate } from '../utils/dates';
+import { Wordmark } from './TileD';
 import { readHistory, recordDailyResult, computeStats } from '../utils/stats';
 import {
   remindersSupported,
@@ -1959,10 +1960,7 @@ const DroidGame = () => {
           <div className="end-screen result-screen">
             <div className="result-panel">
               <header className="result-topbar">
-                <div className="home-wordmark" aria-label="Droid">
-                  <span className="home-wordmark-mark" aria-hidden="true">D</span>
-                  <span className="home-wordmark-text" aria-hidden="true">DROID</span>
-                </div>
+                <Wordmark />
                 <button className="home-help" onClick={resetGame} aria-label="Back to menu">
                   <CloseIcon />
                 </button>

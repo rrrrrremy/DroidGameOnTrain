@@ -183,25 +183,24 @@ body {
 .home-wordmark {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  /* Tight, like letter spacing: the tile-D is the first letter of DROID. */
+  gap: 0.3rem;
 }
 
+/* Sized to the letters beside it, so it reads as one word. */
 .home-wordmark-mark {
-  width: 2.75rem;
-  height: 2.75rem;
-  display: grid;
-  place-items: center;
-  border-radius: 10px;
-  background: var(--indigo);
-  color: #07110b;
-  font-family: 'Press Start 2P', monospace;
-  font-size: 1rem;
+  flex: 0 0 auto;
+  width: 1.7rem;
+  height: 1.7rem;
+  /* The pixel font sits a little high in its line box; match its letters. */
+  transform: translateY(-0.12rem);
 }
 
 .home-wordmark-text {
   font-family: 'Press Start 2P', monospace;
-  font-size: 1.375rem;
-  letter-spacing: 0.06em;
+  font-size: 1.9rem;
+  line-height: 1;
+  letter-spacing: 0.04em;
   color: var(--text);
 }
 

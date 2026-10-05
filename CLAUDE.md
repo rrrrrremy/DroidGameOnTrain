@@ -90,6 +90,15 @@ For device or simulator testing use `./ship.sh test` (see Shipping), not
   deploy is live on the next load. If the site looks stale, check the
   response headers before suspecting the deploy.
 
+## Icon
+
+- The icon is a "D" drawn in game-board tiles (5x5 grid, gold corner tile).
+  `tools/make-icons.js` generates every size from one drawing - the App
+  Store icon (opaque RGB: App Store rejects alpha) and the web favicons -
+  and says where each file goes. The in-game wordmark draws the same D in
+  `components/TileD.js`, standing in for the first letter of DROID. Change
+  both together.
+
 ## Releasing to the App Store
 
 - Both version numbers live in `droid-game-ios/ios/App/App.xcodeproj/project.pbxproj`

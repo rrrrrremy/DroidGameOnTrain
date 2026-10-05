@@ -71,3 +71,6 @@ node_modules/
 
 # ship.sh run logs and reports
 .ship-logs/
+
+# tools/make-icons.js output
+tools/icons-out/
