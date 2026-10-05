@@ -49,17 +49,23 @@ sync never overwrites. When a feature needs native behaviour, give the web
 app a do-nothing module with the same interface and have the sync repoint
 the import (see `utils/reminders.js` and `native/reminders.js`).
 
-`npm run sync:testing` (in `droid-game-ios`) builds with the
-one-game-a-day limit disabled, for device testing only.
+For device or simulator testing use `./ship.sh test` (see Shipping), not
+`npm run sync:testing` directly: the script also installs dependencies.
 
 ## Shipping
 
-- **`./ship.sh`** from the repo root, on a clean `preserve-current-localhost`:
-  pulls, deploys the website (`npm run deploy` in `droid-game`: tests,
-  `npm audit`, build, then Firebase Hosting and Firestore indexes),
-  regenerates and builds the iOS app (`npm install`, sync, `cap sync`),
-  then fast-forwards `main`. `./ship.sh web` or `./ship.sh ios` does one
-  side. `./deploy.sh` is kept as a shortcut for `./ship.sh web`.
+- **`./ship.sh` is the one command**, run from the repo root on a clean
+  `preserve-current-localhost`. Every mode pulls first and runs
+  `npm install`, so a new plugin can't fail with "Module not found".
+  - `./ship.sh` - release both: deploys the website (`npm run deploy` in
+    `droid-game`: tests, `npm audit`, build, Firebase Hosting and Firestore
+    indexes), builds the iOS app (sync, `cap sync`), opens Xcode, then
+    fast-forwards `main`.
+  - `./ship.sh web` / `./ship.sh ios` - one side only.
+  - `./ship.sh test` - iOS testing build (one-game-a-day limit off, "TEST
+    BUILD" badge) for the simulator or a cabled phone. Never archived;
+    leaves `main` alone.
+  - `./deploy.sh` is kept as a shortcut for `./ship.sh web`.
 - Then archive in Xcode (`droid-game-ios/ios/App/App.xcworkspace`) and
   upload. After adding a native plugin, use Product > Clean Build Folder
   if Xcode reports a missing module.
