@@ -1,7 +1,8 @@
 #!/bin/bash
 #
 # Ship the current branch to both targets: the web app on Firebase Hosting,
-# and the iOS app's generated sources ready for Xcode.
+# and the iOS app's generated sources ready for Xcode. Then fast-forward
+# main to match, so GitHub's default branch shows what is live.
 #
 #   ./ship.sh          both targets
 #   ./ship.sh web      Firebase Hosting only
@@ -57,6 +58,18 @@ if [ "$TARGET" = "both" ] || [ "$TARGET" = "ios" ]; then
   echo
   echo "iOS sources are current. Open Xcode and archive:"
   echo "  open droid-game-ios/ios/App/App.xcworkspace"
+fi
+
+# main is a mirror of $BRANCH, so the GitHub front page shows what is live.
+# Fast-forward only: if main ever gains commits of its own, it is left alone
+# rather than overwritten.
+echo
+echo "==> Updating main to match $BRANCH"
+git fetch origin main --quiet || true
+if git merge-base --is-ancestor origin/main HEAD 2>/dev/null; then
+  git push origin HEAD:main || echo "Could not update main (network?). Run ./ship.sh again later." >&2
+else
+  echo "main has commits that are not on $BRANCH; left it alone." >&2
 fi
 
 echo

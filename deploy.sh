@@ -1,7 +1,6 @@
 #!/bin/bash
-set -e
-cd "$(dirname "$0")"
-git pull --rebase origin main
-cd droid-game
-CI= npm run build
-firebase deploy --only hosting:droidgame
+#
+# Kept so an old habit still works. It used to `git pull --rebase origin
+# main` and deploy without the production checks; ship.sh does it properly
+# (right branch, clean tree, tests, audit, then deploy).
+exec "$(dirname "$0")/ship.sh" web

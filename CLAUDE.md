@@ -3,29 +3,93 @@
 Word-reconstruction game ("Droid") by Second Nature Games (Remy & Matthew
 Browne). Two codebases, one game:
 
-- `droid-game/` — the web app (Create React App). **Source of truth for all
+- `droid-game/` - the web app (Create React App). **Source of truth for all
   game code.** Deployed to Firebase Hosting (`droidgame.web.app`).
-- `droid-game-ios/` — Capacitor iOS wrapper. `src/` and `public/` are
-  **generated** from `droid-game` by `droid-game-ios/tools/sync-from-web.py`,
-  which re-applies a small set of asserted iOS patches. Never hand-edit the
-  synced files there; change `droid-game` and re-run the script.
+- `droid-game-ios/` - Capacitor iOS wrapper, live on the App Store. `src/`
+  and `public/` are **generated** from `droid-game` by
+  `droid-game-ios/tools/sync-from-web.py`, which re-applies a small set of
+  asserted iOS patches. Never hand-edit the synced files there; change
+  `droid-game` and re-run the script.
 
-## Working agreements
+## Branches and GitHub
 
-- All work happens on the `preserve-current-localhost` branch. Do not create
-  or push other branches.
-- Game changes go in `droid-game`, then:
-  `cd droid-game-ios && python3 tools/sync-from-web.py && npm run sync`
-  (`npm run sync:testing` builds with the one-game-a-day limit disabled, for
-  device testing only).
-- Verify UI work with Playwright against the production build at iPhone
-  sizes; `env(safe-area-inset-*)` is 0 in desktop browsers, so safe-area
-  regressions only show on real hardware.
+- **All work happens on `preserve-current-localhost`.** Commit and push
+  there only. Do not create other branches.
+- **`main` is a mirror** of `preserve-current-localhost`, kept there so the
+  GitHub front page shows what is live. `./ship.sh` fast-forwards it after
+  every ship. Never commit to `main` directly.
+- Never `git reset`, `git pull --rebase`, force-push, or rewrite history.
+  The branch is the record of the live game.
+- **Cloud sessions (Claude Code on the web) can start on a stale branch or
+  an old checkout.** Before any edit, check `git status -sb`; if it is not
+  `preserve-current-localhost`, run
+  `git fetch origin preserve-current-localhost && git checkout preserve-current-localhost`
+  (a tracking branch; nothing local is at risk on a fresh checkout).
+- Cloud sessions can push commits but cannot delete branches or change
+  repository settings; do those on github.com.
+- The repository (`rrrrrremy/DroidGameOnTrain`) is meant to be private.
+
+## Making a change
+
+1. Change game code in `droid-game/src`.
+2. Test the web app: `cd droid-game && npm run test:ci`.
+3. Regenerate the iOS sources: `cd droid-game-ios && python3 tools/sync-from-web.py`
+   (it must report all its adaptations applied; a failure names the patch
+   whose anchor moved), then test them:
+   `CI=true npx react-scripts test --watchAll=false`.
+4. Verify UI work with Playwright against the production build at iPhone
+   sizes (390x844 and the SE's 375x667 at least). `env(safe-area-inset-*)`
+   is 0 in desktop browsers, so safe-area regressions only show on real
+   hardware.
+5. Commit both `droid-game` and the regenerated `droid-game-ios` together.
+
+iOS-only code lives in `droid-game-ios/src/native/`, `src/config.js`,
+`src/styles/ios.css`, `src/index.js` and `public/index.html`, which the
+sync never overwrites. When a feature needs native behaviour, give the web
+app a do-nothing module with the same interface and have the sync repoint
+the import (see `utils/reminders.js` and `native/reminders.js`).
+
+`npm run sync:testing` (in `droid-game-ios`) builds with the
+one-game-a-day limit disabled, for device testing only.
+
+## Shipping
+
+- **`./ship.sh`** from the repo root, on a clean `preserve-current-localhost`:
+  pulls, deploys the website (`npm run deploy` in `droid-game`: tests,
+  `npm audit`, build, then Firebase Hosting and Firestore indexes),
+  regenerates and builds the iOS app (`npm install`, sync, `cap sync`),
+  then fast-forwards `main`. `./ship.sh web` or `./ship.sh ios` does one
+  side. `./deploy.sh` is kept as a shortcut for `./ship.sh web`.
+- Then archive in Xcode (`droid-game-ios/ios/App/App.xcworkspace`) and
+  upload. After adding a native plugin, use Product > Clean Build Folder
+  if Xcode reports a missing module.
+- Do not run `firebase deploy` from the repo root: the root
+  `firebase.json` and `public/` are an old placeholder site. Hosting config
+  lives in `droid-game/firebase.json`. `netlify.toml` is from an earlier
+  Netlify setup and is not part of shipping.
+- `index.html` is served `no-cache` and `/static/**` as immutable, so a
+  deploy is live on the next load. If the site looks stale, check the
+  response headers before suspecting the deploy.
+
+## Releasing to the App Store
+
+- Both version numbers live in `droid-game-ios/ios/App/App.xcodeproj/project.pbxproj`
+  and are tracked in git. Do not let Xcode manage them during Distribute
+  (leave "Manage version and build number" unticked): it increments the
+  build number without writing it back, so the repo and App Store Connect
+  drift apart.
+- `MARKETING_VERSION` must go **up for every release**. Once a version is
+  approved, that train closes and App Store Connect refuses any further
+  build under it (errors 90062 and 90186), whatever the build number is.
+- `CURRENT_PROJECT_VERSION` must be unique within a train. Incrementing it
+  every upload, across trains, is the simplest way to never collide.
+- A new marketing version also needs a matching version created in App
+  Store Connect before a build can be submitted against it.
 
 ## Infrastructure
 
 - **Node**: Start9 (StartOS 0.4) box, always on. Runs Bitcoin and
-  **Alby Hub** (embedded LDK node — the box's separate LND is unused).
+  **Alby Hub** (embedded LDK node - the box's separate LND is unused).
 - **Payments**: removed from the game. The paid "play more today" mode was
   hidden on iOS for App Store guideline 3.1.1, then taken out of the web
   build too, so nothing in either build reaches a payment. `PaymentModal.js`
@@ -35,20 +99,6 @@ Browne). Two codebases, one game:
   flow requires a LUD-21 `verify` URL.
 - **Leaderboard**: Firestore (project `onebitcoin-38ea0`), rules in
   `firestore.rules`.
-
-## Releasing to the App Store
-
-- Both version numbers live in `droid-game-ios/ios/App/App.xcodeproj/project.pbxproj`
-  and are tracked in git. Do not let Xcode manage them during Distribute:
-  it increments the build number without writing it back, so the repo and
-  App Store Connect drift apart.
-- `MARKETING_VERSION` must go **up for every release**. Once a version is
-  approved, that train closes and App Store Connect refuses any further
-  build under it (errors 90062 and 90186), whatever the build number is.
-- `CURRENT_PROJECT_VERSION` must be unique within a train. Incrementing it
-  every upload, across trains, is the simplest way to never collide.
-- A new marketing version also needs a matching version created in App
-  Store Connect before a build can be submitted against it.
 
 ## Daily board build
 
@@ -90,5 +140,5 @@ Browne). Two codebases, one game:
 - All daily limits, and the streak and stats, live in local storage with
   no accounts, so deleting and reinstalling the app, or clearing site data
   on the web, resets them. iCloud key-value sync would carry stats across a
-  reinstall on iOS without a login, if players ask for it.
-  Closing that needs a server-side record per player.
+  reinstall on iOS without a login; enforcing the daily limit across
+  reinstalls needs a server-side record per player.
