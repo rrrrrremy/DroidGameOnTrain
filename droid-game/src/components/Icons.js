@@ -45,3 +45,23 @@ export const FlameIcon = () => (
     <path d="M12 3c.5 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-4.5.3 1.6 1.1 2.6 2 3 0-3 .5-5.5.5-8.5z" />
   </Stroke>
 );
+
+/* Solid glyphs for the pause control: bars to pause, a triangle to resume. */
+const Solid = ({ size, children }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    {children}
+  </svg>
+);
+
+export const PauseIcon = ({ size = 22 }) => (
+  <Solid size={size}>
+    <rect x="6" y="4.5" width="4" height="15" rx="1.2" />
+    <rect x="14" y="4.5" width="4" height="15" rx="1.2" />
+  </Solid>
+);
+
+export const PlayIcon = ({ size = 22 }) => (
+  <Solid size={size}>
+    <path d="M8 4.8v14.4c0 .8.9 1.3 1.6.8l11-7.2c.6-.4.6-1.2 0-1.6l-11-7.2C8.9 3.5 8 4 8 4.8z" />
+  </Solid>
+);

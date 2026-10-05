@@ -23,7 +23,7 @@ import {
   setReminderSetting,
   refreshReminders,
 } from '../native/reminders';
-import { CloseIcon, CheckIcon, TrophyIcon, FlameIcon } from './Icons';
+import { CloseIcon, CheckIcon, TrophyIcon, FlameIcon, PauseIcon, PlayIcon } from './Icons';
 import {
   generateComputerBoard,
   generateDailyBoard,
@@ -1559,26 +1559,49 @@ const DroidGame = () => {
                   <span className="live-score-grade">{liveScoreLabel}</span>
                   <span className="live-score-pts">score</span>
                 </div>
-                <button className="dvh-pause-button" onClick={() => setIsPaused((prev) => !prev)}>
-                  <span>{isPaused ? 'Restart Game' : isReadingTime ? 'Game Starts' : 'Pause Game'}</span>
-                  {isReadingTime && !isPaused && (
-                    /* Re-keyed each tick so the pulse replays every second. */
-                    <small key={readingSecondsLeft} className="dvh-countdown">
-                      in {readingSecondsLeft}s
-                    </small>
-                  )}
+                {/* Says what a tap does: pause, or carry on. It used to read
+                    "Restart Game" while paused, which sounds like starting
+                    over. */}
+                <button
+                  className={`dvh-pause-button${isPaused ? ' is-resume' : ''}`}
+                  onClick={() => setIsPaused((prev) => !prev)}
+                  aria-label={isPaused ? 'Resume game' : 'Pause game'}
+                >
+                  {isPaused ? <PlayIcon /> : <PauseIcon />}
+                  <span>{isPaused ? 'Resume' : 'Pause'}</span>
                 </button>
               </div>
 
-              <div className="dvh-meta-strip">
-                <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
-                <span>{todayString()}</span>
-                {/* A timed round is scored on the clock alone, so hiding the
-                    clock leaves the player no way to see the score falling. */}
-                {timerEnabled && (
-                  <span className="dvh-elapsed">{formatElapsedTime(timerSeconds)}</span>
-                )}
-              </div>
+              {/* Reading time takes over the strip above the board: it is
+                  the one thing to know in those seconds, and the same height
+                  as the strip, so the board does not move when it ends. */}
+              {isReadingTime ? (
+                <div
+                  className={`dvh-meta-strip dvh-countdown-strip${isPaused ? ' is-paused' : ''}`}
+                  role="timer"
+                  aria-live="polite"
+                  style={{ '--reading-seconds': `${READING_TIME_SECONDS}s` }}
+                >
+                  <span className="dvh-countdown-label">
+                    {isPaused ? 'Countdown paused' : 'Clock starts in'}
+                  </span>
+                  {/* Re-keyed each tick so the pop replays every second. */}
+                  <span key={readingSecondsLeft} className="dvh-countdown-number">
+                    {readingSecondsLeft}
+                  </span>
+                  <span className="dvh-countdown-bar" aria-hidden="true" />
+                </div>
+              ) : (
+                <div className="dvh-meta-strip">
+                  <span>{BOARD_SHAPES[boardShape]?.name || 'Droid'}</span>
+                  <span>{todayString()}</span>
+                  {/* A timed round is scored on the clock alone, so hiding the
+                      clock leaves the player no way to see the score falling. */}
+                  {timerEnabled && (
+                    <span className="dvh-elapsed">{formatElapsedTime(timerSeconds)}</span>
+                  )}
+                </div>
+              )}
 
               {challenge && (
                 <div className="challenge-target-badge dvh-challenge">
@@ -1610,7 +1633,17 @@ const DroidGame = () => {
                   interactive={!isReadingTime && !isPaused}
                   removedSquares={removedSquares}
                 />
-                {isPaused && <div className="dvh-pause-ribbon">Game Paused</div>}
+                {isPaused && (
+                  <div className="dvh-pause-card">
+                    <span className="dvh-pause-card-icon"><PauseIcon size={28} /></span>
+                    <strong>Paused</strong>
+                    <span>The clock is stopped and the board is hidden.</span>
+                    <button className="dvh-resume-button" onClick={() => setIsPaused(false)}>
+                      <PlayIcon size={18} />
+                      Resume
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className={`dvh-letter-panel${isPaused ? ' is-masked' : ''}`}>

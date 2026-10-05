@@ -1730,28 +1730,94 @@ body {
   text-transform: uppercase;
 }
 
-/* The countdown to play. Re-keyed in the JSX on every tick, so this replays
-   once a second and the corner catches the eye without a banner. */
-.dvh-countdown {
-  display: inline-block;
-  animation: dvh-countdown-pulse 0.9s ease-out;
+/* Pause control: an icon over a one-word label. The icon carries it at a
+   glance; the label settles any doubt. */
+.dvh-pause-button svg {
+  flex: 0 0 auto;
+  width: clamp(1.1rem, calc(var(--app-height) * 0.03), 1.5rem);
+  height: auto;
 }
 
-@keyframes dvh-countdown-pulse {
-  0%   { transform: scale(1.45); opacity: 0.45; }
-  55%  { transform: scale(1);    opacity: 1; }
-  100% { transform: scale(1);    opacity: 1; }
+.dvh-pause-button > span {
+  font-size: clamp(0.7rem, calc(var(--app-height) * 0.017), 0.85rem);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* While paused the button is the way back in, so it lights up. */
+.dvh-pause-button.is-resume,
+.dvh-pause-button.is-resume:hover {
+  border-color: transparent;
+  background: var(--indigo);
+  color: #07110b;
+}
+
+/* Reading time. It replaces the shape/date strip above the board with
+   something nobody can miss: amber, a big number that pops on every tick
+   (it is re-keyed in the JSX), and a bar that drains to the start. Paired
+   with .dvh-meta-strip for its sizes, so it outranks that rule here. */
+.dvh-meta-strip.dvh-countdown-strip {
+  position: relative;
+  overflow: hidden;
+  gap: 0.6rem;
+  border-color: transparent;
+  background: #f59e0b;
+  color: #1c1300;
+}
+
+.dvh-meta-strip.dvh-countdown-strip span + span::before { content: none; }
+
+.dvh-countdown-label {
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.dvh-countdown-number {
+  display: inline-block;
+  min-width: 1.2em;
+  font-size: 1.9em;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  animation: dvh-countdown-pop 0.6s ease-out;
+}
+
+.dvh-countdown-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(28, 19, 0, 0.55);
+  transform-origin: left center;
+  animation: dvh-countdown-drain var(--reading-seconds, 6s) linear forwards;
+}
+
+.dvh-meta-strip.dvh-countdown-strip.is-paused {
+  background: #3a3a3c;
+  color: var(--text);
+}
+
+.dvh-meta-strip.dvh-countdown-strip.is-paused .dvh-countdown-number,
+.dvh-meta-strip.dvh-countdown-strip.is-paused .dvh-countdown-bar {
+  animation-play-state: paused;
+}
+
+.dvh-meta-strip.dvh-countdown-strip.is-paused .dvh-countdown-bar { background: rgba(255,255,255,0.4); }
+
+@keyframes dvh-countdown-pop {
+  0%   { transform: scale(1.6); }
+  60%  { transform: scale(0.95); }
+  100% { transform: scale(1); }
+}
+
+@keyframes dvh-countdown-drain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .dvh-countdown { animation: none; }
-}
-
-.dvh-panel.is-paused .dvh-pause-button {
-  border-color: rgba(134,239,172,0.5);
-  background:
-    linear-gradient(135deg, rgba(34,197,94,0.16), rgba(13,148,136,0.08)),
-    rgba(10,12,12,0.36);
+  .dvh-countdown-number { animation: none; }
 }
 
 .dvh-home-button:hover,
@@ -1937,6 +2003,70 @@ body {
   box-shadow: 0 16px 36px rgba(0,0,0,0.34), 0 0 24px rgba(34,197,94,0.12);
   z-index: 2;
 }
+
+/* Paused: the board and letters are hidden (is-masked), and this card sits
+   where the board was, with its own way back in. */
+.dvh-pause-card {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(18rem, 88%);
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem 1.25rem 1.1rem;
+  border: 1px solid #2f3a33;
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+  text-align: center;
+  z-index: 2;
+}
+
+.dvh-pause-card-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #262729;
+  color: var(--text);
+}
+
+.dvh-pause-card strong {
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.dvh-pause-card > span:not(.dvh-pause-card-icon) {
+  color: #a6a8a9;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.dvh-resume-button {
+  margin-top: 0.35rem;
+  min-height: 2.9rem;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 0;
+  border-radius: 12px;
+  background: var(--indigo);
+  color: #07110b;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 900;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.dvh-resume-button:active { transform: scale(0.98); }
 
 .dvh-letter-panel {
   min-height: 6.2rem;
