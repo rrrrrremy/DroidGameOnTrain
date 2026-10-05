@@ -16,7 +16,14 @@ import {
 import { saveDailyProgress, readDailyProgress, clearDailyProgress } from '../utils/dailyProgress';
 import { buildDailyBoard } from '../utils/dailyBoardBuilder';
 import { shortDate } from '../utils/dates';
-import { CloseIcon, CheckIcon, TrophyIcon } from './Icons';
+import { readHistory, recordDailyResult, computeStats } from '../utils/stats';
+import {
+  remindersSupported,
+  getReminderSetting,
+  setReminderSetting,
+  refreshReminders,
+} from '../native/reminders';
+import { CloseIcon, CheckIcon, TrophyIcon, FlameIcon } from './Icons';
 import {
   generateComputerBoard,
   generateDailyBoard,
@@ -205,6 +212,10 @@ const DroidGame = () => {
   // The date the current daily round began on. A round can run past
   // midnight, and its save must stay tied to the puzzle it belongs to.
   const dailyRoundDateRef = useRef(null);
+  // Every daily result on this device, for the streak and stats.
+  const [history, setHistory] = useState(() => readHistory());
+  const [reminderSetting, setReminderSettingState] = useState(() => getReminderSetting());
+  const [reminderNote, setReminderNote] = useState(null);
   const [dailyScoreSubmitted, setDailyScoreSubmitted] = useState(
     () => hasSubmittedLeaderboardScore(todayString())
   );
@@ -1059,7 +1070,11 @@ const DroidGame = () => {
   /** Leaving mid-round spends the daily. Marked before the reset, which
    *  clears dailyMode along with everything else. */
   const quitAndForfeit = () => {
-    if (dailyMode) markDailySpent();
+    if (dailyMode) {
+      // A forfeit is a day played for the limit but not for the streak.
+      setHistory(recordDailyResult(dailyRoundDateRef.current || todayString(), { forfeit: true }));
+      markDailySpent();
+    }
     setConfirmQuit(false);
     resetGame();
   };
@@ -1315,6 +1330,43 @@ const DroidGame = () => {
   }, [board, player1Board, correctTiles, preservedTiles, gameState, letterHintsUsed, timerSeconds, maxScore, player2FullValid, boardShape, hintPenalty, wordHintUsed, timerEnabled, isTimedComputerScoring, ghostMode]);
 
   const scoreMax = isTimedComputerScoring || ghostMode ? GHOST_SCORE_MAX : maxScore;
+
+  // A finished daily is recorded once, from the render that first shows its
+  // result, when the score is final. Recording ignores a day already saved.
+  useEffect(() => {
+    if (gameState !== 'end' || !dailyMode || !dailyRoundDateRef.current) return;
+    setHistory(recordDailyResult(dailyRoundDateRef.current, {
+      score,
+      maxScore: scoreMax,
+      seconds: timerSeconds,
+      hints: letterHintsUsed,
+      wordHint: wordHintUsed,
+      solved: player2FullValid,
+    }));
+  }, [gameState, dailyMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // gameState is a dependency so the day rolls over when the player comes
+  // back to the home screen after midnight.
+  const stats = useMemo(
+    () => computeStats(history, todayString()),
+    [history, gameState] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // Re-plan the week's reminders whenever today's status or the streak
+  // changes, and on opening. dailyPlayed covers a day played before results
+  // were being recorded.
+  const reminderPlayedToday = stats.playedToday || dailyPlayed;
+  useEffect(() => {
+    refreshReminders({ playedToday: reminderPlayedToday, streak: stats.currentStreak });
+  }, [reminderPlayedToday, stats.currentStreak, reminderSetting]);
+
+  const toggleReminders = async () => {
+    const result = await setReminderSetting(reminderSetting !== 'on');
+    setReminderSettingState(result === 'on' ? 'on' : 'off');
+    setReminderNote(result === 'denied'
+      ? 'Notifications are off for Droid. Allow them in the Settings app, then try again.'
+      : null);
+  };
   const scorePercent = scoreMax > 0 ? Math.round(score / scoreMax * 100) : 0;
   const challengeResult = challenge && gameState === 'end'
     ? (() => {
@@ -1432,6 +1484,7 @@ const DroidGame = () => {
           onShowHowToPlay={() => setShowHowToPlay(true)}
           dailyPlayed={dailyPlayed}
           dailyInProgress={dailyInProgress}
+          streak={stats.currentStreak}
         />
       )}
 
@@ -1919,6 +1972,27 @@ const DroidGame = () => {
                     Average score ({gamesPlayed} droids): {combinedTotal}%
                   </p>
                 )}
+
+                {dailyMode && (
+                  <dl className="result-stats" aria-label="Your stats on this device">
+                    <div className="result-stat is-streak">
+                      <dt>Streak</dt>
+                      <dd><FlameIcon />{stats.currentStreak}</dd>
+                    </div>
+                    <div className="result-stat">
+                      <dt>Best</dt>
+                      <dd>{stats.bestStreak}</dd>
+                    </div>
+                    <div className="result-stat">
+                      <dt>Played</dt>
+                      <dd>{stats.played}</dd>
+                    </div>
+                    <div className="result-stat">
+                      <dt>Average</dt>
+                      <dd>{stats.averageScore === null ? '–' : stats.averageScore.toFixed(1)}</dd>
+                    </div>
+                  </dl>
+                )}
               </section>
 
               {challengeResult && (
@@ -1984,20 +2058,24 @@ const DroidGame = () => {
                       interactive={false}
                       removedSquares={removedSquares}
                     />
-                    <div className="legend result-legend">
-                      <div className="legend-item">
-                        <div className="legend-dot correct" />
-                        Correct
+                    {/* Every tile is green on a solved board, so the key
+                        only earns its room when something went wrong. */}
+                    {!player2FullValid && (
+                      <div className="legend result-legend">
+                        <div className="legend-item">
+                          <div className="legend-dot correct" />
+                          Correct
+                        </div>
+                        <div className="legend-item">
+                          <div className="legend-dot incorrect" />
+                          Wrong
+                        </div>
+                        <div className="legend-item">
+                          <div className="legend-dot preserved" />
+                          Hint tile
+                        </div>
                       </div>
-                      <div className="legend-item">
-                        <div className="legend-dot incorrect" />
-                        Wrong
-                      </div>
-                      <div className="legend-item">
-                        <div className="legend-dot preserved" />
-                        Hint tile
-                      </div>
-                    </div>
+                    )}
                   </>
                 )}
               </div>
@@ -2016,6 +2094,25 @@ const DroidGame = () => {
                   Back to menu
                 </button>
               </div>
+
+              {dailyMode && remindersSupported() && (
+                <div className="result-reminder">
+                  <span className="result-reminder-copy">
+                    <strong>Daily reminder</strong>
+                    <small>6 pm, only on days you haven't played</small>
+                  </span>
+                  <button
+                    className={`result-switch${reminderSetting === 'on' ? ' is-on' : ''}`}
+                    role="switch"
+                    aria-checked={reminderSetting === 'on'}
+                    aria-label="Daily reminder"
+                    onClick={toggleReminders}
+                  >
+                    <span className="result-switch-knob" />
+                  </button>
+                </div>
+              )}
+              {dailyMode && reminderNote && <p className="result-note">{reminderNote}</p>}
             </div>
           </div>
         );

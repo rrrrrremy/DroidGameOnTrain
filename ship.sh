@@ -51,7 +51,9 @@ fi
 if [ "$TARGET" = "both" ] || [ "$TARGET" = "ios" ]; then
   echo
   echo "==> Regenerating the iOS sources"
-  ( cd droid-game-ios && python3 tools/sync-from-web.py && npm run sync )
+  # npm install first: a new Capacitor plugin in package.json (local
+  # notifications, say) is otherwise a "Module not found" at build time.
+  ( cd droid-game-ios && npm install --no-audit --no-fund && python3 tools/sync-from-web.py && npm run sync )
   echo
   echo "iOS sources are current. Open Xcode and archive:"
   echo "  open droid-game-ios/ios/App/App.xcworkspace"

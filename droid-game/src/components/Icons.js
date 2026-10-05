@@ -39,3 +39,9 @@ export const CheckIcon = () => (
     <path d="M5 12l5 5L19 7" />
   </Stroke>
 );
+
+export const FlameIcon = () => (
+  <Stroke size={16} width={2.2}>
+    <path d="M12 3c.5 3.5 4.5 5.5 4.5 10a4.5 4.5 0 0 1-9 0c0-2 1-3.5 2-4.5.3 1.6 1.1 2.6 2 3 0-3 .5-5.5.5-8.5z" />
+  </Stroke>
+);

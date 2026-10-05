@@ -1,7 +1,7 @@
 import React from 'react';
 import { BOARD_SHAPES, dailyShape } from '../utils/computerPlayer';
 import { shortDate } from '../utils/dates';
-import { HelpIcon, ChevronIcon, TrophyIcon } from './Icons';
+import { HelpIcon, ChevronIcon, TrophyIcon, FlameIcon } from './Icons';
 
 const StartScreen = ({
   onStart,
@@ -11,6 +11,7 @@ const StartScreen = ({
   onShowHowToPlay,
   dailyPlayed,
   dailyInProgress = false,
+  streak = 0,
 }) => {
   // Today's shape is shown before play: the board opens on it anyway, and
   // the rotation makes each day's card look different.
@@ -42,6 +43,17 @@ const StartScreen = ({
               ))}
             </div>
             <p className="home-daily-meta">{shape.name} · 6 words · 6 minutes</p>
+            {/* A live streak only: a broken one is no reason to open the
+                card on a downer. Kept alive by yesterday until today ends. */}
+            {streak > 0 && (
+              <p className="home-streak">
+                <FlameIcon />
+                <span>
+                  {streak}-day streak
+                  {!dailyPlayed && <span className="home-streak-hint"> · play today to keep it</span>}
+                </span>
+              </p>
+            )}
           </div>
 
           <button

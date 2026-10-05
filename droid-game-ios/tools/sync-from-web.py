@@ -281,6 +281,15 @@ def main():
         count=2,
     )
 
+    # Daily reminders are local notifications, which only the app can send.
+    # The web build imports a do-nothing version; point the app at the real
+    # one in native/reminders.js (same interface).
+    s = patch(
+        s, 'native reminders',
+        "} from '../utils/reminders';",
+        "} from '../native/reminders';",
+    )
+
     if failures:
         print('Sync failed - the web app has moved under these patches:\n')
         for f in failures:
@@ -291,7 +300,7 @@ def main():
 
     open(path, 'w').write(s)
     print('Synced src/ and public/ from ../droid-game and re-applied '
-          '9 iOS adaptations.')
+          '10 iOS adaptations.')
 
     changed = sync_dependencies()
     if changed:

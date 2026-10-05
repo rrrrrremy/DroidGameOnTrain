@@ -63,6 +63,21 @@ Browne). Two codebases, one game:
   couple of months of `generateDailyBoard` output against the previous
   version before shipping.
 
+## Streak, stats and reminders
+
+- Each daily result (or forfeit) is saved on the device in
+  `utils/stats.js` (`droid_daily_history`), which also computes the
+  streak and stats shown on the home card and the daily result screen.
+  Streak rule: any finished daily counts, solved or not; a forfeit or a
+  missed day ends it; yesterday keeps it alive until today is over.
+- Daily reminders are iOS-only local notifications (no server):
+  `droid-game-ios/src/native/reminders.js`, using
+  `@capacitor/local-notifications`. The web build imports a do-nothing
+  `utils/reminders.js` with the same interface, and the sync script
+  repoints the import. The app re-plans a week of 6 pm reminders on every
+  open and every finished round, skipping today once it is played. Off
+  until the player turns on the switch on the daily result screen.
+
 ## Known open items
 
 - The daily round is saved as it is played (`utils/dailyProgress.js`), so
@@ -72,6 +87,8 @@ Browne). Two codebases, one game:
   rounds scored as if the phone had been left running), so a player can
   still think away from the clock. Counting time away would close that and
   reopen the original complaint (owner's call).
-- All daily limits live in local storage with no accounts, so deleting and
-  reinstalling the app, or clearing site data on the web, resets them.
+- All daily limits, and the streak and stats, live in local storage with
+  no accounts, so deleting and reinstalling the app, or clearing site data
+  on the web, resets them. iCloud key-value sync would carry stats across a
+  reinstall on iOS without a login, if players ask for it.
   Closing that needs a server-side record per player.
