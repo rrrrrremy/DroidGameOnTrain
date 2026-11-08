@@ -42,6 +42,8 @@ WEB_ONLY = {
     # bundled copy would only create a version of the policy that can go
     # stale without anyone noticing.
     'public/privacy.html',
+    # Link-preview image for the website; nothing in the app shows it.
+    'public/og-image.png',
 }
 
 failures = []
@@ -290,6 +292,20 @@ def main():
         "} from '../native/reminders';",
     )
 
+    # Sharing a result and asking for a rating: the web build imports
+    # versions using the browser's share sheet and doing nothing; the app
+    # uses the native share sheet and Apple's rating prompt (same interfaces).
+    s = patch(
+        s, 'native share',
+        "import { shareText } from '../utils/share';",
+        "import { shareText } from '../native/share';",
+    )
+    s = patch(
+        s, 'native review',
+        "import { maybeAskForReview } from '../utils/review';",
+        "import { maybeAskForReview } from '../native/review';",
+    )
+
     if failures:
         print('Sync failed - the web app has moved under these patches:\n')
         for f in failures:
@@ -300,7 +316,7 @@ def main():
 
     open(path, 'w').write(s)
     print('Synced src/ and public/ from ../droid-game and re-applied '
-          '10 iOS adaptations.')
+          '12 iOS adaptations.')
 
     changed = sync_dependencies()
     if changed:

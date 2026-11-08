@@ -38,6 +38,10 @@ import {
 } from '../utils/computerPlayer';
 import Leaderboard from './Leaderboard';
 import HowToPlay from './HowToPlay';
+import { shareText } from '../utils/share';
+import { maybeAskForReview } from '../utils/review';
+import { buildDailyShareText } from '../utils/shareResult';
+import AppStoreLink from './AppStoreLink';
 import { hasSubmittedLeaderboardScore, preloadLeaderboard } from '../utils/leaderboard';
 
 const DAILY_STORAGE_KEY = 'droid_daily_played';
@@ -174,6 +178,28 @@ const NativeShareButton = ({ url, title = 'Droid Challenge', text = 'Can you bea
   return (
     <button className="native-share-btn" onClick={handleShare}>
       Share
+    </button>
+  );
+};
+
+/**
+ * Shares today's result as a spoiler-free grid. Says "Copied" for a moment
+ * where the browser has no share sheet and the text went to the clipboard.
+ */
+const ShareResultButton = ({ getText }) => {
+  const [note, setNote] = useState(null);
+
+  const handleShare = async () => {
+    const outcome = await shareText(getText());
+    if (outcome === 'copied') {
+      setNote('Copied - paste it anywhere');
+      setTimeout(() => setNote(null), 2500);
+    }
+  };
+
+  return (
+    <button className="home-play-button result-primary result-share" onClick={handleShare}>
+      <span>{note || 'Share result'}</span>
     </button>
   );
 };
@@ -1325,14 +1351,20 @@ const DroidGame = () => {
   // result, when the score is final. Recording ignores a day already saved.
   useEffect(() => {
     if (gameState !== 'end' || !dailyMode || !dailyRoundDateRef.current) return;
-    setHistory(recordDailyResult(dailyRoundDateRef.current, {
+    const updated = recordDailyResult(dailyRoundDateRef.current, {
       score,
       maxScore: scoreMax,
       seconds: timerSeconds,
       hints: letterHintsUsed,
       wordHint: wordHintUsed,
       solved: player2FullValid,
-    }));
+    });
+    setHistory(updated);
+    // A good moment to ask for a rating; the iOS app decides whether to.
+    maybeAskForReview({
+      solved: player2FullValid,
+      played: computeStats(updated, todayString()).played,
+    });
   }, [gameState, dailyMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // gameState is a dependency so the day rolls over when the player comes
@@ -2130,7 +2162,23 @@ const DroidGame = () => {
 
               <div className="result-actions">
                 {dailyMode && (
-                  <button className="home-play-button result-primary" onClick={() => setShowLeaderboard(true)}>
+                  <ShareResultButton
+                    getText={() => buildDailyShareText({
+                      dateLabel: shortDate(),
+                      shapeName,
+                      removed: removedSquares,
+                      preservedTiles,
+                      correctTiles,
+                      solved: player2FullValid,
+                      scoreLabel: isTimedComputerScoring ? `${score.toFixed(1)}/${scoreMax}` : `${scorePercent}%`,
+                      time: timerEnabled ? formatElapsedTime(timerSeconds) : null,
+                      hints: letterHintsUsed + (wordHintUsed ? 1 : 0),
+                      streak: stats.currentStreak,
+                    })}
+                  />
+                )}
+                {dailyMode && (
+                  <button className="home-leaderboard-btn" onClick={() => setShowLeaderboard(true)}>
                     <TrophyIcon />
                     <span>Daily Leaderboard</span>
                   </button>
@@ -2141,6 +2189,7 @@ const DroidGame = () => {
                 >
                   Back to menu
                 </button>
+                {dailyMode && <AppStoreLink />}
               </div>
             </div>
           </div>
