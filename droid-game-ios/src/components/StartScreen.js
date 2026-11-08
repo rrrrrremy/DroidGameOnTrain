@@ -2,6 +2,7 @@ import React from 'react';
 import { BOARD_SHAPES, dailyShape } from '../utils/computerPlayer';
 import { shortDate } from '../utils/dates';
 import { Wordmark } from './TileD';
+import AppStoreLink from './AppStoreLink';
 import { HelpIcon, ChevronIcon, TrophyIcon, FlameIcon, GearIcon } from './Icons';
 
 const StartScreen = ({
@@ -97,6 +98,8 @@ const StartScreen = ({
           <TrophyIcon />
           <span>Daily Leaderboard</span>
         </button>
+
+        <AppStoreLink />
 
         <footer className="home-footer">
           <span>Second Nature Games Pty Limited · ACN: 161 671 549</span>
